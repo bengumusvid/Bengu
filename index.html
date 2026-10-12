@@ -2844,6 +2844,24 @@ function J_() {
                 u.jsxs("div", {
                   className: "flex items-center",
                   children: [
+                    u.jsxs("button", {
+                      onClick: () =>
+                        window.bengu_comp_open && window.bengu_comp_open(),
+                      "aria-label": "Competição Musical",
+                      title: "Competição Musical",
+                      className: "bg-comp",
+                      children: [
+                        u.jsx("span", {
+                          className: "bg-coin",
+                          "aria-hidden": "true",
+                          children: "$",
+                        }),
+                        u.jsxs("span", {
+                          className: "bg-txt",
+                          children: ["Competição", u.jsx("br", {}), "Musical"],
+                        }),
+                      ],
+                    }),
                     u.jsx("button", {
                       onClick: () => at("search"),
                       "aria-label": x("search"),
@@ -6103,7 +6121,7 @@ function lx({
       u.jsxs("p", {
         className: "text-center text-xs py-4",
         style: { color: k.mute },
-        children: ["Bengu · ", x("versionLbl"), " 2.0.4"],
+        children: ["Bengu · ", x("versionLbl"), " 2.2.0"],
       }),
     ],
   });
@@ -7891,5 +7909,178 @@ Am(document.getElementById("root")).render(
   </head>
   <body style="margin:0">
     <div id="root"></div>
+  <script>/* BENGU 2.2.0 concursos */
+(function(){
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ";
+var PINK="#ff1fa9";
+function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
+function uid(){try{return JSON.parse(atob(tok().split(".")[1].replace(/-/g,"+").replace(/_/g,"/"))).sub}catch(e){return null}}
+function call(p,o){o=o||{};return fetch(U+p,{method:o.m||"GET",headers:{apikey:K,Authorization:"Bearer "+(tok()||K),"Content-Type":"application/json"},body:o.b?JSON.stringify(o.b):undefined}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.message||"Erro");return j})})}
+function rpc(n,b){return call("/rest/v1/rpc/"+n,{m:"POST",b:b||{}})}
+function get(t,q){return call("/rest/v1/"+t+"?"+(q||""))}
+function h(t,a,c){var e=document.createElement(t);for(var k in a||{})if(k!="on")e.setAttribute(k,a[k]);if(a&&a.on)for(var ev in a.on)e.addEventListener(ev,a.on[ev]);[].concat(c==null?[]:c).forEach(function(x){e.append(x)});return e}
+var S="width:100%;box-sizing:border-box;padding:10px;margin:4px 0;border-radius:8px;border:1px solid #3a4175;background:#1b2250;color:#fff;font-size:15px";
+var B="padding:10px 14px;margin:4px 4px 4px 0;border:0;border-radius:8px;background:#f5b301;color:#12183A;font-weight:700;font-size:15px";
+var BP="padding:10px 14px;margin:4px 4px 4px 0;border:0;border-radius:8px;background:"+PINK+";color:#fff;font-weight:700;font-size:15px";
+var CARD="background:#1b2250;border-radius:10px;padding:12px;margin:8px 0";
+var DIM="font-size:13px;opacity:.8";
+function inp(ph,t){return h("input",{placeholder:ph,type:t||"text",style:S})}
+function sel(ph,opts){return h("select",{style:S},[h("option",{value:""},ph)].concat(opts.map(function(o){return h("option",{value:o[0]},o[1])})))}
+function btn(t,f,pink){return h("button",{style:pink?BP:B,on:{click:f}},t)}
+function fmt(n,cur){return Number(n||0).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})+" "+(cur||"")}
+var LV={distrital:"Distrital",provincial:"Provincial",nacional:"Nacional",regional:"Regional (continente)"};
+var MEDAL=["🥇","🥈","🥉"];
+
+/* animação do $ rosa */
+document.head.append(h("style",{},"@keyframes bgSpin{0%{transform:rotateY(0)}40%,100%{transform:rotateY(360deg)}}@keyframes bgGlow{0%{box-shadow:0 0 0 0 "+PINK+"cc}100%{box-shadow:0 0 0 9px "+PINK+"00}}@keyframes bgPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}.bg-comp{display:inline-flex;align-items:center;gap:5px;margin-right:6px;padding:3px 8px 3px 4px;border:0;border-radius:999px;background:"+PINK+";color:#fff;cursor:pointer;flex:none;animation:bgPulse 2s ease-in-out infinite}.bg-comp .bg-coin{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff,#ffd1ee 55%,#ff7ccb);color:"+PINK+";font:900 15px/1 system-ui,sans-serif;animation:bgSpin 3s ease-in-out infinite,bgGlow 1.6s ease-out infinite}.bg-comp .bg-txt{font:800 9.5px/1.05 system-ui,sans-serif;text-align:left;letter-spacing:.2px}"));
+
+/* botão no cabeçalho (antes da lupa); a app React chama window.bengu_comp_open() */
+window.bengu_comp_open=open;
+
+var ov=h("div",{style:"display:none;position:fixed;inset:0;z-index:99999;background:#12183A;color:#fff;overflow:auto;padding:12px;padding-top:calc(12px + env(safe-area-inset-top,0px));font-family:system-ui,sans-serif"});
+var bar=h("div",{style:"display:flex;gap:6px;flex-wrap:wrap;position:sticky;top:0;background:#12183A;padding-bottom:6px;z-index:2"});
+var box=h("div");ov.append(bar,box);
+var timer=null;
+function stop(){if(timer){clearInterval(timer);timer=null}}
+function msg(t,ok){box.prepend(h("div",{style:"padding:8px;border-radius:8px;margin:6px 0;background:"+(ok?"#1e6b3a":"#8a2b2b")},t))}
+function fail(e){msg(e.message||String(e))}
+function need(){if(!tok()){msg("Inicie sessão no Bengu primeiro.");return false}return true}
+function open(){ov.style.display="block";
+ bar.replaceChildren(btn("✕",function(){stop();ov.style.display="none"}),btn("Concursos",list),btn("Sou cantor",singer),btn("Criar concurso",create),btn("Os meus concursos",mine));list()}
+
+/* ───── lista ───── */
+function list(){stop();
+ var f=sel("Todos os níveis",Object.keys(LV).map(function(k){return[k,LV[k]]})),area=h("div");
+ box.replaceChildren(h("h3",{},"Competição Musical"),f,area);
+ var all=[];
+ function draw(){area.replaceChildren.apply(area,(function(){var r=all.filter(function(c){return!f.value||c.level==f.value});
+  return r.length?r.map(function(c){return h("div",{style:CARD},[h("b",{},c.title),
+   h("div",{style:DIM},LV[c.level]+" · "+fmt(c.vote_price,c.currency)+"/voto · até "+new Date(c.ends_at).toLocaleDateString()),
+   btn("Ver placar e votar",function(){detail(c)},1)])}):[h("p",{},"Ainda não há concursos abertos.")]})())}
+ f.addEventListener("change",draw);
+ area.append(h("p",{},"A carregar…"));
+ get("competitions","select=*&status=eq.open&order=created_at.desc").then(function(r){all=r;draw()}).catch(fail)}
+
+/* ───── detalhe: placar em tempo real + votar ───── */
+function detail(c){stop();
+ var vbox=h("div"),board=h("div");
+ box.replaceChildren(btn("← Voltar",list),h("h3",{},c.title),
+  h("div",{style:DIM},LV[c.level]+" · "+fmt(c.vote_price,c.currency)+" por voto"),
+  h("div",{style:DIM},"Placar ao vivo — atualiza sozinho"),
+  btn("Entrar como cantor",function(){if(!need())return;rpc("enter_competition",{p_competition:c.id}).then(function(){msg("Inscrito!",1);load()}).catch(fail)}),
+  vbox,board);
+ function render(r){
+  if(!r.length){board.replaceChildren(h("p",{},"Sem cantores ainda."));return}
+  board.replaceChildren.apply(board,r.map(function(x){
+   var top=x.position<=3;
+   return h("div",{style:CARD+(top?";border:1px solid "+PINK:"")},[
+    h("div",{style:"display:flex;justify-content:space-between;gap:8px"},[h("b",{},(top?MEDAL[x.position-1]+" ":"#"+x.position+" ")+x.stage_name),h("b",{},x.votes+" votos ("+x.percent+"%)")]),
+    h("div",{style:DIM},x.district+", "+x.province+", "+x.country),
+    top?h("div",{style:"font-size:14px;font-weight:700;color:#ffd166;margin-top:4px"},"Prémio a ganhar: "+fmt(x.prize,x.currency)):"",
+    h("div",{style:"height:6px;border-radius:3px;background:#3a4175;margin:6px 0"},h("div",{style:"height:6px;border-radius:3px;background:"+PINK+";width:"+Math.min(100,x.percent)+"%"})),
+    btn("Votar neste cantor",function(){voteForm(c,x,vbox)},1)])}))}
+ function load(){rpc("get_live_board",{p_competition:c.id}).then(render).catch(function(){})}
+ load();timer=setInterval(load,5000)}
+
+function voteForm(c,x,vbox){
+ if(!need())return;
+ var amt=inp("Valor ("+c.currency+")","number"),info=h("div",{style:DIM},""),pay=h("div"),chosen=null,cs=null;
+ function calc(){var n=Math.floor(Number(amt.value)/c.vote_price);info.textContent=n>0?"= "+n+" voto(s) para "+x.stage_name:"Mínimo: "+fmt(c.vote_price,c.currency)+" (1 voto)"}
+ amt.addEventListener("input",calc);
+ var quick=h("div",{},[1,5,10,50].map(function(n){return h("button",{style:B+";background:#3a4175;color:#fff",on:{click:function(){amt.value=(n*c.vote_price).toFixed(2);calc()}}},n+" voto"+(n>1?"s":""))}));
+ function methods(code){chosen=null;pay.replaceChildren(h("div",{style:DIM},"A carregar meios de pagamento…"));
+  get("payment_methods","country_code=eq."+code+"&active=eq.true&order=sort_order,name").then(function(m){
+   if(!m.length){pay.replaceChildren(h("div",{style:DIM},"Sem meios de pagamento neste país."));return}
+   var btns=m.map(function(p){var b=h("button",{style:B+";background:#3a4175;color:#fff",on:{click:function(){chosen=p.name;btns.forEach(function(o){o.style.background="#3a4175";o.style.color="#fff"});b.style.background=PINK}}},p.name);return b});
+   pay.replaceChildren(h("div",{style:DIM},"Pague com:"),h("div",{},btns))}).catch(fail)}
+ var head=[h("h4",{},"Votar: "+x.stage_name)];
+ if(c.country_code){methods(c.country_code)}else{
+  cs=sel("O seu país",[]);
+  get("countries","select=code,name&region=eq."+encodeURIComponent(c.region)+"&order=name").then(function(r){r.forEach(function(k){cs.append(h("option",{value:k.code},k.name))})});
+  cs.onchange=function(){if(cs.value)methods(cs.value)};head.push(cs)}
+ vbox.replaceChildren(h("div",{style:CARD+";border:1px solid "+PINK},head.concat([pay,amt,quick,info,
+  btn("Pagar e votar",function(){
+   if(!chosen)return msg("Escolha o meio de pagamento");
+   rpc("create_vote_payment",{p_entry:x.entry_id,p_amount:Number(amt.value),p_method:chosen,p_country:cs?cs.value:null}).then(function(p){
+    msg("Pedido de pagamento criado ("+p.votes+" votos). Os votos entram no placar assim que o pagamento for confirmado.",1)}).catch(fail)},1)])));
+ calc()}
+
+/* ───── cantor ───── */
+function geo(co,pr,di,onC){
+ get("countries","select=code,name,region,continent&order=name").then(function(r){r.forEach(function(x){co.append(h("option",{value:x.code},x.name+" ("+x.continent+")"));co["_"+x.code]=x});if(onC)onC()});
+ co.addEventListener("change",function(){pr.replaceChildren(h("option",{value:""},"Província"));di.replaceChildren(h("option",{value:""},"Distrito"));if(!co.value)return;get("provinces","country_code=eq."+co.value+"&order=name").then(function(r){r.forEach(function(x){pr.append(h("option",{value:x.id},x.name))})})});
+ pr.addEventListener("change",function(){di.replaceChildren(h("option",{value:""},"Distrito"));if(!pr.value)return;get("districts","province_id=eq."+pr.value+"&order=name").then(function(r){r.forEach(function(x){di.append(h("option",{value:x.id},x.name))})})})}
+function singer(){stop();
+ var nm=inp("Nome artístico"),bio=inp("Bio"),song=inp("Link da música"),pm=inp("Meio para receber (ex.: M-Pesa)"),pa=inp("Número/conta para receber");
+ var co=sel("País",[]),pr=sel("Província",[]),di=sel("Distrito",[]),where=h("div",{style:DIM},"Continente e região aparecem ao escolher o país");
+ geo(co,pr,di);
+ co.addEventListener("change",function(){var x=co["_"+co.value];where.textContent=x?"Continente: "+x.continent+(x.region?" · Região de África: "+x.region:""):""});
+ box.replaceChildren(h("h3",{},"Registo de cantor"),nm,bio,song,co,where,pr,di,pm,pa,btn("Registar",function(){
+  if(!need())return;
+  rpc("register_singer",{p_stage_name:nm.value,p_bio:bio.value,p_song_url:song.value,p_country:co.value,p_province:pr.value,p_district:di.value,p_payout_method:pm.value,p_payout_account:pa.value}).then(function(){msg("Registado! Agora entre num concurso da sua zona.",1)}).catch(fail)},1))}
+
+/* ───── criar concurso ───── */
+function create(){stop();
+ var t=inp("Título"),d=inp("Descrição"),lv=sel("Nível",Object.keys(LV).map(function(k){return[k,LV[k]]})),
+ rg=sel("Região de África",["Norte","Ocidental","Central","Oriental","Austral"].map(function(x){return[x,x]})),
+ co=sel("País",[]),pr=sel("Província",[]),di=sel("Distrito",[]),pc=inp("Preço de 1 voto","number"),
+ en=inp("Fim da votação","datetime-local"),quote=h("div",{style:"padding:10px;border-radius:8px;background:#2a1240;border:1px solid "+PINK+";margin:6px 0"},"Escolha o nível e o local para ver a taxa."),
+ fixed=false,q=null;
+ geo(co,pr,di);
+ function vis(){var r=lv.value=="regional";rg.style.display=r?"":"none";co.style.display=pr.style.display=di.style.display=r?"none":"";
+  if(!r){pr.style.display=(lv.value=="provincial"||lv.value=="distrital")?"":"none";di.style.display=lv.value=="distrital"?"":"none"}}
+ function refresh(){vis();q=null;pc.style.display="";
+  var l=lv.value;if(!l)return;
+  if(l!="regional"&&!co.value)return;
+  if((l=="provincial"||l=="distrital")&&!pr.value)return;
+  if(l=="distrital"&&!di.value)return;
+  if(l=="regional"&&!rg.value)return;
+  rpc("quote_competition",{p_level:l,p_country:l=="regional"?null:co.value,p_province:pr.value||null,p_district:di.value||null}).then(function(r){
+   q=r;fixed=r.fixed_vote_price!=null;
+   quote.replaceChildren(h("div",{},"Taxa de inscrição (não reembolsável, vai para a conta Bengu): "),h("b",{style:"font-size:18px;color:#ffd166"},fmt(r.fee_usd,"USD")),
+    h("div",{style:DIM},fixed?"Voto fixo: 1 USD = "+fmt(r.fixed_vote_price,r.currency)+" por voto.":"Preço do voto definido por si, em "+r.currency+"."));
+   pc.style.display=fixed?"none":"";pc.placeholder="Preço de 1 voto ("+r.currency+")"}).catch(fail)}
+ [lv,rg,co,pr,di].forEach(function(e){e.addEventListener("change",refresh)});
+ vis();
+ box.replaceChildren(h("h3",{},"Criar concurso"),
+  h("p",{style:DIM},"Divisão do total arrecadado: 1º 40% · rede social Bengu 20% · organizador 15% · 2º 15% · 3º 10%"),
+  t,d,lv,rg,co,pr,di,quote,pc,en,btn("Criar e pagar taxa",function(){
+   if(!need())return;
+   if(!q)return msg("Escolha o nível e o local.");
+   if(!en.value)return msg("Indique o fim da votação.");
+   var l=lv.value;
+   rpc("create_competition",{p_title:t.value,p_description:d.value,p_level:l,p_country:l=="regional"?null:co.value||null,p_region:l=="regional"?rg.value:null,p_province:pr.value||null,p_district:di.value||null,p_vote_price:fixed?null:Number(pc.value),p_ends_at:new Date(en.value).toISOString()}).then(function(r){
+    box.replaceChildren(btn("Os meus concursos",mine),h("div",{style:CARD},[h("b",{},"Concurso criado — falta pagar a taxa"),
+     h("p",{},"Pague "+fmt(r.fee_usd,"USD")+" (não reembolsável). O concurso abre assim que o pagamento for confirmado."),
+     h("div",{style:DIM},"Referência: "+r.id)]))}).catch(fail)},1))}
+
+/* ───── os meus concursos + painel do organizador ───── */
+function mine(){stop();
+ if(!need())return;
+ box.replaceChildren(h("h3",{},"Os meus concursos"),h("p",{},"A carregar…"));
+ get("competitions","select=*&organizer_id=eq."+uid()+"&order=created_at.desc").then(function(r){
+  box.replaceChildren.apply(box,[h("h3",{},"Os meus concursos")].concat(r.length?r.map(function(c){
+   var ended=new Date(c.ends_at)<new Date();
+   var kids=[h("b",{},c.title),h("div",{style:DIM},LV[c.level]+" · "+({pending_fee:"à espera da taxa",open:"aberto",closed:"fechado",paid_out:"pago"})[c.status])];
+   if(c.status=="pending_fee")kids.push(h("div",{style:"color:#ffd166"},"Taxa a pagar: "+fmt(c.organizer_fee_usd,"USD")+" · ref. "+c.id));
+   else{kids.push(btn("Painel",function(){dash(c)}));
+    if(c.status=="open"&&ended)kids.push(btn("Fechar e calcular prémios",function(){rpc("close_competition",{p_competition:c.id}).then(function(){msg("Concurso fechado.",1);mine()}).catch(fail)},1))}
+   return h("div",{style:CARD},kids)}):[h("p",{},"Ainda não criou concursos.")]))}).catch(fail)}
+function dash(c){
+ box.replaceChildren(btn("← Voltar",mine),h("p",{},"A carregar…"));
+ rpc("organizer_dashboard",{p_competition:c.id}).then(function(d){var cu=d.currency;
+  function row(a,b){return h("div",{style:"display:flex;justify-content:space-between;padding:4px 0"},[h("span",{},a),h("b",{},b)])}
+  box.replaceChildren(btn("← Voltar",mine),h("h3",{},d.title),
+   h("div",{style:CARD},[row("Total arrecadado",fmt(d.total_raised,cu)),row("Taxa do gateway",fmt(d.gateway_fee,cu)),row("Votos confirmados",d.confirmed_votes),
+    row("A sua parte (organizador)",fmt(d.organizer_share,cu)),row("🥇 1º lugar",fmt(d.prize_first,cu)),row("🥈 2º lugar",fmt(d.prize_second,cu)),row("🥉 3º lugar",fmt(d.prize_third,cu)),
+    h("div",{style:DIM},"A parte da rede social Bengu e a taxa de inscrição não aparecem aqui.")]),
+   h("h4",{},"Cantores"),
+   h("div",{},d.singers.map(function(s){return h("div",{style:CARD},[row("#"+s.position+" "+s.stage_name,s.votes+" votos"),h("div",{style:DIM},"Arrecadado: "+fmt(s.raised,cu))])})),
+   h("h4",{},"Últimos pagamentos"),
+   h("div",{},d.payments.map(function(p){return h("div",{style:"font-size:13px;padding:4px 0;border-bottom:1px solid #3a4175"},new Date(p.created_at).toLocaleString()+" · "+p.method+" · "+fmt(p.amount,cu)+" · "+p.votes+" votos · "+p.status)})))}).catch(fail)}
+
+document.body.append(ov);
+})();
+</script>
   </body>
 </html>

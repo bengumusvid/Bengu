@@ -2292,14 +2292,9 @@ function J_() {
             },
           },
         });
-        if (
-          Oe &&
-          /already|registered|duplicate|unique|database error/i.test(
-            Oe.message || "",
-          )
-        )
+        if (Oe && /already|registered|duplicate/i.test(Oe.message || ""))
           continue;
-        if (Oe) return { error: pa(Oe) };
+        if (Oe) return { error: Oe.message || pa(Oe) };
         if (Kt.user && Kt.user.identities && Kt.user.identities.length === 0)
           continue;
         _e(`Conta criada. O seu nome de utilizador é ${De} (só você o vê). Guarde-o: serve para entrar.`);
@@ -2309,7 +2304,9 @@ function J_() {
     },
     Ig = async ({ username: I, password: V }) => {
       const { error: Z } = await me.auth.signInWithPassword({
-        email: `${I.trim().replace(/^@/, "")}@users.bengu.app`,
+        email: I.trim().includes("@") && !I.trim().startsWith("@")
+          ? I.trim().toLowerCase()
+          : `${I.trim().replace(/^@/, "").toLowerCase()}@users.bengu.app`,
         password: V,
       });
       return Z ? { error: pa(Z) } : {};
@@ -7579,13 +7576,13 @@ function px({
     ae = async () => {
       if (W) return;
       F("");
-      const X = v.trim().toLowerCase().replace(/^@/, "");
+      const X = z ? v.trim().toLowerCase().replace(/^@/, "") : v.trim().toLowerCase();
       if (z) {
         if (w.trim().length < 2) return G("Escreva o nome próprio (mínimo 2 letras).");
         if (E.trim().length < 2) return G("Escreva o apelido (mínimo 2 letras).");
         if (!/^[a-z0-9]{3,14}$/.test(X))
           return G("O nome de utilizador deve ter 3 a 14 letras ou números, sem espaços.");
-      } else if (!ag.test(X)) return G(x("errWrong"));
+      } else if (X.length < 3) return G(x("errWrong"));
       if (h.length < 6) return G(x("errPass"));
       G("");
       L(!0);
@@ -7722,11 +7719,11 @@ u.jsxs("div", {
                         g(
                           X.target.value
                             .toLowerCase()
-                            .replace(z ? /[^a-z0-9]/g : /[^a-z0-9_.@]/g, ""),
+                            .replace(z ? /[^a-z0-9]/g : /\s/g, ""),
                         ),
-                      placeholder: "Nome do utilizador",
+                      placeholder: z ? "Nome do utilizador" : "Nome do utilizador ou email",
                       "aria-label": "Nome do utilizador",
-                      maxLength: 20,
+                      maxLength: z ? 14 : 120,
                       autoComplete: "username",
                       autoCapitalize: "none",
                       className: te,

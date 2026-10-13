@@ -1738,7 +1738,7 @@ function es({
         u.jsx("p", {
           className: `px-4 pb-3 whitespace-pre-wrap ${e.type === "text" ? "text-lg leading-snug" : "text-[15px] leading-snug"}`,
           style: { color: k.ink },
-          children: e.text,
+          children: Tg_(e.text),
         }),
       u.jsx(K_, { post: e, users: r }),
       u.jsxs("div", {
@@ -2674,13 +2674,13 @@ function J_() {
         Yc(I);
       }
     },
-    td = (I) => {
+    td = (window.bengu_td = (I) => {
       var V;
       (Ie(I === (h == null ? void 0 : h.id) ? "me" : I),
         we("profile"),
         se(!1),
         (V = window.scrollTo) == null || V.call(window, 0, 0));
-    },
+    }),
     rd = (I) => {
       var V;
       (K(I), we("chat"), (V = window.scrollTo) == null || V.call(window, 0, 0));
@@ -4721,6 +4721,15 @@ function sx({ ids: e, users: t, addUsers: r, onUnblock: n, onBack: s }) {
     })
   );
 }
+function Tg_(t) {
+  if (!t) return t;
+  return t.split(/(#[\p{L}\d_]+|@[a-z0-9_.]{3,20})/gu).map((q, i) =>
+    q[0] === "#" && q.length > 1
+      ? u.jsx("span", { style: { color: "#1E88E5", fontWeight: 600 }, children: q }, i)
+      : q[0] === "@" && q.length > 3
+        ? u.jsx("span", { onClick: () => window.bengu_mention && window.bengu_mention(q.slice(1)), style: { color: "#1E88E5", fontWeight: 600, cursor: "pointer" }, children: q }, i)
+        : q);
+}
 function St_({ size: e = 22 }) {
   return u.jsxs("svg", { width: e, height: e, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, children: [u.jsx("circle", { cx: 12, cy: 12, r: 9, strokeDasharray: "4 3" }), u.jsx("circle", { cx: 12, cy: 12, r: 4 })] });
 }
@@ -5955,6 +5964,8 @@ function lx({
                 className: "w-full px-3 py-2.5 rounded-lg text-sm outline-none",
                 style: { background: k.paper, color: k.ink },
               }),
+              u.jsx("button", { onClick: () => window.bengu_legal && window.bengu_legal(), className: "w-full text-left px-1 py-2 text-sm font-semibold", style: { color: k.ink }, children: "Termos e Política de Privacidade" }),
+              u.jsx("button", { onClick: () => window.bengu_delete_account && window.bengu_delete_account(), className: "w-full text-left px-1 py-2 text-sm font-semibold", style: { color: k.like }, children: "Apagar a minha conta" }),
             ],
           }),
         ],
@@ -7890,6 +7901,8 @@ u.jsxs("div", {
               style: { background: W ? k.line : k.saffron, color: k.onAccent },
               children: x(W ? "wait" : isPh && d === "code" ? "verify" : z ? "createAccount" : "login"),
             }),
+            !z && u.jsx("button", { type: "button", onClick: () => window.bengu_recover && window.bengu_recover(), className: "w-full mt-3 text-sm font-semibold underline", style: { color: k.mute }, children: "Esqueci a palavra-passe" }),
+            z && u.jsxs("p", { className: "mt-3 text-[11px] text-center", style: { color: k.mute }, children: ["Ao criar conta aceita os ", u.jsx("button", { type: "button", className: "underline", onClick: () => window.bengu_legal && window.bengu_legal(), children: "Termos e a Política de Privacidade" }), "."] }),
             u.jsxs("p", {
               className: "mt-4 text-center text-sm",
               style: { color: k.mute },
@@ -7967,6 +7980,27 @@ document.head.append(h("style",{},
 
 /* a app React chama window.bengu_comp_open("cantores" | "humoristas" | "criadores") */
 window.bengu_comp_open=function(c){setCat(CATS[c]?c:"cantores");open()};
+var HASH0=location.hash;
+function overlay(t,kids){var o=h("div",{style:"position:fixed;inset:0;z-index:100001;background:#12183A;color:#fff;overflow:auto;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));font-family:system-ui,sans-serif"},[h("button",{style:BS,on:{click:function(){o.remove()}}},"✕ Fechar"),h("h3",{},t)].concat(kids));document.body.append(o);return o}
+window.bengu_legal=function(){var P=function(a,b){return[h("b",{},a),h("p",{style:"font-size:14px;line-height:1.5;opacity:.9;margin:4px 0 12px"},b)]};
+ overlay("Termos e Política de Privacidade",[].concat(
+ P("1. Uso","O Bengu é para partilhar conteúdo. Não publique conteúdo ilegal, violento, sexual envolvendo menores, assédio, burlas ou conteúdo de que não tenha direitos. Contas que violem estas regras podem ser removidas."),
+ P("2. Idade","É necessário ter pelo menos 13 anos. Menores de 18 anos têm mensagens e lives limitadas."),
+ P("3. Dados","Guardamos o seu nome, utilizador, email ou telefone, país e o conteúdo que publica, para a app funcionar. Não vendemos os seus dados. Pode apagar a sua conta em Definições."),
+ P("4. Concursos e pagamentos","Os votos pagos só contam depois de o pagamento ser confirmado. Taxas de inscrição não são reembolsáveis."),
+ P("5. Denúncias","Pode denunciar publicações. Os administradores podem apagar conteúdo e bloquear contas."),
+ P("6. Contacto","Para dúvidas ou pedidos sobre os seus dados, contacte a administração do Bengu.")))};
+window.bengu_recover=function(){var em=(prompt("Escreva o email da sua conta para receber o link de recuperação:")||"").trim().toLowerCase();if(!em)return;
+ if(/@users\.bengu\.app$/.test(em)||em.indexOf("@")<0){alert("Contas criadas só com nome de utilizador não têm email e não podem recuperar a palavra-passe. Contacte a administração.");return}
+ call("/auth/v1/recover",{m:"POST",b:{email:em}}).then(function(){alert("Se este email tiver conta, enviámos um link para criar nova palavra-passe.")}).catch(function(e){alert(e.message)})};
+window.bengu_delete_account=function(){if(!tok()){alert("Inicie sessão primeiro.");return}
+ if(!confirm("Apagar a sua conta? Esta ação não pode ser desfeita."))return;if(prompt("Para confirmar, escreva APAGAR")!=="APAGAR")return;
+ rpc("delete_my_account").then(function(){try{localStorage.clear()}catch(e){}location.href=location.pathname}).catch(function(e){alert("Não foi possível apagar: "+e.message+" (corra o SQL 3.1.0)")})};
+window.bengu_mention=function(hd){get("profiles","select=id&handle=eq."+encodeURIComponent(hd)+"&limit=1").then(function(r){if(r[0]&&window.bengu_td)window.bengu_td(r[0].id);else alert("Utilizador não encontrado")}).catch(function(){})};
+(function(){var m=/access_token=([^&]+)/.exec(HASH0);if(!m||!/type=recovery/.test(HASH0))return;var t=m[1];
+ var pw=inp("Nova palavra-passe (mínimo 6)","password"),box2=h("div");pw.setAttribute("autocomplete","new-password");
+ var o=overlay("Criar nova palavra-passe",[pw,box2,h("button",{style:B,on:{click:function(){if(pw.value.length<6){box2.textContent="Mínimo 6 caracteres.";return}
+  fetch(U+"/auth/v1/user",{method:"PUT",headers:{apikey:K,Authorization:"Bearer "+t,"Content-Type":"application/json"},body:JSON.stringify({password:pw.value})}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.msg||j.message||"Erro");box2.textContent="Palavra-passe alterada. Já pode entrar.";setTimeout(function(){o.remove()},1800)})}).catch(function(e){box2.textContent=e.message})}}},"Guardar")])})();
 var FAST=null;
 function fastSet(){if(FAST)return FAST;FAST=get("payment_methods","select=country_code&active=eq.true&fast=eq.true").catch(function(){return get("payment_methods","select=country_code&active=eq.true")}).then(function(r){var m={};r.forEach(function(x){m[x.country_code]=1});return m}).catch(function(){return{}});return FAST}
 function copt(code,txt,m){var ok=m[code];return h("option",{value:code,style:"color:"+(ok?PINK:"#ff4d4d")},(ok?"✔ ":"✘ ")+txt)}

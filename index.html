@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
+    <meta name="bengu-build" content="4.3.0_13.10.2026" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <title>Bengu</title>
@@ -3723,6 +3724,20 @@ function X_({
   return u.jsxs(u.Fragment, {
     children: [
       u.jsxs("div", {
+        className: "flex items-center justify-between px-3 py-2",
+        style: { background: k.card, borderBottom: `1px solid ${k.line}` },
+        children: [
+          u.jsx("span", { className: "text-sm font-extrabold", style: { color: k.ink }, children: "Bengu" }),
+          u.jsx("button", {
+            "aria-label": "Notificações",
+            onClick: () => window.bengu_notif_open && window.bengu_notif_open(),
+            className: "text-xl px-3 py-1 rounded-full",
+            style: { background: k.bg || "transparent" },
+            children: "🔔",
+          }),
+        ],
+      }),
+      u.jsxs("div", {
         className: "flex gap-2 overflow-x-auto px-3 py-3 bg-st",
         style: {
           background: k.card,
@@ -5974,7 +5989,7 @@ function lx({
           }),
         ],
       }),
-      u.jsx("section", { className: C, style: { background: k.card }, children: [u.jsx("button", { onClick: () => window.bengu_notif_open && window.bengu_notif_open(), className: "w-full text-left text-sm font-bold py-1", style: { color: k.ink }, children: "🔔 Notificações" }), u.jsx("button", { onClick: () => window.bengu_fee_open && window.bengu_fee_open(), className: "w-full text-left text-sm font-bold py-2", style: { color: k.ink }, children: "💳 Taxa de publicação" })] }),
+      u.jsx("section", { className: C, style: { background: k.card }, children: [u.jsx("button", { onClick: () => window.bengu_notif_open && window.bengu_notif_open(), className: "w-full text-left text-sm font-bold py-1", style: { color: k.ink }, children: "🔔 Notificações" })] }),
       u.jsxs("section", {
         className: C,
         style: { background: k.card },
@@ -8261,14 +8276,19 @@ function need(){if(!tok()){msg("Inicie sessão no Bengu primeiro.");return false
 function dt(s){return s?new Date(s).toLocaleString("pt-PT",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"-"}
 function ph(t){var n=Date.now(),a=+new Date(t.starts_at),b=+new Date(t.ends_at);return n<a?"Começa em "+dt(t.starts_at):n<b?"🔴 A decorrer · termina em "+dt(t.ends_at):"Terminado"}
 var HD=function(t){return h("h3",{style:"color:"+G},t)};
-function open(){ov.style.display="block";bar.replaceChildren(btn("✕",function(){ov.style.display="none"}),btn("Torneios",list),btn("Criar torneio",create));list()}
+function open(){ov.style.display="block";bar.replaceChildren(btn("✕",function(){ov.style.display="none"}),btn("Torneios",list),btn("Criar torneio",create),btn("💳 Taxa",function(){window.bengu_fee_open&&window.bengu_fee_open()}));list();
+ if(tok())api("rpc/is_admin","POST",{}).then(function(a){if(a===true)bar.append(btn("🔒 Admin",adminAcc))}).catch(function(){})}
+function adminAcc(){box.replaceChildren(HD("🔒 Conta M-Pesa de recebimento"),h("p",{style:DIM},"Só o administrador vê esta informação."),h("p",{},"A carregar…"));
+ api("rpc/admin_fee_account","POST",{}).then(function(r){var a=r&&r[0]||{},nm=inp("Nome do titular"),ph2=inp("Número (ex.: 258848199912)","tel");nm.value=a.holder_name||"";ph2.value=a.phone||"";
+  box.replaceChildren(HD("🔒 Conta M-Pesa de recebimento"),h("p",{style:DIM},"Só o administrador vê esta informação. Os utilizadores nunca a veem."),nm,ph2,btn("Guardar",function(){var v=ph2.value.replace(/\D/g,"");if(!/^258(84|85)\d{7}$/.test(v)||nm.value.trim().length<3)return msg("Indique o nome e um número M-Pesa válido (258XXXXXXXXX).");
+   api("rpc/admin_set_fee_account","POST",{p_name:nm.value.trim(),p_phone:v}).then(function(){msg("Conta guardada.",1)}).catch(fail)}))}).catch(fail)}
 function list(){box.replaceChildren(HD("⚽ Torneios de Futebol"),h("p",{},"A carregar…"));
  api("tournaments?select=*&order=starts_at.desc").then(function(r){box.replaceChildren(HD("⚽ Torneios de Futebol"));if(!r.length)box.append(h("p",{},"Ainda não há torneios. Toque em Criar torneio."));
   r.forEach(function(t){box.append(h("div",{style:CARD},[h("b",{},t.name),h("div",{style:DIM},ph(t)),btn("Abrir",function(){detail(t)})]))})}).catch(function(e){box.replaceChildren(h("p",{},e.message))})}
 function create(){var n=inp("Nome do torneio"),d=inp("Descrição (opcional)"),a=inp("","datetime-local"),b=inp("","datetime-local");
  box.replaceChildren(HD("Criar torneio"),n,d,h("label",{style:DIM},["Início",a]),h("label",{style:DIM},["Fim",b]),btn("Criar",function(){if(!need())return;
   if(n.value.trim().length<3||!a.value||!b.value)return msg("Indique nome, início e fim.");
-  api("tournaments","POST",{owner_id:uid(),name:n.value.trim(),description:d.value.trim(),starts_at:new Date(a.value).toISOString(),ends_at:new Date(b.value).toISOString()}).then(function(r){dots();detail(r[0])}).catch(fail)}))}
+  api("tournaments","POST",{owner_id:uid(),name:n.value.trim(),description:d.value.trim(),starts_at:new Date(a.value).toISOString(),ends_at:new Date(b.value).toISOString()}).then(function(r){dots();detail(r[0])}).catch(function(e){if(/TAXA_PUBLICACAO/.test(e.message||"")){box.replaceChildren(HD("Taxa de torneio"),h("div",{style:CARD},[h("b",{},"Para criar um torneio de futebol é preciso pagar a taxa."),h("p",{style:DIM},"Depois do pagamento volte aqui e crie o torneio."),btn("Pagar taxa (M-Pesa)",function(){window.bengu_fee_open&&window.bengu_fee_open()})]))}else fail(e)})}))}
 function detail(t){var me=uid(),own=me&&t.owner_id==me,again=function(){detail(t)};
  Promise.all([api("tournament_teams?select=*&tournament_id=eq."+t.id+"&order=created_at"),api("tournament_matches?select=*&tournament_id=eq."+t.id+"&order=played_at"),api("tournament_players?select=*&tournament_id=eq."+t.id).catch(function(){return[]})]).then(function(r){
   var T=r[0],M=r[1],PL=r[2]||[],nm={},st={};T.forEach(function(x){nm[x.id]=x.name;st[x.id]={n:x.name,fc:0,j:0,v:0,e:0,d:0,gm:0,gs:0,p:0}});
@@ -8367,12 +8387,12 @@ window.bengu_notif_open=function(){var b=sheet("Notificações");function draw()
  draw()};
 /* taxa de publicação (M-Pesa) */
 var SS="width:100%;box-sizing:border-box;padding:10px;margin:6px 0;border-radius:8px;border:1px solid #c9cfe0;font-size:15px",BB="padding:10px 16px;border:0;border-radius:8px;background:#FFB020;color:#12183A;font-weight:800;font-size:15px";
-window.bengu_fee_open=function(){var b=sheet("💳 Taxa de publicação");
+window.bengu_fee_open=function(){var b=sheet("💳 Taxa de torneio de futebol");b.parentNode.style.zIndex=100000;
  function post(u,body){return fetch(U+u,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+(tok()||K),"Content-Type":"application/json"},body:JSON.stringify(body||{})}).then(function(r){return r.json()})}
  function load(){b.replaceChildren(h("p",{},"A carregar…"));post("/rest/v1/rpc/fee_status").then(function(s){if(s.message||s.code)throw 0;draw(s)}).catch(function(){b.replaceChildren(h("p",{},"Faça login e execute o SQL da taxa (4.1) na base de dados."))})}
  function draw(s){var now=Date.now(),paid=s.paid_until&&new Date(s.paid_until)>now,card="background:#fff;border-radius:12px;padding:12px;margin:10px 0";
   var sel=h("select",{style:SS},[["","Escolha onde vive"],["mossurize","Distrito de Mossurize"],["mocambique","Outras partes de Moçambique"],["exterior","Fora de Moçambique"]].map(function(o){return h("option",{value:o[0]},o[1])}));sel.value=s.region||"";
-  var out=[h("div",{style:card},[h("b",{},"Valores (por ano)"),h("div",{},"Distrito de Mossurize: 0 MT"),h("div",{},"Outras partes de Moçambique: "+s.price_mocambique_mzn+" MT"),h("div",{},"Fora de Moçambique: "+s.price_exterior_usd+" USD")]),
+  var out=[h("div",{style:card},[h("b",{},"Valores (por ano)"),h("div",{style:"font-size:12px;opacity:.7;margin-bottom:4px"},"Taxa para criar torneios de futebol. As publicações normais não pagam."),h("div",{},"Distrito de Mossurize: 0 MT"),h("div",{},"Outras partes de Moçambique: "+s.price_mocambique_mzn+" MT"),h("div",{},"Fora de Moçambique: "+s.price_exterior_usd+" USD")]),
    h("div",{style:card},[h("b",{},"Onde vive?"),sel,h("button",{style:BB,on:{click:function(){if(!sel.value)return toast("Escolha uma opção.");post("/rest/v1/rpc/set_publication_region",{r:sel.value}).then(function(){load()})}}},"Guardar")])];
   if(!s.fee_active)out.unshift(h("div",{style:card},"A taxa ainda não está ativa"+(s.start_date?". Começa em "+s.start_date+".":". Começa quando a conta Bengu passar a Pro.")));
   else if(paid)out.unshift(h("div",{style:card+";background:#dcfce7"},"✅ Taxa paga. Pode publicar até "+new Date(s.paid_until).toLocaleDateString("pt-PT")+"."));
@@ -8382,6 +8402,20 @@ window.bengu_fee_open=function(){var b=sheet("💳 Taxa de publicação");
    out.unshift(h("div",{style:card},[h("b",{},"Pagar a taxa anual: "+s.amount_mzn+" MT"),ph,go,s.region=="exterior"?h("div",{style:"font-size:12px;opacity:.7"},"O M-Pesa cobra em meticais (equivalente a "+s.price_exterior_usd+" USD)."):""]))}
   b.replaceChildren.apply(b,out)}
  load()};
+})();
+</script>
+  <script>/* BENGU 4.3: actualização automática (cache / service worker) */
+(function(){
+var B="4.3.0_13.10.2026",KEY="bg_build",TRY="bg_build_try";
+function wipe(){var p=[];try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(n){return caches.delete(n)}))}))}catch(e){}
+ try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}))}catch(e){}
+ return Promise.all(p).catch(function(){})}
+function reloadFor(v){try{if(sessionStorage.getItem(TRY)===v)return;sessionStorage.setItem(TRY,v)}catch(e){}wipe().then(function(){try{localStorage.setItem(KEY,v)}catch(e){}location.reload()})}
+try{if(localStorage.getItem(KEY)!==B){localStorage.setItem(KEY,B);wipe()}}catch(e){}
+function check(){fetch(location.pathname+"?_="+Date.now(),{cache:"no-store",headers:{"Cache-Control":"no-cache"}}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="bengu-build" content="([^"]+)"/);if(m&&m[1]!==B)reloadFor(m[1])}).catch(function(){})}
+setTimeout(check,4000);setInterval(check,120000);
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")check()});
+try{if(navigator.serviceWorker){navigator.serviceWorker.getRegistration().then(function(r){if(r)r.update()}).catch(function(){});var f=0;navigator.serviceWorker.addEventListener("controllerchange",function(){if(f||!navigator.serviceWorker.controller)return;f=1;try{if(sessionStorage.getItem("bg_cc"))return;sessionStorage.setItem("bg_cc","1")}catch(e){}location.reload()})}}catch(e){}
 })();
 </script>
 </body>

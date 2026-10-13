@@ -421,7 +421,7 @@ function L_({ children: e }) {
           navigator.mediaSession.metadata = new window.MediaMetadata({
             title: b.title,
             artist: b.artist || "Bengu",
-            album: "Bengu",
+            album: b.album || "Bengu",
             artwork: b.cover ? [{ src: b.cover, sizes: "512x512" }] : [],
           });
           const j = navigator.mediaSession;
@@ -621,6 +621,12 @@ function D_() {
                   style: { color: k.mute },
                   children: e.cur.artist,
                 }),
+                e.cur.credits &&
+                  u.jsx("div", {
+                    className: "text-xs mt-1",
+                    style: { color: k.mute },
+                    children: e.cur.credits,
+                  }),
               ],
             }),
             u.jsxs("div", {
@@ -729,6 +735,12 @@ function Wc({ song: e, queue: t, index: r }) {
             style: { color: k.mute },
             children: e.artist,
           }),
+          e.credits &&
+            u.jsx("div", {
+              className: "text-[11px] truncate",
+              style: { color: k.mute },
+              children: e.credits,
+            }),
         ],
       }),
       u.jsx("span", {
@@ -1245,7 +1257,16 @@ const Ag = (e, t) =>
               n.title ||
               (n.name || "").replace(/\.[a-z0-9]{1,5}$/i, "") ||
               "Bengu",
-            artist: a.name,
+            artist: (n.artist || a.name) + (n.featuring ? " feat. " + n.featuring : ""),
+            credits: [
+              n.producer && "Prod.: " + n.producer,
+              n.musicians && "Músicos: " + n.musicians,
+              n.engineer && "Gravação: " + n.engineer,
+              n.album && "Álbum: " + n.album,
+              n.release && "Lançamento: " + n.release,
+            ]
+              .filter(Boolean)
+              .join(" · "),
             cover: n.cover || a.avatar || null,
             postId: i.id,
             item: n,
@@ -2525,6 +2546,13 @@ function J_() {
                     url: Xg,
                     name: Ui,
                     title: (ot.title || "").trim(),
+                    artist: (ot.artist || "").trim(),
+                    producer: (ot.producer || "").trim(),
+                    musicians: (ot.musicians || "").trim(),
+                    engineer: (ot.engineer || "").trim(),
+                    release: ot.release || "",
+                    album: (ot.album || "").trim(),
+                    featuring: (ot.featuring || "").trim(),
                     size: Nu(ot.file.size),
                     kind: "audio",
                     cover: ld,
@@ -3015,8 +3043,8 @@ function J_() {
                     },
                     role: "tablist",
                     children: [
-                      ["all", x("forYou")],
                       ["bell", "🔔"],
+                      ["all", x("forYou")],
                       ["following", x("following")],
                       ["users", "Usuários"],
                     ].map(([I, V]) => I === "bell" ? u.jsx("button", {
@@ -3473,6 +3501,7 @@ function J_() {
           u.jsx(dx, {
             post: qt(Q),
             user: E[qt(Q).userId] || mt,
+            users: E,
             me: h,
             onClose: () => ee(null),
             say: _e,
@@ -6525,8 +6554,10 @@ function cx({ post: e, me: t, onClose: r }) {
     })
   );
 }
-function dx({ post: e, me: t, onClose: r, say: n }) {
+function dx({ post: e, me: t, users: us, onClose: r, say: n }) {
   const [s] = B.useState(() => `${Rc()}#${og()}`);
+  const [uq, setUq] = B.useState(""),
+    [sentTo, setSentTo] = B.useState({});
   B.useEffect(() => {
     const p = s.split("#")[1];
     me.from("share_links")
@@ -6649,6 +6680,67 @@ function dx({ post: e, me: t, onClose: r, say: n }) {
             ),
           ),
         }),
+        u.jsxs("div", {
+          className: "mt-5",
+          children: [
+            u.jsx("div", {
+              className: "text-sm font-bold mb-2",
+              style: { color: k.ink },
+              children: "Enviar no Bengu (usuários)",
+            }),
+            u.jsx("input", {
+              value: uq,
+              onChange: (p) => setUq(p.target.value),
+              placeholder: "Procurar usuário…",
+              "aria-label": "Procurar usuário",
+              className: "w-full px-3 py-2 rounded-lg text-sm outline-none mb-2",
+              style: { background: k.paper, color: k.ink },
+            }),
+            ...Object.values(us || {})
+              .filter(
+                (p) =>
+                  p &&
+                  p.id !== t.id &&
+                  (p.name || "").toLowerCase().includes(uq.trim().toLowerCase()),
+              )
+              .slice(0, 8)
+              .map((p) =>
+                u.jsxs(
+                  "div",
+                  {
+                    className: "flex items-center gap-2 py-1.5",
+                    children: [
+                      u.jsx("span", {
+                        className: "flex-1 text-sm truncate",
+                        style: { color: k.ink },
+                        children: p.name,
+                      }),
+                      u.jsx("button", {
+                        disabled: !!sentTo[p.id],
+                        onClick: async () => {
+                          const { error: er } = await me
+                            .from("messages")
+                            .insert({ sender_id: t.id, receiver_id: p.id, body: i + " " + s });
+                          if (er) return n(Ze(er));
+                          setSentTo((z) => ({ ...z, [p.id]: 1 }));
+                          n("Enviado a " + p.name);
+                        },
+                        className: "text-xs font-bold px-3 py-1 rounded-full",
+                        style: { background: k.saffron, color: k.onAccent },
+                        children: sentTo[p.id] ? "Enviado ✓" : "Enviar",
+                      }),
+                    ],
+                  },
+                  p.id,
+                ),
+              ),
+            u.jsx("div", {
+              className: "text-xs mt-2",
+              style: { color: k.mute },
+              children: `${x("pagesGroups")} · ${x("comingSoon")}`,
+            }),
+          ],
+        }),
         u.jsx("button", {
           onClick: c,
           className: "w-full mt-5 py-3 rounded-full text-sm font-bold",
@@ -6713,6 +6805,13 @@ function hx({ minor: e, allowDefault: t, onPublish: r, onError: n }) {
           title: _.name.replace(/\.[a-z0-9]{1,5}$/i, ""),
           cover: null,
           coverUrl: null,
+          artist: "",
+          producer: "",
+          musicians: "",
+          engineer: "",
+          release: "",
+          album: "",
+          featuring: "",
           big: K && _.size > H,
         });
       }
@@ -6739,6 +6838,20 @@ function hx({ minor: e, allowDefault: t, onPublish: r, onError: n }) {
     we = async () => {
       if (!X || h) return;
       if (be && !b) return n(x("needRights"));
+      if (s === "audio") {
+        const bad = d.findIndex(
+          (Y) =>
+            !(Y.artist || "").trim() ||
+            !(Y.title || "").trim() ||
+            !(Y.producer || "").trim() ||
+            !Y.release ||
+            !Y.cover,
+        );
+        if (bad >= 0)
+          return n(
+            `Música ${bad + 1}: preencha nome do cantor, título, produtor musical, data de lançamento e capa (obrigatórios).`,
+          );
+      }
       y(!0);
       const Y = await r({
         kind: s,
@@ -6751,6 +6864,13 @@ function hx({ minor: e, allowDefault: t, onPublish: r, onError: n }) {
           file: ve.file,
           title: ve.title,
           cover: ve.cover,
+          artist: ve.artist,
+          producer: ve.producer,
+          musicians: ve.musicians,
+          engineer: ve.engineer,
+          release: ve.release,
+          album: ve.album,
+          featuring: ve.featuring,
         })),
         bg: s === "text" && O ? { color: U, file: j, blur: pe } : null,
       });
@@ -7018,11 +7138,51 @@ function hx({ minor: e, allowDefault: t, onPublish: r, onError: n }) {
                                     onChange: (xe) =>
                                       z(ve, { title: xe.target.value }),
                                     maxLength: 80,
-                                    "aria-label": x("songTitle"),
-                                    placeholder: x("songTitle"),
+                                    "aria-label": "Título da música",
+                                    placeholder: "Título da música *",
                                     className:
                                       "w-full px-2 py-1.5 rounded-md text-sm font-semibold outline-none",
                                     style: { background: k.card, color: k.ink },
+                                  }),
+                                  ...[
+                                    ["artist", "Nome do cantor *", 80],
+                                    ["producer", "Produtor musical (responsável pela produção) *", 80],
+                                    ["musicians", "Músicos participantes (instrumentistas, coristas…)", 200],
+                                    ["engineer", "Engenheiro de som / de gravação", 80],
+                                    ["album", "Álbum", 80],
+                                    ["featuring", "Featuring (artistas convidados)", 120],
+                                  ].map(([k2, ph, ml]) =>
+                                    u.jsx("input", {
+                                      key: k2,
+                                      value: Y[k2] || "",
+                                      onChange: (xe) => z(ve, { [k2]: xe.target.value }),
+                                      maxLength: ml,
+                                      "aria-label": ph,
+                                      placeholder: ph,
+                                      className: "w-full px-2 py-1.5 rounded-md text-sm mt-1 outline-none",
+                                      style: { background: k.card, color: k.ink },
+                                    }),
+                                  ),
+                                  u.jsxs("label", {
+                                    className: "block text-[11px] mt-1",
+                                    style: { color: k.mute },
+                                    children: [
+                                      "Ano / data de lançamento *",
+                                      u.jsx("input", {
+                                        type: "date",
+                                        value: Y.release || "",
+                                        onChange: (xe) => z(ve, { release: xe.target.value }),
+                                        className: "w-full px-2 py-1.5 rounded-md text-sm outline-none",
+                                        style: { background: k.card, color: k.ink },
+                                      }),
+                                    ],
+                                  }),
+                                  u.jsx("div", {
+                                    className: "text-[11px] mt-1 font-semibold",
+                                    style: { color: Y.cover ? k.mute : "#d33" },
+                                    children: Y.cover
+                                      ? "Capa / arte gráfica ✓"
+                                      : "Toque no quadrado à esquerda para escolher a capa / arte gráfica *",
                                   }),
                                   u.jsxs("div", {
                                     className: "text-[11px] mt-0.5 truncate",
@@ -8234,8 +8394,10 @@ function mine(){stop();
   box.replaceChildren.apply(box,[h("h3",{style:"color:"+LITE},"Os meus concursos")].concat(r.length?r.map(function(c){
    var ended=new Date(c.ends_at)<new Date();
    var kids=[h("b",{},c.title),h("div",{style:DIM},CATS[c.category].one+" · "+LV[c.level]+" · "+({pending_fee:"à espera da taxa",open:"aberto",closed:"encerrado — pagamentos a processar",paid_out:"pago"})[c.status]),h("div",{style:DIM},dt(c.starts_at)+" → "+dt(c.ends_at))];
-   if(c.status=="pending_fee")kids.push(h("div",{style:"color:#ffd166"},"Taxa a pagar: "+fmt(c.fee_usd,"USD")+" · ref. "+c.id));
-   else{kids.push(btn("Painel",function(){dash(c)}));
+   var canDel=c.status=="pending_fee"||(c.status=="open"&&new Date(c.starts_at)>new Date());
+   function delBtn(){return btn("🗑 Apagar concurso",function(){if(!confirm("Apagar este concurso? Só o criador pode fazer isto e não pode ser desfeito."))return;rpc("delete_competition",{p_competition:String(c.id)}).then(function(){msg("Concurso apagado.",1);mine()}).catch(fail)},1)}
+   if(c.status=="pending_fee"){kids.push(h("div",{style:"color:#ffd166"},"Taxa a pagar: "+fmt(c.fee_usd,"USD")+" · ref. "+c.id));kids.push(delBtn())}
+   else{if(canDel)kids.push(delBtn());kids.push(btn("Painel",function(){dash(c)}));
     if(c.status=="open"&&ended)kids.push(btn("Encerrar e pagar agora",function(){rpc("close_competition",{p_competition:c.id}).then(function(){msg("Concurso encerrado. Os pagamentos foram colocados em fila.",1);mine()}).catch(fail)},1))}
    return h("div",{style:CARD},kids)}):[h("p",{},"Ainda não criou concursos.")]))}).catch(fail)}
 function dash(c){
@@ -8307,7 +8469,7 @@ function chg(tb,id,field,again){var i=h("input",{type:"file",accept:"image/*"});
 function maybeUp(p,kind){return p.get()?upload(p.get(),kind):Promise.resolve(null)}
 /* ecrãs */
 var FIL="todos",curT=null,curOwn=false;
-function open(s){if(s&&SP[s])FIL=s;ov.style.display="block";bar.replaceChildren(btn("✕",function(){curT=null;ov.style.display="none"}),btn("Torneios",list),btn("Criar torneio",create),btn("💳 Taxa",function(){window.bengu_fee_open&&window.bengu_fee_open()}));list();
+function open(s){if(s&&SP[s])FIL=s;ov.style.display="block";bar.replaceChildren(btn("✕",function(){curT=null;ov.style.display="none"}),btn("Torneios",list),btn("Criar torneio",create));list();
  if(tok())api("rpc/is_admin","POST",{}).then(function(a){if(a===true)bar.append(btn("🔒 Admin",adminAcc))}).catch(function(){})}
 function adminAcc(){curT=null;box.replaceChildren(HD("🔒 Conta M-Pesa de recebimento"),h("p",{style:DIM},"Só o administrador vê esta informação."),h("p",{},"A carregar…"));
  api("rpc/admin_fee_account","POST",{}).then(function(r){var a=r&&r[0]||{},nm=inp("Nome do titular"),ph2=inp("Número (ex.: 258848199912)","tel");nm.value=a.holder_name||"";ph2.value=a.phone||"";
@@ -8323,7 +8485,7 @@ function create(){curT=null;var sel=h("select",{style:S},Object.keys(SP).map(fun
  var n=inp("Nome do torneio"),d=inp("Descrição (opcional)"),a=inp("","datetime-local"),b=inp("","datetime-local");
  box.replaceChildren(HD("Criar torneio"),h("label",{style:DIM},["Desporto",sel]),n,d,h("label",{style:DIM},["Início",a]),h("label",{style:DIM},["Fim",b]),btn("Criar",function(){if(!need())return;
   if(n.value.trim().length<3||!a.value||!b.value)return msg("Indique nome, início e fim.");
-  api("tournaments","POST",{owner_id:uid(),sport:sel.value,name:n.value.trim(),description:d.value.trim(),starts_at:new Date(a.value).toISOString(),ends_at:new Date(b.value).toISOString()}).then(function(r){dots();detail(r[0])}).catch(function(e){if(/TAXA_PUBLICACAO/.test(e.message||"")){box.replaceChildren(HD("Taxa de torneio"),h("div",{style:CARD},[h("b",{},"Para criar um torneio é preciso pagar a taxa."),h("p",{style:DIM},"Depois do pagamento volte aqui e crie o torneio."),btn("Pagar taxa (M-Pesa)",function(){window.bengu_fee_open&&window.bengu_fee_open()})]))}else fail(e)})}))}
+  api("tournaments","POST",{owner_id:uid(),sport:sel.value,name:n.value.trim(),description:d.value.trim(),starts_at:new Date(a.value).toISOString(),ends_at:new Date(b.value).toISOString()}).then(function(r){dots();detail(r[0])}).catch(fail)}))}
 function detail(t){var me=uid(),own=!!(me&&t.owner_id==me),again=function(){detail(t)},P=sp(t);curT=t;curOwn=own;
  Promise.all([api("tournament_teams?select=*&tournament_id=eq."+t.id+"&order=created_at"),api("tournament_matches?select=*&tournament_id=eq."+t.id+"&order=played_at"),api("tournament_players?select=*&tournament_id=eq."+t.id).catch(function(){return[]}),api("tournament_match_goals?select=*&tournament_id=eq."+t.id+"&order=created_at").catch(function(){return[]})]).then(function(r){
   var T=r[0],M=r[1],PL=r[2]||[],MG=r[3]||[],tm={},st={},PM={};
@@ -8337,7 +8499,7 @@ function detail(t){var me=uid(),own=!!(me&&t.owner_id==me),again=function(){deta
   var tb=h("table",{style:"width:100%;border-collapse:collapse;font-size:12px;min-width:340px"},[h("tr",{style:"text-align:left;opacity:.7"},cols.map(function(c){return h("th",{style:"padding:4px 2px"},c)}))].concat(rows.map(function(s,i){
    var cells=[i+1,h("span",{style:"display:inline-flex;align-items:center;gap:6px"},[av(s.t.logo_url,s.t.name,22),s.t.name]),h("b",{},s.p),s.j,s.v].concat(P.draw?[s.e]:[]).concat([s.d,s.gm,s.gs,s.gm-s.gs,s.fc]);
    return h("tr",{style:"border-top:1px solid #2f6b45"},cells.map(function(c){return h("td",{style:"padding:5px 2px"},c)}))})));
-  var out=[HD(P.ico+" "+t.name),h("div",{style:DIM},P.nome+" · "+ph(t)),t.description?h("p",{},t.description):"",h("div",{style:CARD},[h("b",{},"Tabela classificativa"),rows.length?h("div",{style:"overflow-x:auto"},tb):h("p",{style:DIM},"Sem equipas ainda."),h("div",{style:DIM+";margin-top:6px"},"Pontos: vitória "+P.w+(P.draw?" · empate "+P.dr:"")+" · derrota "+P.l+". Desempate: diferença e "+(P.draw?"golos":"pontos")+" marcados.")])];
+  var out=[HD(P.ico+" "+t.name),h("div",{style:DIM},P.nome+" · "+ph(t)),h("div",{},[btn("📤 Partilhar",function(){var u2=location.origin+location.pathname,tx=P.ico+" "+t.name+" · Bengu";if(navigator.share)navigator.share({title:"Bengu",text:tx,url:u2}).catch(function(){});else if(navigator.clipboard)navigator.clipboard.writeText(tx+" "+u2).then(function(){msg("Ligação copiada.",1)})}),own?btn("🗑 Apagar torneio",function(){if(!confirm("Apagar este torneio e todas as equipas, jogos e jogadores? Não pode ser desfeito."))return;api("rpc/delete_tournament","POST",{p_tournament:String(t.id)}).then(function(){dots();list()}).catch(fail)}):""]),t.description?h("p",{},t.description):"",h("div",{style:CARD},[h("b",{},"Tabela classificativa"),rows.length?h("div",{style:"overflow-x:auto"},tb):h("p",{style:DIM},"Sem equipas ainda."),h("div",{style:DIM+";margin-top:6px"},"Pontos: vitória "+P.w+(P.draw?" · empate "+P.dr:"")+" · derrota "+P.l+". Desempate: diferença e "+(P.draw?"golos":"pontos")+" marcados.")])];
   /* jogos: um a um */
   var mc=[h("b",{},"Jogos")];if(!M.length)mc.push(h("p",{style:DIM},"Sem jogos marcados."));
   M.forEach(function(m){var H=tm[m.home_id],A=tm[m.away_id];if(!H||!A)return;var has=m.home_score!=null&&m.away_score!=null,wo=m.home_wo||m.away_wo,hs=num(has?m.home_score:""),as=num(has?m.away_score:"");

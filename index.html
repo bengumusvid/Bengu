@@ -1212,7 +1212,7 @@ function xl(e, t, r) {
     .map(
       (s) => (
         s.profiles && (r[s.profiles.id] = Xr(s.profiles)),
-        { id: s.id, userId: s.user_id, text: s.body }
+        { id: s.id, userId: s.user_id, ...window.bgDec(s.body) }
       ),
     );
   return {
@@ -2410,11 +2410,23 @@ function J_() {
           Ce.id === I
             ? {
                 ...Ce,
-                comments: [...Ce.comments, { id: Z.id, userId: h.id, text: V }],
+                comments: [...Ce.comments, { id: Z.id, userId: h.id, ...window.bgDec(V) }],
               }
             : Ce,
         ),
       );
+    },
+    Ud = async (pid, cid) => {
+      const { data: D, error: Z } = await me.from("comments").delete().eq("id", cid).select("id");
+      if (Z || !D || !D.length) return _e(Z ? Ze(Z) : "Sem permissão. Execute o SQL 3.2.0 na base de dados.");
+      me.from("comments").delete().like("body", "@@r:" + cid + "@@%").then(() => {});
+      P((he) => he.map((Ce) => Ce.id === pid ? { ...Ce, comments: Ce.comments.filter((c) => c.id !== cid && c.parent != cid) } : Ce));
+    },
+    Ue = async (pid, cid, v, par) => {
+      const { data: D, error: Z } = await me.from("comments").update({ body: bgEnc(v, par) }).eq("id", cid).select("id");
+      if (Z || !D || !D.length) return _e(Z ? Ze(Z) : "Sem permissão. Execute o SQL 3.2.0 na base de dados.");
+      P((he) => he.map((Ce) => Ce.id === pid ? { ...Ce, comments: Ce.comments.map((c) => c.id === cid ? { ...c, text: v } : c) } : Ce));
+      _e("Comentário atualizado");
     },
     $g = async (I) => {
       const V = O.includes(I);
@@ -2882,6 +2894,13 @@ function J_() {
                       children: [u.jsx("span", { className: "bg-coin", "aria-hidden": "true", children: "$" })],
                     }),
                     u.jsx("button", {
+                      onClick: () => window.bengu_fut_open && window.bengu_fut_open(),
+                      "aria-label": "Torneio de Futebol",
+                      title: "Torneio de Futebol",
+                      className: "bg-comp bg-green",
+                      children: u.jsx("span", { className: "bg-coin", "aria-hidden": "true", children: "⚽" }),
+                    }),
+                    u.jsx("button", {
                       onClick: () => at("search"),
                       "aria-label": x("search"),
                       className: "p-1.5",
@@ -3016,11 +3035,7 @@ function J_() {
                       ),
                     ),
                   }),
-                  Y === "following" && O.length > 0 &&
-                    u.jsxs("div", { style: { background: k.card, borderBottom: `1px solid ${k.line}` }, children: [
-                      u.jsx("div", { className: "px-4 pt-3 text-xs font-bold", style: { color: k.mute }, children: x("following") + " (" + O.filter((id) => E[id]).length + ")" }),
-                      u.jsx("div", { className: "flex flex-wrap gap-2 px-4 py-3", children: O.filter((id) => E[id]).map((id) => u.jsx("button", { onClick: () => td(id), className: "px-3 py-1.5 rounded-full text-xs font-semibold", style: { background: k.paper, color: k.ink }, children: E[id].name }, id)) }),
-                    ] }),
+                  Y === "following" && O.length > 0 && u.jsx(BgFolder, { ids: O.filter((id) => E[id]), users: E, onOpen: td }),
                   Y === "users"
                     ? u.jsx(BenguUsers, {
                         me: h,
@@ -3440,6 +3455,9 @@ function J_() {
             users: E,
             onClose: () => D(null),
             onSend: (I) => Ug(T, I),
+            meId: h.id,
+            onDelete: (c) => Ud(T, c),
+            onEdit: (c, v, p) => Ue(T, c, v, p),
           }),
         Q &&
           qt(Q) &&
@@ -3713,21 +3731,8 @@ function X_({
           scrollbarWidth: "none",
         },
         children: [
-          e &&
-            u.jsx(A, {
-              user: e,
-              plus: !v[e.id],
-              label: x("myStatus"),
-              onClick: () => (v[e.id] ? o({ userId: e.id, i: 0 }) : c(!0)),
-            }),
-          e &&
-            v[e.id] &&
-            u.jsx(A, {
-              user: e,
-              plus: !0,
-              label: x("addStatus"),
-              onClick: () => c(!0),
-            }),
+          e && u.jsx(A, { user: e, plus: !0, label: x("newStatus"), onClick: () => c(!0) }),
+          e && u.jsx(A, { user: e, plus: !1, label: x("myStatus"), onClick: () => (v[e.id] ? o({ userId: e.id, i: 0 }) : c(!0)) }),
           g.map((O) =>
             u.jsx(
               A,
@@ -6316,83 +6321,71 @@ function lx({
     ],
   });
 }
-function ux({ post: e, users: t, onClose: r, onSend: n }) {
-  const [s, i] = B.useState(""),
-    a = () => {
-      s.trim() && (n(s.trim()), i(""));
-    };
-  return u.jsxs(Cs, {
-    title: `${x("comments")} (${e.comments.length})`,
-    onClose: r,
-    children: [
-      u.jsxs("div", {
-        className: "overflow-y-auto flex-1 px-4 py-2",
-        children: [
-          e.comments.length === 0 &&
-            u.jsx("p", {
-              className: "text-sm text-center py-10",
-              style: { color: k.mute },
-              children: x("noComments"),
-            }),
-          e.comments.map((o) => {
-            const l = t[o.userId] || mt;
-            return u.jsxs(
-              "div",
-              {
-                className: "flex gap-3 py-2.5",
-                children: [
-                  u.jsx(Ct, { user: l, size: 32 }),
-                  u.jsxs("div", {
-                    children: [
-                      u.jsx("div", {
-                        className: "text-sm font-semibold",
-                        style: { color: k.ink },
-                        children: l.name,
-                      }),
-                      u.jsx("div", {
-                        className: "text-sm",
-                        style: { color: k.ink },
-                        children: o.text,
-                      }),
-                    ],
-                  }),
-                ],
-              },
-              o.id,
-            );
-          }),
-        ],
-      }),
-      u.jsxs("div", {
-        className: "flex items-center gap-2 px-4 py-3",
-        style: { borderTop: `1px solid ${k.line}` },
-        children: [
-          u.jsx("input", {
-            value: s,
-            onChange: (o) => i(o.target.value),
-            onKeyDown: (o) => o.key === "Enter" && a(),
-            maxLength: 500,
-            placeholder: x("writeComment"),
-            "aria-label": x("writeComment"),
-            className: "flex-1 px-4 py-2.5 rounded-full text-sm outline-none",
-            style: { background: k.paper, color: k.ink },
-          }),
-          u.jsx("button", {
-            onClick: a,
-            "aria-label": x("send"),
-            className: "flex items-center justify-center rounded-full",
-            style: {
-              width: 40,
-              height: 40,
-              background: s.trim() ? k.saffron : k.line,
-              color: k.onAccent,
-            },
-            children: u.jsx(vg, { size: 18 }),
-          }),
-        ],
-      }),
-    ],
-  });
+const bgEm = ["😀","😂","😍","👏","🔥","❤️","🙏","👍","😢","🎉"];
+const bgPh = ["Parabéns! 🎉","Muito bom!","Gostei muito!","Obrigado! 🙏","Concordo 👍","Continue assim! 💪"];
+const bgEnc = (t, p) => (p ? `@@r:${p}@@ ${t}` : t);
+window.bgDec = (b) => { const m = /^@@r:([^@]+)@@ ?/.exec(b || ""); return m ? { text: b.slice(m[0].length), parent: m[1] } : { text: b || "", parent: null }; };
+async function bgTr(text) {
+  const to = (Tu.lang || "pt").slice(0, 2);
+  try {
+    const r = await fetch("https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=" + to + "&dt=t&q=" + encodeURIComponent(text));
+    const j = await r.json(); return j[0].map((s) => s[0]).join("");
+  } catch (e) {}
+  const r = await fetch("https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text.slice(0, 450)) + "&langpair=autodetect|" + to);
+  const j = await r.json(); return j.responseData.translatedText;
+}
+function BgFolder({ ids, users, onOpen }) {
+  const h = B.createElement, [o, setO] = B.useState(false);
+  return h("div", { style: { background: k.card, borderBottom: `1px solid ${k.line}` } },
+    h("button", { onClick: () => setO(!o), className: "w-full flex items-center gap-3 px-4 py-3 text-left", "aria-expanded": o },
+      h("span", { style: { fontSize: 22 } }, o ? "📂" : "📁"),
+      h("span", { className: "flex-1 text-sm font-bold", style: { color: k.ink } }, x("following") + " (" + ids.length + ")"),
+      h("span", { style: { color: k.mute, transform: o ? "rotate(90deg)" : "none", transition: ".2s" } }, "›")),
+    o && h("div", { className: "px-4 pb-3" }, ids.map((id) => { const l = users[id] || mt;
+      return h("button", { key: id, onClick: () => onOpen(id), className: "w-full flex items-center gap-3 py-2 text-left" },
+        h(Ct, { user: l, size: 32 }), h("span", { className: "text-sm font-semibold", style: { color: k.ink } }, l.name),
+        h("span", { className: "text-xs", style: { color: k.mute } }, "@" + l.handle)); })));
+}
+function ux({ post: e, users: t, meId: me_, onClose: r, onSend: n, onDelete: dl, onEdit: ed }) {
+  const h = B.createElement, [s, i] = B.useState(""), [rp, setRp] = B.useState(null), [eid, setEid] = B.useState(null), [tr, setTr] = B.useState({});
+  const send = () => { const v = s.trim(); if (!v) return;
+      if (eid) { const cur = e.comments.find((c) => c.id === eid); ed(eid, v, cur && cur.parent); setEid(null); }
+      else n(bgEnc(v, rp && rp.id));
+      i(""); setRp(null); },
+    trans = async (c) => {
+      if (tr[c.id] && tr[c.id] !== "...") return setTr((o) => { const p = { ...o }; delete p[c.id]; return p; });
+      setTr((o) => ({ ...o, [c.id]: "..." }));
+      try { const v = await bgTr(c.text); setTr((o) => ({ ...o, [c.id]: v })); }
+      catch { setTr((o) => { const p = { ...o }; delete p[c.id]; return p; }); } },
+    lnk = (txt, f, col) => h("button", { key: txt, onClick: f, className: "text-xs font-semibold mr-3", style: { color: col || k.mute } }, txt),
+    row = (c, sub) => { const l = t[c.userId] || mt, own = c.userId === me_, canDel = own || e.userId === me_, done = tr[c.id] && tr[c.id] !== "...";
+      return h("div", { key: c.id, className: "flex gap-3 py-2", style: { marginLeft: sub ? 36 : 0 } },
+        h(Ct, { user: l, size: sub ? 26 : 32 }),
+        h("div", { className: "flex-1 min-w-0" },
+          h("div", { className: "text-sm font-semibold", style: { color: k.ink } }, l.name),
+          h("div", { className: "text-sm break-words", style: { color: k.ink } }, c.text),
+          tr[c.id] && h("div", { className: "text-sm italic mt-1", style: { color: k.mute } }, "🌐 " + (tr[c.id] === "..." ? "…" : tr[c.id])),
+          h("div", { className: "mt-1" },
+            lnk(done ? "Ver original" : "Traduzir", () => trans(c)),
+            lnk("Responder", () => { setRp({ id: sub ? c.parent : c.id, name: l.name }); setEid(null); i("@" + l.name.split(" ")[0] + " "); }),
+            own && lnk("Editar", () => { setEid(c.id); setRp(null); i(c.text); }),
+            canDel && lnk("Apagar", () => { window.confirm("Apagar este comentário?") && dl(c.id); }, k.like)))); };
+  const top = e.comments.filter((c) => !c.parent || !e.comments.some((p) => p.id == c.parent));
+  return h(Cs, { title: `${x("comments")} (${e.comments.length})`, onClose: r },
+    h("div", { className: "overflow-y-auto flex-1 px-4 py-2" },
+      e.comments.length === 0 && h("p", { className: "text-sm text-center py-10", style: { color: k.mute } }, x("noComments")),
+      top.map((c) => h(B.Fragment, { key: c.id }, row(c, false), e.comments.filter((z) => z.parent == c.id).map((z) => row(z, true))))),
+    h("div", { style: { borderTop: `1px solid ${k.line}` } },
+      (rp || eid) && h("div", { className: "flex items-center px-4 pt-2 text-xs", style: { color: k.mute } },
+        h("span", { className: "flex-1" }, eid ? "A editar comentário" : "A responder a " + rp.name),
+        h("button", { onClick: () => { setRp(null); setEid(null); i(""); }, "aria-label": "Cancelar" }, "✕")),
+      h("div", { className: "flex gap-3 px-4 pt-2 overflow-x-auto", style: { scrollbarWidth: "none" } },
+        bgEm.map((em) => h("button", { key: em, onClick: () => i((v) => v + em), style: { fontSize: 22 }, "aria-label": em }, em))),
+      h("div", { className: "flex gap-2 px-4 py-2 overflow-x-auto", style: { scrollbarWidth: "none" } },
+        bgPh.map((p) => h("button", { key: p, onClick: () => i((v) => (v ? v + " " : "") + p), className: "text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap flex-none", style: { background: k.paper, color: k.ink } }, p))),
+      h("div", { className: "flex items-center gap-2 px-4 pb-3" },
+        h("input", { value: s, onChange: (o) => i(o.target.value), onKeyDown: (o) => o.key === "Enter" && send(), maxLength: 500, placeholder: x("writeComment"), "aria-label": x("writeComment"), className: "flex-1 px-4 py-2.5 rounded-full text-sm outline-none", style: { background: k.paper, color: k.ink } }),
+        h("button", { onClick: send, "aria-label": x("send"), className: "flex items-center justify-center rounded-full", style: { width: 40, height: 40, background: s.trim() ? k.saffron : k.line, color: k.onAccent } }, h(vg, { size: 18 })))));
 }
 function cx({ post: e, me: t, onClose: r }) {
   const [n, s] = B.useState(null),
@@ -8131,14 +8124,14 @@ function create(){stop();
   if(l=="regional"&&!rg.value)return;
   rpc("quote_competition",{p_level:l,p_country:l=="regional"?null:co.value,p_province:pr.value||null,p_district:di.value||null}).then(function(r){
    q=r;fixed=r.fixed_vote_price!=null;
-   quote.replaceChildren(h("div",{},"Taxa de inscrição (não reembolsável, vai para a conta Bengu): "),h("b",{style:"font-size:18px;color:#ffd166"},fmt(r.fee_usd,"USD")),
+   quote.replaceChildren(h("div",{},"Taxa de inscrição"),h("b",{style:"font-size:18px;color:#ffd166"},fmt(r.fee_usd,"USD")),
     h("div",{style:DIM},fixed?"Voto fixo: 1 USD = "+fmt(r.fixed_vote_price,r.currency)+" por voto.":"Preço do voto definido por si, em "+r.currency+"."));
    pc.style.display=fixed?"none":"";pc.placeholder="Preço de 1 voto ("+r.currency+")"}).catch(fail)}
  [lv,rg,co,pr,di].forEach(function(e){e.addEventListener("change",refresh)});
  vis();
  box.replaceChildren(h("h3",{style:"color:"+LITE},"Criar "+C.label.toLowerCase()),
   h("div",{style:"padding:10px;border-radius:8px;background:#0f1437;border:1px dashed #3a4175;margin:6px 0;font-size:13px"},
-   "🔒 Divisão do total arrecadado (privada, só você vê): 1º 35% · 2º 25% · 3º 15% · 4º 5% · organizador 10% · conta Bengu 10%. Os valores são enviados automaticamente no fim da competição e a Bengu paga os custos de transferência."),
+   "🔒 Divisão do total arrecadado (privada, só você vê): 1º 35% · 2º 25% · 3º 15% · 4º 5% · organizador 10%. Os valores são enviados automaticamente no fim da competição e a Bengu paga os custos de transferência."),
   t,d,lv,rg,co,pr,di,quote,pc,lab("Início da competição",st),lab("Fim da competição",en),
   h("div",{style:DIM},"Onde recebe a sua parte:"),om,oa,
   btn("Criar e pagar taxa",function(){
@@ -8198,5 +8191,66 @@ function dash(c){
 document.body.append(ov);
 })();
 </script>
-  </body>
+    <script>/* BENGU 3.2.0: torneio de futebol + ponto vermelho nas competições */
+(function(){
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ";
+function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
+function uid(){try{return JSON.parse(atob(tok().split(".")[1].replace(/-/g,"+").replace(/_/g,"/"))).sub}catch(e){return null}}
+function api(p,m,b){var hd={apikey:K,Authorization:"Bearer "+(tok()||K),"Content-Type":"application/json"};if(m&&m!="GET")hd.Prefer="return=representation";
+ return fetch(U+"/rest/v1/"+p,{method:m||"GET",headers:hd,body:b?JSON.stringify(b):undefined}).then(function(r){return r.json().catch(function(){return[]}).then(function(j){if(!r.ok)throw new Error((j&&j.message)||"Erro. Execute o SQL 3.2.0 na base de dados.");return j})})}
+function h(t,a,c){var e=document.createElement(t);for(var q in a||{})if(q!="on")e.setAttribute(q,a[q]);if(a&&a.on)for(var ev in a.on)e.addEventListener(ev,a.on[ev]);[].concat(c==null?[]:c).forEach(function(x){e.append(x)});return e}
+var G="#22c55e",S="width:100%;box-sizing:border-box;padding:10px;margin:4px 0;border-radius:8px;border:1px solid #2f6b45;background:#12301f;color:#fff;font-size:15px",
+B="padding:9px 13px;margin:4px 4px 4px 0;border:0;border-radius:8px;background:#22c55e;color:#06210f;font-weight:700;font-size:14px",
+CARD="background:#12301f;border-radius:10px;padding:12px;margin:8px 0",DIM="font-size:13px;opacity:.8";
+document.head.append(h("style",{},".bg-comp{position:relative}.bg-comp.bg-green{--c:#12803a;--cg:rgba(34,197,94,.85);--c1:#d1fae5;--c2:#4ade80;padding:3px}"+
+"@keyframes bgBlink{0%,100%{opacity:1}50%{opacity:.35}}.bg-comp[data-live=\"1\"]::after{content:\"\";position:absolute;left:50%;bottom:-5px;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:#ff2d2d;box-shadow:0 0 0 2px #12183A;animation:bgBlink 1.2s infinite}"));
+var ov=h("div",{style:"display:none;position:fixed;inset:0;z-index:99999;background:#0a1f14;color:#fff;overflow:auto;padding:12px;padding-top:calc(12px + env(safe-area-inset-top,0px));font-family:system-ui,sans-serif"}),
+bar=h("div",{style:"display:flex;gap:6px;position:sticky;top:0;background:#0a1f14;padding-bottom:6px;z-index:2"}),box=h("div");ov.append(bar,box);document.body.append(ov);
+function btn(t,f){return h("button",{style:B,on:{click:f}},t)}
+function inp(ph,t){return h("input",{placeholder:ph,type:t||"text",style:S})}
+function msg(t,ok){box.prepend(h("div",{style:"padding:8px;border-radius:8px;margin:6px 0;background:"+(ok?"#1e6b3a":"#8a2b2b")},t))}
+function fail(e){msg(e.message||String(e))}
+function need(){if(!tok()){msg("Inicie sessão no Bengu primeiro.");return false}return true}
+function dt(s){return s?new Date(s).toLocaleString("pt-PT",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"-"}
+function ph(t){var n=Date.now(),a=+new Date(t.starts_at),b=+new Date(t.ends_at);return n<a?"Começa em "+dt(t.starts_at):n<b?"🔴 A decorrer · termina em "+dt(t.ends_at):"Terminado"}
+var HD=function(t){return h("h3",{style:"color:"+G},t)};
+function open(){ov.style.display="block";bar.replaceChildren(btn("✕",function(){ov.style.display="none"}),btn("Torneios",list),btn("Criar torneio",create));list()}
+function list(){box.replaceChildren(HD("⚽ Torneios de Futebol"),h("p",{},"A carregar…"));
+ api("tournaments?select=*&order=starts_at.desc").then(function(r){box.replaceChildren(HD("⚽ Torneios de Futebol"));if(!r.length)box.append(h("p",{},"Ainda não há torneios. Toque em Criar torneio."));
+  r.forEach(function(t){box.append(h("div",{style:CARD},[h("b",{},t.name),h("div",{style:DIM},ph(t)),btn("Abrir",function(){detail(t)})]))})}).catch(function(e){box.replaceChildren(h("p",{},e.message))})}
+function create(){var n=inp("Nome do torneio"),d=inp("Descrição (opcional)"),a=inp("","datetime-local"),b=inp("","datetime-local");
+ box.replaceChildren(HD("Criar torneio"),n,d,h("label",{style:DIM},["Início",a]),h("label",{style:DIM},["Fim",b]),btn("Criar",function(){if(!need())return;
+  if(n.value.trim().length<3||!a.value||!b.value)return msg("Indique nome, início e fim.");
+  api("tournaments","POST",{owner_id:uid(),name:n.value.trim(),description:d.value.trim(),starts_at:new Date(a.value).toISOString(),ends_at:new Date(b.value).toISOString()}).then(function(r){dots();detail(r[0])}).catch(fail)}))}
+function detail(t){var me=uid(),own=me&&t.owner_id==me,again=function(){detail(t)};
+ Promise.all([api("tournament_teams?select=*&tournament_id=eq."+t.id+"&order=created_at"),api("tournament_matches?select=*&tournament_id=eq."+t.id+"&order=played_at")]).then(function(r){
+  var T=r[0],M=r[1],nm={},st={};T.forEach(function(x){nm[x.id]=x.name;st[x.id]={n:x.name,j:0,v:0,e:0,d:0,gm:0,gs:0,p:0}});
+  M.forEach(function(m){if(m.home_score==null||m.away_score==null||!st[m.home_id]||!st[m.away_id])return;var a=st[m.home_id],b=st[m.away_id],x=m.home_score,y=m.away_score;a.j++;b.j++;a.gm+=x;a.gs+=y;b.gm+=y;b.gs+=x;
+   if(x>y){a.v++;a.p+=3;b.d++}else if(x<y){b.v++;b.p+=3;a.d++}else{a.e++;b.e++;a.p++;b.p++}});
+  var rows=Object.keys(st).map(function(q){return st[q]}).sort(function(a,b){return b.p-a.p||(b.gm-b.gs)-(a.gm-a.gs)||b.gm-a.gm});
+  var tb=h("table",{style:"width:100%;border-collapse:collapse;font-size:13px"},[h("tr",{style:"text-align:left;opacity:.7"},["#","Equipa","J","V","E","D","DG","Pts"].map(function(c){return h("th",{},c)}))].concat(rows.map(function(s,i){return h("tr",{},[i+1,s.n,s.j,s.v,s.e,s.d,s.gm-s.gs,h("b",{},s.p)].map(function(c){return h("td",{style:"padding:5px 2px"},c)}))})));
+  var out=[HD("⚽ "+t.name),h("div",{style:DIM},ph(t)),t.description?h("p",{},t.description):"",h("div",{style:CARD},[h("b",{},"Tabela"),rows.length?tb:h("p",{style:DIM},"Sem equipas ainda.")])];
+  var mc=[h("b",{},"Jogos")];if(!M.length)mc.push(h("p",{style:DIM},"Sem jogos marcados."));
+  M.forEach(function(m){var has=m.home_score!=null,hs=inp("",""),as=inp("","");hs.type=as.type="number";hs.min=as.min=0;hs.style.cssText=as.style.cssText=S+";width:60px;display:inline-block";if(has){hs.value=m.home_score;as.value=m.away_score}
+   var line=[h("div",{},nm[m.home_id]+"  "+(has?m.home_score+" – "+m.away_score:"vs")+"  "+nm[m.away_id]),h("div",{style:DIM},dt(m.played_at))];
+   if(own)line.push(h("div",{},[hs,"  ",as,"  ",btn("Guardar",function(){if(hs.value===""||as.value==="")return msg("Indique os dois golos.");api("tournament_matches?id=eq."+m.id,"PATCH",{home_score:+hs.value,away_score:+as.value}).then(again).catch(fail)}),btn("Apagar",function(){api("tournament_matches?id=eq."+m.id,"DELETE").then(again).catch(fail)})]));
+   mc.push(h("div",{style:"border-top:1px solid #2f6b45;padding:8px 0"},line))});
+  out.push(h("div",{style:CARD},mc));
+  var tc=[h("b",{},"Equipas ("+T.length+")")];T.forEach(function(x){tc.push(h("div",{style:"padding:4px 0"},[x.name+" ",(own||x.owner_id==me)?btn("✕",function(){api("tournament_teams?id=eq."+x.id,"DELETE").then(again).catch(fail)}):""]))});
+  var tn=inp("Nome da equipa");tc.push(tn,btn("Inscrever a minha equipa",function(){if(!need())return;if(tn.value.trim().length<2)return msg("Escreva o nome da equipa.");api("tournament_teams","POST",{tournament_id:t.id,owner_id:uid(),name:tn.value.trim()}).then(again).catch(fail)}));
+  out.push(h("div",{style:CARD},tc));
+  if(own&&T.length>1){var opt=function(){return T.map(function(x){return h("option",{value:x.id},x.name)})},hm=h("select",{style:S},opt()),aw=h("select",{style:S},opt()),wh=inp("","datetime-local");
+   out.push(h("div",{style:CARD},[h("b",{},"Adicionar jogo"),hm,aw,wh,btn("Adicionar",function(){if(hm.value==aw.value)return msg("Escolha duas equipas diferentes.");api("tournament_matches","POST",{tournament_id:t.id,home_id:hm.value,away_id:aw.value,played_at:wh.value?new Date(wh.value).toISOString():null}).then(again).catch(fail)})]))}
+  box.replaceChildren.apply(box,out)}).catch(fail)}
+var LIVE={};
+function apply(){var map={"Competição de Cantores":"cantores","Competição de Humoristas":"humoristas","Competição de Criadores de Conteúdos Digitais":"criadores","Torneio de Futebol":"futebol"};
+ document.querySelectorAll(".bg-comp").forEach(function(b){var v=LIVE[map[b.getAttribute("aria-label")]]?"1":"0";if(b.dataset.live!==v)b.dataset.live=v})}
+function dots(){var n=new Date().toISOString();
+ Promise.all([api("competitions?select=category&status=eq.open&starts_at=lte."+n+"&ends_at=gte."+n).catch(function(){return[]}),api("tournaments?select=id&starts_at=lte."+n+"&ends_at=gte."+n+"&limit=1").catch(function(){return[]})]).then(function(r){LIVE={};r[0].forEach(function(c){LIVE[c.category]=1});if(r[1].length)LIVE.futebol=1;apply()})}
+var tm;new MutationObserver(function(){clearTimeout(tm);tm=setTimeout(apply,400)}).observe(document.body,{childList:true,subtree:true});
+setInterval(dots,45000);setTimeout(dots,1500);
+window.bengu_fut_open=open;
+})();
+</script>
+</body>
 </html>

@@ -4209,13 +4209,6 @@ function X_({
   return u.jsxs(u.Fragment, {
     children: [
       u.jsxs("div", {
-        className: "flex items-center justify-between px-3 py-2",
-        style: { background: k.card, borderBottom: `1px solid ${k.line}` },
-        children: [
-          u.jsx("span", { className: "text-sm font-extrabold", style: { color: k.ink }, children: "Bengu" }),
-        ],
-      }),
-      u.jsxs("div", {
         className: "flex gap-2 overflow-x-auto px-3 py-3 bg-st",
         style: {
           background: k.card,
@@ -5671,11 +5664,11 @@ function Ad_({ onBack: e, say: t }) {
           u.jsxs(
             "div",
             {
-              className: "flex items-center gap-3 px-4 py-2.5",
+              className: "flex items-start gap-3 px-4 py-2.5",
               style: { borderBottom: `1px solid ${k.line}` },
               children: [
                 u.jsx("div", {
-                  className: "w-6 text-sm font-bold",
+                  className: "w-6 text-sm font-bold shrink-0",
                   style: { color: k.mute },
                   children: i + 1,
                 }),
@@ -5683,7 +5676,7 @@ function Ad_({ onBack: e, say: t }) {
                   className: "flex-1 min-w-0",
                   children: [
                     u.jsx("div", {
-                      className: "text-sm font-semibold truncate",
+                      className: "text-sm font-semibold break-words",
                       style: { color: k.ink },
                       children: r.name,
                     }),
@@ -5695,19 +5688,24 @@ function Ad_({ onBack: e, say: t }) {
                         " seguidores" +
                         (r.banned ? " · bloqueado" : ""),
                     }),
+                    u.jsxs("div", {
+                      className: "flex gap-2 flex-wrap mt-2",
+                      children: [
+                        u.jsx("button", {
+                          onClick: () => ban(r.id, !r.banned),
+                          className: btn,
+                          style: {
+                            background: k.paper,
+                            color: r.banned ? k.ink : k.like,
+                          },
+                          children: r.banned ? "Desbloquear" : "Bloquear",
+                        }),
+                        u.jsx("button", { onClick: () => warn(r.id, null), className: btn, style: { background: k.paper, color: k.ink }, children: "Avisar" }),
+                        u.jsx("button", { onClick: () => delUser(r.id), className: btn, style: { background: k.paper, color: k.like }, children: "Apagar perfil" }),
+                      ],
+                    }),
                   ],
                 }),
-                u.jsx("button", {
-                  onClick: () => ban(r.id, !r.banned),
-                  className: btn,
-                  style: {
-                    background: k.paper,
-                    color: r.banned ? k.ink : k.like,
-                  },
-                  children: r.banned ? "Desbloquear" : "Bloquear",
-                }),
-                u.jsx("button", { onClick: () => warn(r.id, null), className: btn, style: { background: k.paper, color: k.ink }, children: "Avisar" }),
-                u.jsx("button", { onClick: () => delUser(r.id), className: btn, style: { background: k.paper, color: k.like }, children: "Apagar perfil" }),
               ],
             },
             r.id,
@@ -8741,13 +8739,29 @@ function setCat(c){cat=c;PINK=CATS[c].color;LITE=CATS[c].lite;styles()}
 
 var ov=h("div",{style:"display:none;position:fixed;inset:0;z-index:99999;background:#12183A;color:#fff;overflow:auto;padding:12px;padding-top:calc(12px + env(safe-area-inset-top,0px));font-family:system-ui,sans-serif"});
 var bar=h("div",{style:"display:flex;gap:6px;flex-wrap:wrap;position:sticky;top:0;background:#12183A;padding-bottom:6px;z-index:2"});
-var box=h("div");ov.append(bar,box);
+/* faixa publicitária "Inscrições Abertas" (competições e torneios) */
+document.head.append(h("style",{},
+"@keyframes bgInscMove{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}"+
+"@keyframes bgInscStar{0%,100%{transform:scale(1) rotate(0);filter:drop-shadow(0 0 2px #ffd700)}50%{transform:scale(1.25) rotate(18deg);filter:drop-shadow(0 0 7px #ffec80)}}"+
+".bg-insc{--ic:#ffd700;overflow:hidden;white-space:nowrap;margin:2px 0 8px;border-radius:10px;background:#0b1230;border:1px solid var(--ic);box-shadow:0 0 10px rgba(255,215,0,.25);padding:7px 0;font:800 15px/1.2 system-ui,sans-serif;letter-spacing:.4px;color:#fff}"+
+".bg-insc .bg-insc-track{display:inline-block;padding-left:100%;animation:bgInscMove 11s linear infinite}"+
+".bg-insc:hover .bg-insc-track{animation-play-state:paused}"+
+".bg-insc .bg-star{display:inline-block;color:#ffd700;font-size:18px;vertical-align:-1px;margin:0 8px;animation:bgInscStar 1.6s ease-in-out infinite}"+
+"@media(prefers-reduced-motion:reduce){.bg-insc{text-align:center}.bg-insc .bg-insc-track{animation:none;padding-left:0}.bg-insc .bg-star{animation:none}}"));
+window.bgInscBanner=function(c){var d=document.createElement("div");d.className="bg-insc";d.setAttribute("role","note");
+ if(c)d.style.setProperty("--ic",c);
+ var t=document.createElement("span");t.className="bg-insc-track";
+ var s1=document.createElement("span");s1.className="bg-star";s1.textContent="\u2605";
+ var s2=document.createElement("span");s2.className="bg-star";s2.textContent="\u2605";s2.style.animationDelay=".4s";
+ t.append(s1,document.createTextNode("Inscri\u00e7\u00f5es Abertas"),s2);d.append(t);return d};
+var INSC=window.bgInscBanner("#ff1fa9");
+var box=h("div");ov.append(bar,INSC,box);
 var timer=null;
 function stop(){if(timer){clearInterval(timer);timer=null}}
 function msg(t,ok){box.prepend(h("div",{style:"padding:8px;border-radius:8px;margin:6px 0;background:"+(ok?"#1e6b3a":"#8a2b2b")},t))}
 function fail(e){msg(e.message||String(e))}
 function need(){if(!tok()){msg("Inicie sessão no Bengu primeiro.");return false}return true}
-function open(){ov.style.display="block";
+function open(){ov.style.display="block";INSC.style.setProperty("--ic",PINK);
  bar.replaceChildren(sbtn("✕",function(){stop();ov.style.display="none"}),sbtn("Concursos",list),sbtn("Registo",register),sbtn("Criar",create),sbtn("Meus concursos",mine),sbtn("Meus ganhos",earn));
  rpc("settle_due_competitions").catch(function(){});   /* reforço: fecha e distribui concursos terminados */
  list()}
@@ -8953,7 +8967,7 @@ AVB="width:44px;height:44px;border-radius:50%;background:#0a1f14;border:1px dash
 document.head.append(h("style",{},"nav.fixed button{overflow:hidden}.bg-st>*{flex:0 0 auto!important;min-width:64px}.bg-comp{position:relative}.bg-comp.bg-green{--c:#12803a;--cg:rgba(34,197,94,.85);--c1:#d1fae5;--c2:#4ade80;padding:3px}"+
 "@keyframes bgBlink{0%,100%{opacity:1}50%{opacity:.35}}.bg-comp[data-live=\"1\"]::after{content:\"\";position:absolute;left:50%;bottom:-5px;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:#ff2d2d;box-shadow:0 0 0 2px #12183A;animation:bgBlink 1.2s infinite}"));
 var ov=h("div",{style:"display:none;position:fixed;inset:0;z-index:99999;background:#0a1f14;color:#fff;overflow:auto;padding:12px;padding-top:calc(12px + env(safe-area-inset-top,0px));font-family:system-ui,sans-serif"}),
-bar=h("div",{style:"display:flex;gap:6px;position:sticky;top:0;background:#0a1f14;padding-bottom:6px;z-index:2;overflow-x:auto"}),box=h("div");ov.append(bar,box);document.body.append(ov);
+bar=h("div",{style:"display:flex;gap:6px;position:sticky;top:0;background:#0a1f14;padding-bottom:6px;z-index:2;overflow-x:auto"}),box=h("div"),INSC=window.bgInscBanner?window.bgInscBanner("#22c55e"):null;INSC?ov.append(bar,INSC,box):ov.append(bar,box);document.body.append(ov);
 function btn(t,f){return h("button",{style:B+";flex:none",on:{click:f}},t)}
 function sbtn(t,f){return h("button",{style:B+";padding:4px 10px;margin:0",on:{click:f}},t)}
 function inp(ph,t){return h("input",{placeholder:ph,type:t||"text",style:S})}

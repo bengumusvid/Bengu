@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.7.4_14.10.2026" />
+    <meta name="bengu-build" content="4.8.0_14.10.2026" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <title>Bengu</title>
@@ -2596,7 +2596,7 @@ function J_() {
         _e(x("waitUpload"));
         return;
       }
-      (Dt({ label: x("addStatus"), pct: 0 }),
+      return (Dt({ label: x("addStatus"), pct: 0 }),
         (async () => {
           try {
             const Z = await Mo(I, `status-${I.name}`, Di),
@@ -2856,6 +2856,11 @@ function J_() {
       ["messages", x("messages"), gg],
       ["profile", x("profile"), hf],
     ];
+  window.__bgGo = (I) => {
+    if (I === "profile") Ie("me");
+    at(I);
+  };
+  window.__bgUnread = z;
   return $o(
     u.jsxs("div", {
       className: "min-h-screen",
@@ -3358,7 +3363,7 @@ function J_() {
               ref: jt,
               className: "max-w-md mx-auto flex",
               style: { scrollbarWidth: "none" },
-              children: Qg.map(([I, V, Z]) => {
+              children: Qg.filter(([q]) => q !== "messages" && q !== "profile").map(([I, V, Z]) => {
                 const le = Yg === I && (I !== "profile" || xe === "me");
                 return I === "create"
                   ? u.jsx(
@@ -3467,6 +3472,7 @@ function J_() {
                   (Ie("me"), at("profile"));
                 },
               ],
+              [gg, x("messages"), () => at("messages")],
               [wg, x("settings"), () => at("settings")],
               [
                 Oo,
@@ -3697,18 +3703,23 @@ function X_({
   });
   const g = Object.keys(v).filter((O) => O !== (e == null ? void 0 : e.id)),
     b = (O, R) => {
-      (c(!1), n(O, R));
+      return (c(!1), n(O, R));
     },
     m = async (O) => {
-      var re;
-      const R = (re = O.target.files) == null ? void 0 : re[0];
-      if (((O.target.value = ""), !R)) return;
-      (await c_(R)) > 120 || R.size > bn * 1048576 ? p(R) : b(R, "video");
+      const fl = Array.from(O.target.files || []);
+      O.target.value = "";
+      for (const R of fl) {
+        if ((await c_(R)) > 120 || R.size > bn * 1048576) {
+          p(R);
+          break;
+        }
+        await b(R, "video");
+      }
     },
-    h = (O) => {
-      var U;
-      const R = (U = O.target.files) == null ? void 0 : U[0];
-      ((O.target.value = ""), R && b(R, "image"));
+    h = async (O) => {
+      const fl = Array.from(O.target.files || []);
+      O.target.value = "";
+      for (const R of fl) await b(R, "image");
     },
     y = a ? ((P = v[a.userId]) == null ? void 0 : P[a.i]) : null,
     E = () =>
@@ -3765,7 +3776,35 @@ function X_({
         className: "flex items-center justify-between px-3 py-2",
         style: { background: k.card, borderBottom: `1px solid ${k.line}` },
         children: [
-          u.jsx("span", { className: "text-sm font-extrabold", style: { color: k.ink }, children: "Bengu" }),
+          u.jsx("span", { className: "text-sm font-extrabold truncate", style: { color: k.ink, minWidth: 0 }, children: e && e.name ? e.name : "Bengu" }),
+          e &&
+            u.jsxs("div", {
+              className: "flex items-center gap-2 shrink-0",
+              children: [
+                u.jsxs("button", {
+                  onClick: () => window.__bgGo && window.__bgGo("messages"),
+                  "aria-label": "Bate-Papo",
+                  className: "px-3 py-1 rounded-full text-xs font-bold",
+                  style: { background: k.paper, color: k.ink, border: `1px solid ${k.line}` },
+                  children: [
+                    "💬 Bate-Papo",
+                    window.__bgUnread > 0 &&
+                      u.jsx("span", {
+                        className: "ml-1 rounded-full px-1.5 text-[10px] font-bold",
+                        style: { background: k.like, color: "#fff" },
+                        children: window.__bgUnread > 9 ? "9+" : window.__bgUnread,
+                      }),
+                  ],
+                }),
+                u.jsx("button", {
+                  onClick: () => window.__bgGo && window.__bgGo("profile"),
+                  "aria-label": "Perfil",
+                  className: "px-3 py-1 rounded-full text-xs font-bold",
+                  style: { background: k.paper, color: k.ink, border: `1px solid ${k.line}` },
+                  children: "👤 Perfil",
+                }),
+              ],
+            }),
         ],
       }),
       u.jsxs("div", {
@@ -3807,6 +3846,7 @@ function X_({
                 ref: w,
                 type: "file",
                 accept: "image/*",
+                multiple: !0,
                 className: "hidden",
                 onChange: h,
               }),
@@ -3814,6 +3854,7 @@ function X_({
                 ref: f,
                 type: "file",
                 accept: "video/*",
+                multiple: !0,
                 className: "hidden",
                 onChange: m,
               }),
@@ -8613,7 +8654,7 @@ function nmsg(e){var t=(e&&e.message)||"Erro.";if(/schema cache|does not exist|C
 function when(s){try{return new Date(s).toLocaleString("pt-PT",{dateStyle:"short",timeStyle:"short"})}catch(e){return""}}
 function shrink(file){return new Promise(function(ok,no){var img=new Image(),u=URL.createObjectURL(file);img.onload=function(){var m=1280,w=img.width,hh=img.height,s=Math.min(1,m/Math.max(w,hh)),c=document.createElement("canvas");c.width=Math.round(w*s);c.height=Math.round(hh*s);c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(function(b){b?ok(b):no(new Error("Foto inválida."))},"image/jpeg",.82)};img.onerror=function(){no(new Error("Foto inválida."))};img.src=u})}
 function addNews(f,done){var me=uid();if(!me){alert("Entre na sua conta para publicar.");return}
- var b=sheet("➕ Nova notícia · "+f.n),blob=null,inp=function(ph){return h("input",{placeholder:ph,style:"width:100%;box-sizing:border-box;padding:10px;border:1px solid #cfd4e3;border-radius:10px;margin:6px 0;font:inherit"})},ti=inp("Título da notícia"),au=inp("Nome do autor"),tx=h("textarea",{placeholder:"Texto da notícia (opcional)",rows:"5",style:"width:100%;box-sizing:border-box;padding:10px;border:1px solid #cfd4e3;border-radius:10px;margin:6px 0;font:inherit"}),
+ var b=sheet("➕ Nova notícia · "+f.n),blob=null,inp=function(ph){return h("input",{placeholder:ph,style:"width:100%;box-sizing:border-box;padding:10px;border:1px solid #cfd4e3;border-radius:10px;margin:6px 0;font:inherit"})},ti=inp("Título da notícia"),au=inp("Nome do autor do texto"),ins=inp("Nome da instituição (opcional)"),tx=h("textarea",{placeholder:"Texto da notícia (opcional)",rows:"5",style:"width:100%;box-sizing:border-box;padding:10px;border:1px solid #cfd4e3;border-radius:10px;margin:6px 0;font:inherit"}),
  pv=h("img",{style:"display:none;max-width:100%;border-radius:10px;margin-top:8px"}),
  box=h("div",{contenteditable:"true",style:"min-height:64px;border:2px dashed #1E88E5;border-radius:12px;padding:10px;background:#fff;color:#6B7391;margin:6px 0"},"📋 Toque aqui e cole a foto da notícia"),
  fi=h("input",{type:"file",accept:"image/*",style:"margin:6px 0"}),go=h("button",{style:"width:100%;padding:12px;border:0;border-radius:12px;background:#E53935;color:#fff;font-weight:800;font-size:16px;margin-top:10px"},"Publicar");
@@ -8624,8 +8665,8 @@ function addNews(f,done){var me=uid();if(!me){alert("Entre na sua conta para pub
  fi.addEventListener("change",function(){if(fi.files[0])setPhoto(fi.files[0])});
  go.addEventListener("click",function(){var t=ti.value.trim();if(t.length<5){alert("Escreva um título com pelo menos 5 letras.");return}var an=au.value.trim();if(an.length<2){alert("Escreva o nome do autor.");return}go.disabled=true;go.textContent="A publicar…";
   var pth=me+"/"+Date.now()+".jpg",up=blob?fetch(U+"/storage/v1/object/news-media/"+pth,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"image/jpeg"},body:blob}).then(function(r){if(!r.ok)throw new Error("Não foi possível enviar a foto. Execute o SQL 4.7 na base de dados.");return U+"/storage/v1/object/public/news-media/"+pth}):Promise.resolve(null);
-  up.then(function(pu){var o={section:f.k,author_id:me,author_name:an.slice(0,80),title:t,body:tx.value.trim()||null};if(pu)o.photo_url=pu;return api("bengu_news","POST",o)}).then(function(){b.parentNode.remove();seenSet(f.k,Date.now()+1000);done()}).catch(function(e){alert(nmsg(e));go.disabled=false;go.textContent="Publicar"})});
- b.append(h("p",{style:"margin:10px 0 4px;font-size:13px;opacity:.7"},"Publique só informação verdadeira. Notícias falsas podem ser denunciadas e apagadas pelo administrador."),ti,au,tx,box,fi,pv,go);api("profiles?select=name&id=eq."+me).then(function(r){if(r&&r[0]&&r[0].name&&!au.value)au.value=r[0].name}).catch(function(){})}
+  up.then(function(pu){var o={section:f.k,author_id:me,author_name:an.slice(0,80),institution:(ins.value.trim().slice(0,120)||null),title:t,body:tx.value.trim()||null};if(pu)o.photo_url=pu;return api("bengu_news","POST",o)}).then(function(){b.parentNode.remove();seenSet(f.k,Date.now()+1000);done()}).catch(function(e){alert(nmsg(e));go.disabled=false;go.textContent="Publicar"})});
+ b.append(h("p",{style:"margin:10px 0 4px;font-size:13px;opacity:.7"},"Publique só informação verdadeira. Notícias falsas podem ser denunciadas e apagadas pelo administrador."),ti,ins,au,tx,box,fi,pv,go);api("profiles?select=name&id=eq."+me).then(function(r){if(r&&r[0]&&r[0].name&&!au.value)au.value=r[0].name}).catch(function(){})}
 window.bengu_news_open=function(){var b=sheet("📰 Notícias"),o=b.parentNode,admin=false,cur=0;o.classList.add("bgnews-open");o.style.background="#FBF6E9";
  var mast=h("div",{style:"margin:10px 0 0;padding:10px;border-radius:12px;text-align:center;color:#fff;font:900 22px Georgia,serif;letter-spacing:3px;background:linear-gradient(90deg,#E53935,#FB8C00,#FDD835 50%,#43A047,#1E88E5)"},"BENGU NOTÍCIAS"),
  tabs=h("div",{style:"display:flex;gap:8px;overflow-x:auto;padding:12px 0"}),list=h("div");b.append(mast,tabs,list);
@@ -8633,8 +8674,8 @@ window.bengu_news_open=function(){var b=sheet("📰 Notícias"),o=b.parentNode,a
  function card(n,f){var mine=uid()&&n.author_id==uid(),rep=n.reports||0,c=h("div",{style:"background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;border-left:5px solid "+(rep?"#E53935":"#1E88E5")});
   if(n.photo_url&&String(n.photo_url).indexOf(U+"/storage/")==0)c.append(h("img",{src:n.photo_url,style:"width:100%;border-radius:10px;margin-bottom:8px",loading:"lazy"}));
   c.append(h("div",{style:"font-weight:800;line-height:1.3"},n.title));if(n.body)c.append(h("p",{style:"margin:6px 0;white-space:pre-wrap"},n.body));
-  var au=h("div",{style:"font-size:12px;opacity:.65"},"Por "+(n.author_name||"Membro")+" · "+when(n.created_at));c.append(au);
-  if(!n.author_name)api("profiles?select=name&id=eq."+n.author_id).then(function(r){if(r&&r[0]&&r[0].name)au.textContent="Por "+r[0].name+" · "+when(n.created_at)}).catch(function(){});
+  var au=h("div",{style:"font-size:12px;opacity:.65"},(n.institution?"🏛 "+n.institution+" · ":"")+"Por "+(n.author_name||"Membro")+" · "+when(n.created_at));c.append(au);
+  if(!n.author_name)api("profiles?select=name&id=eq."+n.author_id).then(function(r){if(r&&r[0]&&r[0].name)au.textContent=(n.institution?"🏛 "+n.institution+" · ":"")+"Por "+r[0].name+" · "+when(n.created_at)}).catch(function(){});
   var bar=h("div",{style:"display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"}),sb=function(t,fn,col){var x=h("button",{style:"padding:6px 12px;border:0;border-radius:8px;font-weight:700;background:"+(col||"#eef0f6")+";color:"+(col?"#fff":"#12183A")},t);x.addEventListener("click",fn);return x};
   bar.append(sb("📤 Partilhar",function(){shareNews(n.title,n.body?n.body.slice(0,200):"",location.origin+location.pathname)}));
   if(rep)bar.append(h("span",{style:"color:#E53935;font-weight:800;align-self:center"},"⚠ "+rep+" denúncia"+(rep>1?"s":"")));
@@ -8702,9 +8743,44 @@ window.addEventListener("blur",function(){on()});window.addEventListener("focus"
 window.addEventListener("userscreenshot",function(){on(2500)});
 })();
 </script>
+  <script>/* BENGU 4.8: recorte de fotos (largura, altura e posição) em todas as opções de publicação */
+(function(){
+function el(t,css,txt){var e=document.createElement(t);if(css)e.style.cssText=css;if(txt!=null)e.textContent=txt;return e}
+function isImg(f){return f&&/^image\//.test(f.type)&&!/gif|svg/.test(f.type)}
+function slider(label,min,max,val,on){var w=el("label","display:block;margin:6px 0;font-size:13px"),s=el("span","",label+": "+val+"%"),r=el("input","width:100%");r.type="range";r.min=min;r.max=max;r.value=val;r.oninput=function(){s.textContent=label+": "+r.value+"%";on(+r.value)};w.append(s,r);return w}
+function crop(file){return new Promise(function(ok){
+ var url=URL.createObjectURL(file),img=new Image();
+ img.onerror=function(){URL.revokeObjectURL(url);ok(file)};
+ img.onload=function(){
+  var W=img.naturalWidth,H=img.naturalHeight,st={w:100,h:100,px:50,py:50};
+  var o=el("div","position:fixed;inset:0;z-index:2147483100;background:#0b1020;color:#fff;display:flex;flex-direction:column;font-family:system-ui,sans-serif;padding:calc(8px + env(safe-area-inset-top,0px)) 12px calc(8px + env(safe-area-inset-bottom,0px));overflow:auto");
+  var cv=el("canvas","display:block;margin:0 auto;max-width:100%;max-height:42vh;background:#000;border-radius:10px");
+  function box(){var sw=W*st.w/100,sh=H*st.h/100;return{sw:sw,sh:sh,sx:(W-sw)*st.px/100,sy:(H-sh)*st.py/100}}
+  function draw(){var b=box(),k=Math.min(1,900/Math.max(b.sw,b.sh));cv.width=Math.max(1,Math.round(b.sw*k));cv.height=Math.max(1,Math.round(b.sh*k));cv.getContext("2d").drawImage(img,b.sx,b.sy,b.sw,b.sh,0,0,cv.width,cv.height)}
+  function done(r){o.remove();URL.revokeObjectURL(url);ok(r)}
+  var bs="flex:1;padding:12px;border:0;border-radius:10px;font-weight:800;font-size:15px;";
+  var use=el("button",bs+"background:#FFB020;color:#12183A","Usar recorte"),orig=el("button",bs+"background:#eef0f6;color:#12183A","Original"),can=el("button",bs+"background:#8a2b2b;color:#fff","Cancelar");
+  use.onclick=function(){if(st.w==100&&st.h==100)return done(file);var b=box(),k=Math.min(1,2560/Math.max(b.sw,b.sh)),c=el("canvas");c.width=Math.max(1,Math.round(b.sw*k));c.height=Math.max(1,Math.round(b.sh*k));c.getContext("2d").drawImage(img,b.sx,b.sy,b.sw,b.sh,0,0,c.width,c.height);c.toBlob(function(bl){done(bl?new File([bl],(file.name||"foto").replace(/\.\w+$/,"")+"-recorte.jpg",{type:"image/jpeg"}):file)},"image/jpeg",.92)};
+  orig.onclick=function(){done(file)};can.onclick=function(){done(null)};
+  o.append(el("div","font-weight:800;font-size:17px;padding:8px 0","✂ Recortar foto"),cv,
+   slider("Largura",10,100,100,function(v){st.w=v;draw()}),slider("Altura",10,100,100,function(v){st.h=v;draw()}),
+   slider("Posição horizontal",0,100,50,function(v){st.px=v;draw()}),slider("Posição vertical",0,100,50,function(v){st.py=v;draw()}));
+  var row=el("div","display:flex;gap:8px;margin-top:10px");row.append(use,orig,can);o.append(row);document.body.append(o);draw()};
+ img.src=url})}
+document.addEventListener("change",function(e){
+ var t=e.target;if(!t||t.tagName!=="INPUT"||t.type!=="file"||t.__bgc)return;
+ if((t.getAttribute("accept")||"").indexOf("image")<0)return;
+ var fl=[].slice.call(t.files||[]);if(!fl.some(isImg))return;
+ e.stopImmediatePropagation();
+ (async function(){var out=[];for(var i=0;i<fl.length;i++){if(isImg(fl[i])){var r=await crop(fl[i]);if(r)out.push(r)}else out.push(fl[i])}
+  if(!out.length){try{t.value=""}catch(x){}return}
+  var d=new DataTransfer();out.forEach(function(f){d.items.add(f)});t.__bgc=1;t.files=d.files;t.dispatchEvent(new Event("change",{bubbles:true}));t.__bgc=0})()
+},true);
+})();
+</script>
   <script>/* BENGU 4.3: actualização automática (cache / service worker) */
 (function(){
-var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.7.4_14.10.2026",KEY="bg_build",TRY="bg_build_try";
+var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.8.0_14.10.2026",KEY="bg_build",TRY="bg_build_try";
 function wipe(){var p=[];try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(n){return caches.delete(n)}))}))}catch(e){}
  try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}))}catch(e){}
  return Promise.all(p).catch(function(){})}

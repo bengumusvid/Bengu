@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.4.0_13.10.2026" />
+    <meta name="bengu-build" content="4.6.0_14.10.2026" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <title>Bengu</title>
@@ -8499,7 +8499,7 @@ function detail(t){var me=uid(),own=!!(me&&t.owner_id==me),again=function(){deta
   var tb=h("table",{style:"width:100%;border-collapse:collapse;font-size:12px;min-width:340px"},[h("tr",{style:"text-align:left;opacity:.7"},cols.map(function(c){return h("th",{style:"padding:4px 2px"},c)}))].concat(rows.map(function(s,i){
    var cells=[i+1,h("span",{style:"display:inline-flex;align-items:center;gap:6px"},[av(s.t.logo_url,s.t.name,22),s.t.name]),h("b",{},s.p),s.j,s.v].concat(P.draw?[s.e]:[]).concat([s.d,s.gm,s.gs,s.gm-s.gs,s.fc]);
    return h("tr",{style:"border-top:1px solid #2f6b45"},cells.map(function(c){return h("td",{style:"padding:5px 2px"},c)}))})));
-  var out=[HD(P.ico+" "+t.name),h("div",{style:DIM},P.nome+" · "+ph(t)),h("div",{},[btn("📤 Partilhar",function(){var u2=location.origin+location.pathname,tx=P.ico+" "+t.name+" · Bengu";if(navigator.share)navigator.share({title:"Bengu",text:tx,url:u2}).catch(function(){});else if(navigator.clipboard)navigator.clipboard.writeText(tx+" "+u2).then(function(){msg("Ligação copiada.",1)})}),own?btn("🗑 Apagar torneio",function(){if(!confirm("Apagar este torneio e todas as equipas, jogos e jogadores? Não pode ser desfeito."))return;api("rpc/delete_tournament","POST",{p_tournament:String(t.id)}).then(function(){dots();list()}).catch(fail)}):""]),t.description?h("p",{},t.description):"",h("div",{style:CARD},[h("b",{},"Tabela classificativa"),rows.length?h("div",{style:"overflow-x:auto"},tb):h("p",{style:DIM},"Sem equipas ainda."),h("div",{style:DIM+";margin-top:6px"},"Pontos: vitória "+P.w+(P.draw?" · empate "+P.dr:"")+" · derrota "+P.l+". Desempate: diferença e "+(P.draw?"golos":"pontos")+" marcados.")])];
+  var out=[HD(P.ico+" "+t.name),h("div",{style:DIM},P.nome+" · "+ph(t)),h("div",{},[btn("📤 Partilhar",function(){var u2=location.origin+location.pathname,tx=P.ico+" "+t.name+" · Bengu";if(navigator.share)navigator.share({title:"Bengu",text:tx,url:u2}).catch(function(){});else if(navigator.clipboard)navigator.clipboard.writeText(tx+" "+u2).then(function(){msg("Ligação copiada.",1)})}),(own||window.__bgAdm===!0)?btn("🗑 Apagar torneio",function(){if(!confirm("Apagar este torneio e todas as equipas, jogos e jogadores? Não pode ser desfeito."))return;api("rpc/delete_tournament","POST",{p_tournament:String(t.id)}).then(function(){dots();list()}).catch(fail)}):""]),t.description?h("p",{},t.description):"",h("div",{style:CARD},[h("b",{},"Tabela classificativa"),rows.length?h("div",{style:"overflow-x:auto"},tb):h("p",{style:DIM},"Sem equipas ainda."),h("div",{style:DIM+";margin-top:6px"},"Pontos: vitória "+P.w+(P.draw?" · empate "+P.dr:"")+" · derrota "+P.l+". Desempate: diferença e "+(P.draw?"golos":"pontos")+" marcados.")])];
   /* jogos: um a um */
   var mc=[h("b",{},"Jogos")];if(!M.length)mc.push(h("p",{style:DIM},"Sem jogos marcados."));
   M.forEach(function(m){var H=tm[m.home_id],A=tm[m.away_id];if(!H||!A)return;var has=m.home_score!=null&&m.away_score!=null,wo=m.home_wo||m.away_wo,hs=num(has?m.home_score:""),as=num(has?m.away_score:"");
@@ -8635,7 +8635,7 @@ window.addEventListener("userscreenshot",function(){on(2500)});
 </script>
   <script>/* BENGU 4.3: actualização automática (cache / service worker) */
 (function(){
-var B="4.3.0_13.10.2026",KEY="bg_build",TRY="bg_build_try";
+var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.6.0_14.10.2026",KEY="bg_build",TRY="bg_build_try";
 function wipe(){var p=[];try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(n){return caches.delete(n)}))}))}catch(e){}
  try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}))}catch(e){}
  return Promise.all(p).catch(function(){})}

@@ -3246,8 +3246,6 @@ function J_() {
       ["videos", x("videos"), zo],
       ["music", x("music"), Mc],
       ["photos", x("photos"), Es],
-      ["messages", x("messages"), gg],
-      ["profile", x("profile"), hf],
     ];
   return $o(
     u.jsxs("div", {
@@ -3348,6 +3346,55 @@ function J_() {
                 }),
               ],
             }),
+        h &&
+          X !== "chat" &&
+          u.jsxs("div", {
+            className: "sticky z-30 flex items-center gap-1 px-4 py-1.5",
+            style: { top: 56, background: k.card, borderBottom: `1px solid ${k.line}` },
+            children: [
+              u.jsxs("button", {
+                onClick: () => {
+                  (Ie("me"), at("profile"));
+                },
+                "aria-label": h.name,
+                className: "flex-1 min-w-0 text-left py-1",
+                children: [
+                  u.jsx("div", { className: "text-sm font-bold truncate", style: { color: k.ink }, children: h.name }),
+                  u.jsx("div", { className: "text-[11px] truncate", style: { color: k.mute }, children: "@" + h.handle }),
+                ],
+              }),
+              u.jsx("button", {
+                onClick: () => {
+                  (Ie("me"), at("profile"));
+                },
+                "aria-label": x("profile"),
+                className: "p-2",
+                style: { color: X === "profile" ? k.ink : k.mute },
+                children: u.jsx(hf, { size: 23, strokeWidth: X === "profile" ? 2.6 : 1.8 }),
+              }),
+              u.jsxs("button", {
+                onClick: () => {
+                  if ("Notification" in window && Notification.permission === "default")
+                    try {
+                      Notification.requestPermission();
+                    } catch {}
+                  at("messages");
+                },
+                "aria-label": x("messages"),
+                className: "p-2 relative",
+                style: { color: X === "messages" ? k.ink : k.mute },
+                children: [
+                  u.jsx(gg, { size: 23, strokeWidth: X === "messages" ? 2.6 : 1.8 }),
+                  z > 0 &&
+                    u.jsx("span", {
+                      className: "absolute flex items-center justify-center rounded-full text-[10px] font-bold",
+                      style: { top: 2, right: 0, minWidth: 16, height: 16, background: k.like, color: "#fff", padding: "0 4px" },
+                      children: z > 9 ? "9+" : z,
+                    }),
+                ],
+              }),
+            ],
+          }),
             Te &&
               u.jsxs("div", {
                 className: "px-4 py-2",
@@ -5534,6 +5581,24 @@ function Ad_({ onBack: e, say: t }) {
       t(r.error ? "Erro" : "Apagado");
       w();
     },
+    warn = async (uid, pid) => {
+      const m = window.prompt("Mensagem de aviso para o utilizador:", pid ? "A sua publicação foi denunciada e viola as regras do Bengu. Se se repetir, a conta poderá ser bloqueada." : "Aviso do Bengu: respeite as regras da comunidade.");
+      if (!m || !m.trim()) return;
+      const r = await me.rpc("admin_warn_user", { uid, msg: m.trim(), pid: pid == null ? null : String(pid) });
+      t(r.error ? "Erro: falta correr o SQL 4.9.1" : "Aviso enviado");
+    },
+    blockPost = async (pid, flag) => {
+      if (!window.confirm(flag ? "Bloquear este conteúdo? Deixa de aparecer para os outros e o autor é avisado." : "Desbloquear este conteúdo?")) return;
+      const r = await me.rpc("admin_block_post", { pid: String(pid), flag });
+      t(r.error ? "Erro: falta correr o SQL 4.9.1" : flag ? "Conteúdo bloqueado" : "Conteúdo desbloqueado");
+      w();
+    },
+    delUser = async (uid) => {
+      if (!window.confirm("Apagar este perfil e todas as suas publicações? Não pode ser desfeito.")) return;
+      const r = await me.rpc("admin_delete_user", { uid });
+      t(r.error ? "Erro: " + (r.error.message || "falta correr o SQL 4.9.1") : "Perfil apagado");
+      w();
+    },
     ban = async (i, b) => {
       if (
         !window.confirm(
@@ -5641,6 +5706,8 @@ function Ad_({ onBack: e, say: t }) {
                   },
                   children: r.banned ? "Desbloquear" : "Bloquear",
                 }),
+                u.jsx("button", { onClick: () => warn(r.id, null), className: btn, style: { background: k.paper, color: k.ink }, children: "Avisar" }),
+                u.jsx("button", { onClick: () => delUser(r.id), className: btn, style: { background: k.paper, color: k.like }, children: "Apagar perfil" }),
               ],
             },
             r.id,
@@ -5684,7 +5751,7 @@ function Ad_({ onBack: e, say: t }) {
                     children: (r.body || "(sem texto)").slice(0, 200),
                   }),
                   u.jsxs("div", {
-                    className: "flex gap-2",
+                    className: "flex gap-2 flex-wrap",
                     children: [
                       u.jsx("button", {
                         onClick: () => del(r.post_id),
@@ -5698,6 +5765,10 @@ function Ad_({ onBack: e, say: t }) {
                         style: { background: k.paper, color: k.like },
                         children: "Bloquear autor",
                       }),
+                      u.jsx("button", { onClick: () => warn(r.author_id, r.post_id), className: btn, style: { background: k.saffron, color: k.onAccent }, children: "Avisar autor" }),
+                      u.jsx("button", { onClick: () => blockPost(r.post_id, !0), className: btn, style: { background: k.paper, color: k.like }, children: "Bloquear conteúdo" }),
+                      u.jsx("button", { onClick: () => blockPost(r.post_id, !1), className: btn, style: { background: k.paper, color: k.ink }, children: "Desbloquear conteúdo" }),
+                      u.jsx("button", { onClick: () => delUser(r.author_id), className: btn, style: { background: k.like, color: "#fff" }, children: "Apagar perfil" }),
                     ],
                   }),
                 ],
@@ -9149,6 +9220,23 @@ function check(){fetch(location.pathname+"?_="+Date.now(),{cache:"no-store",head
 setTimeout(check,4000);setInterval(check,120000);
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")check()});
 try{if(navigator.serviceWorker){navigator.serviceWorker.getRegistration().then(function(r){if(r)r.update()}).catch(function(){});var f=0;navigator.serviceWorker.addEventListener("controllerchange",function(){if(f||!navigator.serviceWorker.controller)return;f=1;try{if(sessionStorage.getItem("bg_cc"))return;sessionStorage.setItem("bg_cc","1")}catch(e){}location.reload()})}}catch(e){}
+})();
+</script>
+  <script>/* BENGU 4.9.1: avisos do administrador */
+(function(){
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",shown=false;
+function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
+function api(p,m,b){return fetch(U+"/rest/v1/"+p,{method:m||"GET",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/json"},body:b?JSON.stringify(b):undefined}).then(function(r){if(!r.ok)throw 0;return r.status==204?[]:r.json()})}
+function check(){if(shown||!tok()||document.visibilityState!=="visible")return;
+ api("bengu_warnings?select=id,message,created_at&seen=eq.false&order=created_at").then(function(a){if(!a||!a.length||shown)return;shown=true;
+  var o=document.createElement("div");o.style.cssText="position:fixed;inset:0;z-index:2147482000;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px";
+  var c=document.createElement("div");c.style.cssText="background:#fff;color:#12183A;border-radius:16px;max-width:380px;width:100%;padding:20px;font-family:system-ui,sans-serif;max-height:80vh;overflow:auto";
+  var t=document.createElement("div");t.textContent="⚠️ Aviso do administrador";t.style.cssText="font-weight:800;font-size:18px;margin-bottom:10px";c.appendChild(t);
+  a.forEach(function(w){var p=document.createElement("p");p.textContent=w.message;p.style.cssText="margin:8px 0;line-height:1.4";c.appendChild(p)});
+  var b=document.createElement("button");b.textContent="Entendi";b.style.cssText="margin-top:12px;width:100%;padding:12px;border-radius:999px;background:#FFB020;color:#12183A;font-weight:800";
+  b.onclick=function(){Promise.all(a.map(function(w){return api("bengu_warnings?id=eq."+w.id,"PATCH",{seen:true})})).catch(function(){});o.remove();shown=false};
+  c.appendChild(b);o.appendChild(c);document.body.appendChild(o)}).catch(function(){})}
+setTimeout(check,5000);setInterval(check,60000);
 })();
 </script>
 </body>

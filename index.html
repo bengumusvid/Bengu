@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.6.0_14.10.2026" />
+    <meta name="bengu-build" content="4.7.1_14.10.2026" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <title>Bengu</title>
@@ -6379,11 +6379,24 @@ async function bgTr(text) {
   const r = await fetch("https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text.slice(0, 450)) + "&langpair=autodetect|" + to);
   const j = await r.json(); return j.responseData.translatedText;
 }
-function BgNewsIcon({ size = 22, strokeWidth = 2 }) {
-  const h = B.createElement;
-  return h("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth, strokeLinecap: "round", strokeLinejoin: "round" },
-    h("path", { d: "M4 4h13a2 2 0 0 1 2 2v13a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2V4z" }), h("path", { d: "M19 8h2v10a2 2 0 0 1-2 2" }),
-    h("path", { d: "M8 8h6M8 12h6M8 16h4" }));
+function BgNewsIcon({ size = 22 }) {
+  const h = B.createElement, [dot, setDot] = B.useState(!!window.__bgNewsDot);
+  B.useEffect(() => {
+    const f = () => setDot(!!window.__bgNewsDot);
+    window.addEventListener("bgnewsdot", f);
+    return () => window.removeEventListener("bgnewsdot", f);
+  }, []);
+  return h("span", { style: { position: "relative", display: "inline-flex", width: size, height: size } },
+    h("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", strokeLinecap: "round", strokeLinejoin: "round" },
+      h("rect", { x: 3, y: 3, width: 18, height: 18, rx: 2, fill: "#FFF3C4", stroke: "#8D6E63", strokeWidth: 1.4 }),
+      h("path", { d: "M14 8h5M14 11h5M14 14h5", stroke: "#8D6E63", strokeWidth: 1.2 }),
+      h("g", { className: "bgn-front" },
+        h("rect", { x: 3, y: 3, width: 18, height: 18, rx: 2, fill: "#FFFFFF", stroke: "#1E88E5", strokeWidth: 1.4 }),
+        h("rect", { x: 5, y: 5, width: 14, height: 3, rx: 0.8, fill: "#E53935" }),
+        h("rect", { x: 5, y: 10, width: 6, height: 5, rx: 0.8, fill: "#FDD835" }),
+        h("path", { d: "M13 10.8h6M13 13.2h6", stroke: "#43A047", strokeWidth: 1.3 }),
+        h("path", { d: "M5 17.5h14M5 19.5h9", stroke: "#1E88E5", strokeWidth: 1.3 }))),
+    dot ? h("span", { style: { position: "absolute", top: -3, right: -4, width: 9, height: 9, borderRadius: "50%", background: "#E53935", border: "2px solid #fff", boxSizing: "content-box" } }) : null);
 }
 function BgAcc({ title, children }) {
   const h = B.createElement, [o, setO] = B.useState(false), cur = (rg.find(([c]) => c === Tu.lang) || [0, ""])[1];
@@ -8578,12 +8591,68 @@ setInterval(listen,3000);
 /* overlay genérico */
 function sheet(title){var o=h("div",{style:"position:fixed;inset:0;z-index:99998;background:#F2F4F8;color:#12183A;overflow:auto;font-family:system-ui,sans-serif;padding-bottom:40px"}),body=h("div",{style:"padding:0 14px"});
  o.append(h("div",{style:"position:sticky;top:0;background:#12183A;color:#fff;padding:12px 14px;padding-top:calc(12px + env(safe-area-inset-top,0px));display:flex;align-items:center;gap:12px;font-weight:800;font-size:18px"},[h("button",{style:"background:none;border:0;color:#fff;font-size:22px",on:{click:function(){o.remove()}}},"←"),title]),body);document.body.append(o);return body}
-/* notícias do mundo */
-var FEEDS=[["Mundo","https://news.google.com/rss/headlines/section/topic/WORLD?hl=pt-PT&gl=PT&ceid=PT:pt-150"],["Moçambique","https://news.google.com/rss/search?q=Mo%C3%A7ambique&hl=pt-PT&gl=MZ&ceid=MZ:pt-150"],["África","https://news.google.com/rss/search?q=%C3%81frica&hl=pt-PT&gl=PT&ceid=PT:pt-150"],["Desporto","https://news.google.com/rss/headlines/section/topic/SPORTS?hl=pt-PT&gl=PT&ceid=PT:pt-150"]];
-window.bengu_news_open=function(){var b=sheet("📰 Notícias"),tabs=h("div",{style:"display:flex;gap:8px;overflow-x:auto;padding:10px 0"}),list=h("div");b.append(tabs,list);
- function load(i){list.replaceChildren(h("p",{},"A carregar…"));fetch("https://api.rss2json.com/v1/api.json?rss_url="+encodeURIComponent(FEEDS[i][1])).then(function(r){return r.json()}).then(function(j){if(!j.items||!j.items.length)throw 0;
-  list.replaceChildren.apply(list,j.items.slice(0,30).map(function(it){return h("a",{href:it.link,target:"_blank",rel:"noopener",style:"display:block;background:#fff;border-radius:12px;padding:12px;margin-bottom:8px;color:#12183A;text-decoration:none"},[h("div",{style:"font-weight:700;line-height:1.3"},it.title),h("div",{style:"font-size:12px;opacity:.65;margin-top:4px"},(it.pubDate||"").slice(0,16))])}))}).catch(function(){list.replaceChildren(h("p",{},"Não foi possível carregar as notícias agora. Tente de novo."))})}
- FEEDS.forEach(function(f,i){tabs.append(h("button",{style:"flex:none;padding:7px 14px;border:0;border-radius:999px;background:#12183A;color:#fff;font-weight:700",on:{click:function(){load(i)}}},f[0]))});load(0)};
+/* BENGU 4.7: notícias (Mundo, África, Moçambique, Desporto) com publicação, denúncia e apagar */
+(function(){var st=document.createElement("style");st.textContent="@keyframes bgnOpenLR{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}.bgnews-open{animation:bgnOpenLR .8s ease-out both}@keyframes bgnUnfold{0%{transform:scaleX(.15)}14%,100%{transform:scaleX(1)}}.bgn-front{transform-box:view-box;transform-origin:3px 12px;animation:bgnUnfold 6s ease-out infinite}";document.head.append(st)})();
+var FEEDS=[
+ {k:"mundo",n:"Mundo",u:"https://news.google.com/rss/headlines/section/topic/WORLD?hl=pt-PT&gl=PT&ceid=PT:pt-150"},
+ {k:"africa",n:"África",u:"https://news.google.com/rss/search?q=%C3%81frica&hl=pt-PT&gl=PT&ceid=PT:pt-150"},
+ {k:"mocambique",n:"Moçambique",c:1,u:"https://news.google.com/rss/search?q=Mo%C3%A7ambique&hl=pt-PT&gl=MZ&ceid=MZ:pt-150"},
+ {k:"desporto",n:"Desporto",c:1,u:"https://news.google.com/rss/headlines/section/topic/SPORTS?hl=pt-PT&gl=PT&ceid=PT:pt-150"}];
+var NC={},NSK="bg_news_seen";
+function seenGet(){try{return JSON.parse(localStorage.getItem(NSK))||{}}catch(e){return{}}}
+function seenSet(k,t){var o=seenGet();o[k]=t;try{localStorage.setItem(NSK,JSON.stringify(o))}catch(e){}}
+function rssItems(f){return fetch("https://api.rss2json.com/v1/api.json?rss_url="+encodeURIComponent(f.u)).then(function(r){return r.json()}).then(function(j){return(j.items||[]).slice(0,30).map(function(it){return{title:it.title,link:it.link,t:Date.parse(String(it.pubDate||"").replace(" ","T")+"Z")||0}})}).catch(function(){return[]})}
+function comItems(f){if(!f.c)return Promise.resolve([]);return api("bengu_news?select=*&section=eq."+f.k+"&order=created_at.desc&limit=40").catch(function(){return[]})}
+function loadTab(f,force){var c=NC[f.k];if(c&&!force)return Promise.resolve(c);return Promise.all([rssItems(f),comItems(f)]).then(function(r){var lt=0;r[0].forEach(function(x){lt=Math.max(lt,x.t)});r[1].forEach(function(x){lt=Math.max(lt,Date.parse(x.created_at)||0)});return NC[f.k]={rss:r[0],com:r[1],latest:lt}})}
+function isNew(f){var c=NC[f.k];if(!c||!c.latest)return false;var s=seenGet()[f.k];return!s||c.latest>s}
+function dotState(){window.__bgNewsDot=FEEDS.some(isNew);try{window.dispatchEvent(new Event("bgnewsdot"))}catch(e){}}
+function refreshDots(){return Promise.all(FEEDS.map(function(f){return loadTab(f,true)})).then(dotState).catch(function(){})}
+setTimeout(refreshDots,6000);setInterval(function(){if(document.visibilityState==="visible")refreshDots()},600000);
+function shareNews(t,x,u){var d={title:"Bengu",text:t+(x?"\n"+x:""),url:u};if(navigator.share){navigator.share(d).catch(function(){});return}var tx=d.text+" "+u;if(navigator.clipboard)navigator.clipboard.writeText(tx).then(function(){alert("Ligação copiada.")}).catch(function(){prompt("Copie:",tx)});else prompt("Copie:",tx)}
+function nmsg(e){var t=(e&&e.message)||"Erro.";if(/schema cache|does not exist|Could not find/i.test(t))t="Falta executar o SQL 4.7 no Supabase (SQL Editor).";return t}
+function when(s){try{return new Date(s).toLocaleString("pt-PT",{dateStyle:"short",timeStyle:"short"})}catch(e){return""}}
+function shrink(file){return new Promise(function(ok,no){var img=new Image(),u=URL.createObjectURL(file);img.onload=function(){var m=1280,w=img.width,hh=img.height,s=Math.min(1,m/Math.max(w,hh)),c=document.createElement("canvas");c.width=Math.round(w*s);c.height=Math.round(hh*s);c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(function(b){b?ok(b):no(new Error("Foto inválida."))},"image/jpeg",.82)};img.onerror=function(){no(new Error("Foto inválida."))};img.src=u})}
+function addNews(f,done){var me=uid();if(!me){alert("Entre na sua conta para publicar.");return}
+ var b=sheet("➕ Nova notícia · "+f.n),blob=null,inp=function(ph){return h("input",{placeholder:ph,style:"width:100%;box-sizing:border-box;padding:10px;border:1px solid #cfd4e3;border-radius:10px;margin:6px 0;font:inherit"})},ti=inp("Título da notícia"),tx=h("textarea",{placeholder:"Texto da notícia (opcional)",rows:"5",style:"width:100%;box-sizing:border-box;padding:10px;border:1px solid #cfd4e3;border-radius:10px;margin:6px 0;font:inherit"}),
+ pv=h("img",{style:"display:none;max-width:100%;border-radius:10px;margin-top:8px"}),
+ box=h("div",{contenteditable:"true",style:"min-height:64px;border:2px dashed #1E88E5;border-radius:12px;padding:10px;background:#fff;color:#6B7391;margin:6px 0"},"📋 Toque aqui e cole a foto da notícia"),
+ fi=h("input",{type:"file",accept:"image/*",style:"margin:6px 0"}),go=h("button",{style:"width:100%;padding:12px;border:0;border-radius:12px;background:#E53935;color:#fff;font-weight:800;font-size:16px;margin-top:10px"},"Publicar");
+ function setPhoto(fl){shrink(fl).then(function(bl){blob=bl;pv.src=URL.createObjectURL(bl);pv.style.display="block"}).catch(function(e){alert(e.message)})}
+ box.addEventListener("beforeinput",function(e){e.preventDefault()});
+ box.addEventListener("paste",function(e){var its=(e.clipboardData||{}).items||[];for(var i=0;i<its.length;i++)if(its[i].type.indexOf("image")==0){e.preventDefault();setPhoto(its[i].getAsFile());return}e.preventDefault();alert("Não há nenhuma foto copiada. Copie a foto e cole aqui, ou escolha um ficheiro abaixo.")});
+ box.addEventListener("drop",function(e){var fl=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];e.preventDefault();if(fl&&fl.type.indexOf("image")==0)setPhoto(fl)});
+ fi.addEventListener("change",function(){if(fi.files[0])setPhoto(fi.files[0])});
+ go.addEventListener("click",function(){var t=ti.value.trim();if(t.length<5){alert("Escreva um título com pelo menos 5 letras.");return}go.disabled=true;go.textContent="A publicar…";
+  var pth=me+"/"+Date.now()+".jpg",up=blob?fetch(U+"/storage/v1/object/news-media/"+pth,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"image/jpeg"},body:blob}).then(function(r){if(!r.ok)throw new Error("Não foi possível enviar a foto. Execute o SQL 4.7 na base de dados.");return U+"/storage/v1/object/public/news-media/"+pth}):Promise.resolve(null);
+  up.then(function(pu){var o={section:f.k,author_id:me,title:t,body:tx.value.trim()||null};if(pu)o.photo_url=pu;return api("bengu_news","POST",o)}).then(function(){b.parentNode.remove();seenSet(f.k,Date.now()+1000);done()}).catch(function(e){alert(nmsg(e));go.disabled=false;go.textContent="Publicar"})});
+ b.append(h("p",{style:"margin:10px 0 4px;font-size:13px;opacity:.7"},"Publique só informação verdadeira. Notícias falsas podem ser denunciadas e apagadas pelo administrador."),ti,tx,box,fi,pv,go)}
+window.bengu_news_open=function(){var b=sheet("📰 Notícias"),o=b.parentNode,admin=false,cur=0;o.classList.add("bgnews-open");o.style.background="#FBF6E9";
+ var mast=h("div",{style:"margin:10px 0 0;padding:10px;border-radius:12px;text-align:center;color:#fff;font:900 22px Georgia,serif;letter-spacing:3px;background:linear-gradient(90deg,#E53935,#FB8C00,#FDD835 50%,#43A047,#1E88E5)"},"BENGU NOTÍCIAS"),
+ tabs=h("div",{style:"display:flex;gap:8px;overflow-x:auto;padding:12px 0"}),list=h("div");b.append(mast,tabs,list);
+ function drawTabs(){tabs.replaceChildren.apply(tabs,FEEDS.map(function(f,i){var on=i==cur,bt=h("button",{style:"flex:none;position:relative;padding:8px 16px;border:2px solid #12183A;border-radius:999px;font-weight:800;background:"+(on?"#12183A":"#fff")+";color:"+(on?"#fff":"#12183A")},f.n);if(!on&&isNew(f))bt.append(h("span",{style:"position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:#E53935;border:2px solid #FBF6E9"}));bt.addEventListener("click",function(){show(i)});return bt}))}
+ function card(n,f){var mine=uid()&&n.author_id==uid(),rep=n.reports||0,c=h("div",{style:"background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;border-left:5px solid "+(rep?"#E53935":"#1E88E5")});
+  if(n.photo_url&&String(n.photo_url).indexOf(U+"/storage/")==0)c.append(h("img",{src:n.photo_url,style:"width:100%;border-radius:10px;margin-bottom:8px",loading:"lazy"}));
+  c.append(h("div",{style:"font-weight:800;line-height:1.3"},n.title));if(n.body)c.append(h("p",{style:"margin:6px 0;white-space:pre-wrap"},n.body));
+  var au=h("div",{style:"font-size:12px;opacity:.65"},"Membro · "+when(n.created_at));c.append(au);
+  api("profiles?select=name&id=eq."+n.author_id).then(function(r){if(r&&r[0]&&r[0].name)au.textContent=r[0].name+" · "+when(n.created_at)}).catch(function(){});
+  var bar=h("div",{style:"display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"}),sb=function(t,fn,col){var x=h("button",{style:"padding:6px 12px;border:0;border-radius:8px;font-weight:700;background:"+(col||"#eef0f6")+";color:"+(col?"#fff":"#12183A")},t);x.addEventListener("click",fn);return x};
+  bar.append(sb("📤 Partilhar",function(){shareNews(n.title,n.body?n.body.slice(0,200):"",location.origin+location.pathname)}));
+  if(rep)bar.append(h("span",{style:"color:#E53935;font-weight:800;align-self:center"},"⚠ "+rep+" denúncia"+(rep>1?"s":"")));
+  if(uid()&&!mine)bar.append(sb("🚩 Denunciar informação falsa",function(){var r=prompt("Porque é falsa esta notícia?","Informação falsa");if(r===null)return;api("bengu_news_reports","POST",{news_id:n.id,reporter_id:uid(),reason:(r||"Informação falsa").slice(0,300)}).then(function(){alert("Denúncia enviada ao administrador.");show(cur)}).catch(function(e){alert(/duplicate|unique/i.test((e&&e.message)||"")?"Já denunciou esta notícia.":nmsg(e))})}));
+  if(admin&&rep)bar.append(sb("Ver denúncias",function(){api("bengu_news_reports?select=reason,created_at&news_id=eq."+n.id+"&order=created_at").then(function(r){alert(r.map(function(x){return"• "+x.reason}).join("\n")||"Sem detalhes.")}).catch(function(e){alert(nmsg(e))})}));
+  if(admin||(mine&&!rep))bar.append(sb("🗑 Apagar",function(){if(!confirm("Apagar esta notícia? Não pode ser desfeito."))return;api("bengu_news?id=eq."+n.id,"DELETE").then(function(){delete NC[f.k];show(cur)}).catch(function(e){alert(nmsg(e))})},"#B71C1C"));
+  else if(mine&&rep)bar.append(h("span",{style:"font-size:12px;opacity:.7;align-self:center"},"Denunciada: só o administrador pode apagar."));
+  c.append(bar);return c}
+ function show(i){cur=i;drawTabs();var f=FEEDS[i];list.replaceChildren(h("p",{},"A carregar…"));
+  loadTab(f,true).then(function(c){seenSet(f.k,c.latest||Date.now());dotState();drawTabs();var out=[];
+   if(f.c){var ad=h("button",{style:"width:100%;padding:12px;border:0;border-radius:12px;background:#43A047;color:#fff;font-weight:800;font-size:16px;margin-bottom:10px"},"➕ Adicionar notícia");ad.addEventListener("click",function(){addNews(f,function(){show(cur)})});out.push(ad);
+    c.com.forEach(function(n){out.push(card(n,f))});if(!c.com.length)out.push(h("p",{style:"opacity:.7"},"Ainda não há notícias publicadas por membros."));
+    out.push(h("div",{style:"font-weight:800;margin:14px 0 8px"},"Outras notícias"))}
+   c.rss.forEach(function(it){var sh=h("button",{style:"margin-top:6px;padding:5px 12px;border:0;border-radius:8px;font-weight:700;background:#eef0f6;color:#12183A"},"📤 Partilhar");sh.addEventListener("click",function(){shareNews(it.title,"",it.link)});out.push(h("div",{style:"background:#fff;border-radius:12px;padding:12px;margin-bottom:8px"},[h("a",{href:it.link,target:"_blank",rel:"noopener",style:"display:block;color:#12183A;text-decoration:none"},[h("div",{style:"font-weight:700;line-height:1.3"},it.title),h("div",{style:"font-size:12px;opacity:.65;margin-top:4px"},it.t?when(it.t):"")]),sh]))});
+   if(!c.rss.length&&!f.c)out.push(h("p",{},"Não foi possível carregar as notícias agora. Tente de novo."));
+   list.replaceChildren.apply(list,out)}).catch(function(){list.replaceChildren(h("p",{},"Não foi possível carregar as notícias agora. Tente de novo."))})}
+ drawTabs();show(0);refreshDots().then(drawTabs);
+ if(tok())api("rpc/is_admin","POST",{}).then(function(a){if(a===true){admin=true;show(cur)}}).catch(function(){})};
 /* notificações (preferências guardadas neste aparelho) */
 var CATS=[["Comentários","app"],["Identificações","pes"],["Lembretes","pes"],["Mais atividade sobre ti","pes"],["Atualizações de amigos","pes"],["Pedidos de amizade","pes"],["Pessoas que talvez conheças","pes"],["Aniversários","pes"],["Grupos","pes"],["Reels","pes"],["Eventos","pes"],["Páginas que geres","pes"],["Páginas que segues","off"],["Marketplace","pes"],["Angariações de fundos e situações críticas","pes"],["Lembretes sobre eleições","app"],["Mensagens","pes"],["Memórias","pes"],["Outras notificações","pes"]];
 var DEF={pes:["push","email","sms"],app:["app"],off:[]},CH={push:"Push",email:"E-mail",sms:"SMS"};
@@ -8635,7 +8704,7 @@ window.addEventListener("userscreenshot",function(){on(2500)});
 </script>
   <script>/* BENGU 4.3: actualização automática (cache / service worker) */
 (function(){
-var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.6.0_14.10.2026",KEY="bg_build",TRY="bg_build_try";
+var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.7.1_14.10.2026",KEY="bg_build",TRY="bg_build_try";
 function wipe(){var p=[];try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(n){return caches.delete(n)}))}))}catch(e){}
  try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}))}catch(e){}
  return Promise.all(p).catch(function(){})}

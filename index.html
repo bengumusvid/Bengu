@@ -8780,7 +8780,12 @@ function feed(){var me=uid();if(!me)return Promise.resolve([]);
   S(["chat_requests?select=*&or=(target_id.eq."+me+",requester_id.eq."+me+")&order=created_at.desc&limit=30"]),
   S(["competitions?select=id,title,category,starts_at,created_at&status=eq.open&order=created_at.desc&limit=15","competitions?select=id,title,category,starts_at&status=eq.open&order=starts_at.desc&limit=15"]),
   S(["tournaments?select=id,name,sport,starts_at,created_at&order=created_at.desc&limit=15","tournaments?select=id,name,sport,starts_at&order=starts_at.desc&limit=15"]),
-  S(["competition_entries?select=*&order=created_at.desc&limit=20","competition_entries?select=*&limit=20"]),
+  S(["competition_entries?select=id,competition_id,singer_id,created_at&order=created_at.desc&limit=20"]).then(function(es){
+   if(!es.length)return es;
+   var sg=es.map(function(e){return e.singer_id}).join(","),cm=Object.keys(es.reduce(function(a,e){a[e.competition_id]=1;return a},{})).join(",");
+   return Promise.all([S(["singers?select=id,user_id,stage_name&id=in.("+sg+")"]),S(["competitions?select=id,title&id=in.("+cm+")"])]).then(function(r){
+    var SM={},CM={};r[0].forEach(function(x){SM[x.id]=x});r[1].forEach(function(x){CM[x.id]=x});
+    es.forEach(function(e){var g=SM[e.singer_id]||{};e.stage_name=g.stage_name;e.user_id=g.user_id;e.ctitle=(CM[e.competition_id]||{}).title});return es})}),
   S(["tournament_teams?select=id,name,tournament_id,owner_id,created_at&order=created_at.desc&limit=20"])
  ]).then(function(R){
   var ids={};R[0].forEach(function(f){ids[f.follower_id]=1});R[2].forEach(function(q){ids[q.requester_id]=1;ids[q.target_id]=1});
@@ -8798,7 +8803,7 @@ function feed(){var me=uid();if(!me)return Promise.resolve([]);
     else if(q.requester_id==me&&q.status=="declined")out.push({t:ts(q),ic:"🚫",tx:nm(q.target_id)+" recusou o teu pedido de conversa."})});
    R[3].forEach(function(c){out.push({t:ts(c),ic:"🎤",tx:"Competição de "+(CAT[c.category]||"")+": "+c.title+" — inscrições abertas.",go:function(){window.bengu_comp_open&&window.bengu_comp_open(c.category)}})});
    R[4].forEach(function(c){out.push({t:ts(c),ic:"🏆",tx:"Torneio: "+c.name+" — inscrições abertas.",go:function(){window.bengu_fut_open&&window.bengu_fut_open(c.sport)}})});
-   R[5].forEach(function(e){var mine=e.user_id==me||e.owner_id==me;out.push({t:ts(e),ic:"📝",tx:mine?"A tua inscrição na competição foi registada.":"Nova inscrição na competição: "+(e.stage_name||e.name||"concorrente")})});
+   R[5].forEach(function(e){var mine=e.user_id==me,ct=e.ctitle?" em «"+e.ctitle+"»":"";out.push({t:ts(e),ic:"📝",tx:mine?"A tua inscrição"+ct+" foi registada.":"Nova inscrição"+ct+": "+(e.stage_name||"concorrente")})});
    R[6].forEach(function(e){out.push({t:ts(e),ic:"📝",tx:e.owner_id==me?"A tua equipa "+e.name+" foi inscrita no torneio.":"Nova inscrição no torneio: equipa "+e.name})});
    out.sort(function(a,b){return b.t-a.t});return out})})}
 

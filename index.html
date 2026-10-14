@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.7.2_14.10.2026" />
+    <meta name="bengu-build" content="4.7.3_14.10.2026" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <title>Bengu</title>
@@ -8592,7 +8592,7 @@ setInterval(listen,3000);
 function sheet(title){var o=h("div",{style:"position:fixed;inset:0;z-index:99998;background:#F2F4F8;color:#12183A;overflow:auto;font-family:system-ui,sans-serif;padding-bottom:40px"}),body=h("div",{style:"padding:0 14px"});
  o.append(h("div",{style:"position:sticky;top:0;background:#12183A;color:#fff;padding:12px 14px;padding-top:calc(12px + env(safe-area-inset-top,0px));display:flex;align-items:center;gap:12px;font-weight:800;font-size:18px"},[h("button",{style:"background:none;border:0;color:#fff;font-size:22px",on:{click:function(){o.remove()}}},"←"),title]),body);document.body.append(o);return body}
 /* BENGU 4.7: notícias (Mundo, África, Moçambique, Desporto) com publicação, denúncia e apagar */
-(function(){var st=document.createElement("style");st.textContent="@keyframes bgnOpenLR{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}.bgnews-open{animation:bgnOpenLR .8s ease-out both}@keyframes bgnUnfold{0%{transform:scaleX(.15)}14%,100%{transform:scaleX(1)}}.bgn-front{transform-box:view-box;transform-origin:3px 12px;animation:bgnUnfold 6s ease-out infinite}";document.head.append(st)})();
+(function(){var st=document.createElement("style");st.textContent="nav.fixed{box-sizing:border-box;width:100%;max-width:100vw;overflow:hidden}nav.fixed>div{display:flex;width:100%;max-width:100%;overflow:hidden!important}nav.fixed>div>button{flex:1 1 0!important;min-width:0!important;width:auto!important;padding-left:0!important;padding-right:0!important;justify-content:center}nav.fixed>div>button svg{width:min(23px,5.6vw);height:min(23px,5.6vw)}nav.fixed>div>button>span:first-child{max-width:100%}html,body{max-width:100%;overflow-x:hidden}@keyframes bgnOpenLR{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}.bgnews-open{animation:bgnOpenLR .8s ease-out both}@keyframes bgnUnfold{0%{transform:scaleX(.15)}14%,100%{transform:scaleX(1)}}.bgn-front{transform-box:view-box;transform-origin:3px 12px;animation:bgnUnfold 6s ease-out infinite}";document.head.append(st)})();
 var FEEDS=[
  {k:"mundo",n:"Mundo",u:"https://news.google.com/rss/headlines/section/topic/WORLD?hl=pt-PT&gl=PT&ceid=PT:pt-150"},
  {k:"africa",n:"África",u:"https://news.google.com/rss/search?q=%C3%81frica&hl=pt-PT&gl=PT&ceid=PT:pt-150"},
@@ -8704,7 +8704,7 @@ window.addEventListener("userscreenshot",function(){on(2500)});
 </script>
   <script>/* BENGU 4.3: actualização automática (cache / service worker) */
 (function(){
-var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.7.2_14.10.2026",KEY="bg_build",TRY="bg_build_try";
+var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.7.3_14.10.2026",KEY="bg_build",TRY="bg_build_try";
 function wipe(){var p=[];try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(n){return caches.delete(n)}))}))}catch(e){}
  try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}))}catch(e){}
  return Promise.all(p).catch(function(){})}

@@ -8814,7 +8814,9 @@ function shareComp(c,x){var url=location.origin+location.pathname+"?concurso="+c
  else prompt("Copie o link:",url)}
 
 /* ───── 4.12: cancelar concurso (também a partir da lista e do detalhe) ───── */
-function isOrg(c){try{return !!tok()&&!!c.organizer_id&&c.organizer_id==uid()}catch(e){return false}}
+var myIds=null;
+function loadMine(cb){if(!tok()){myIds={};return cb()}rpc("my_competitions").then(function(r){myIds={};r.forEach(function(c){myIds[c.id]=1})}).catch(function(){myIds={}}).then(cb)}
+function isOrg(c){return !!(myIds&&myIds[c.id])}
 function cancelBtn(c,after){return btn("⛔ Cancelar concurso",function(){
  var why=prompt("Cancelar este concurso? Escreva o motivo (opcional) e confirme. Esta ação não pode ser desfeita.");if(why===null)return;
  rpc("cancel_competition",{p_competition:String(c.id),p_reason:why}).then(function(){msg("Concurso cancelado.",1);after()}).catch(fail)})}
@@ -8833,7 +8835,7 @@ function list(){stop();
     btn("📤 Partilhar",function(){shareComp(c)})].concat(isOrg(c)?[cancelBtn(c,list)]:[]))}):[h("p",{},"Ainda não há concursos abertos nesta categoria.")])}
  f.addEventListener("change",draw);
  area.append(h("p",{},"A carregar…"));
- get("competitions","select=id,title,level,category,country_code,region,vote_price,currency,starts_at,ends_at,status,registration_closed_at,top_size,organizer_id&status=eq.open&category=eq."+cat+"&order=ends_at.asc").then(function(r){all=r;draw()}).catch(fail)}
+ get("competitions","select=id,title,level,category,country_code,region,vote_price,currency,starts_at,ends_at,status,registration_closed_at,top_size&status=eq.open&category=eq."+cat+"&order=ends_at.asc").then(function(r){all=r;loadMine(draw)}).catch(fail)}
 
 /* ───── detalhe: lista vertical do 1º ao último, com Votar em cada um (em tempo real) ───── */
 function detail(c,focus){stop();
@@ -8899,8 +8901,8 @@ function voteForm(c,x){
 /* ───── registo do concorrente (cantor / humorista / criador) ───── */
 function geo(co,pr,di,onC){
  Promise.all([get("countries","select=code,name,region,continent&order=name"),fastSet()]).then(function(z){var m=z[1];z[0].forEach(function(x){co.append(copt(x.code,x.name+" ("+x.continent+")",m));co["_"+x.code]=x});if(onC)onC()}).catch(fail);
- co.addEventListener("change",function(){pr.replaceChildren(h("option",{value:""},"Província"));di.replaceChildren(h("option",{value:""},"Distrito"));if(!co.value)return;get("provinces","country_code=eq."+co.value+"&order=name").then(function(r){r.forEach(function(x){pr.append(h("option",{value:x.id},x.name))})})});
- pr.addEventListener("change",function(){di.replaceChildren(h("option",{value:""},"Distrito"));if(!pr.value)return;get("districts","province_id=eq."+pr.value+"&order=name").then(function(r){r.forEach(function(x){di.append(h("option",{value:x.id},x.name))})})})}
+ co.addEventListener("change",function(){pr.replaceChildren(h("option",{value:""},"Província"));di.replaceChildren(h("option",{value:""},"Distrito"));if(!co.value)return;get("provinces","country_code=eq."+co.value+"&order=name").then(function(r){r.forEach(function(x){pr.append(h("option",{value:x.id},x.name))})}).catch(fail)});
+ pr.addEventListener("change",function(){di.replaceChildren(h("option",{value:""},"Distrito"));if(!pr.value)return;get("districts","province_id=eq."+pr.value+"&order=name").then(function(r){r.forEach(function(x){di.append(h("option",{value:x.id},x.name))})}).catch(fail)})}
 function register(){stop();
  var C=CATS[cat];
  var nm=inp(C.name),bio=inp("Apresentação"),song=inp(C.link),pm=inp("Meio para receber (ex.: M-Pesa, e-Mola)"),pa=inp("Número/conta para receber");

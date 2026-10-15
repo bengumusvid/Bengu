@@ -1,56 +1,54 @@
-// Supabase Edge Function: mpesa-pay  (cobra a taxa de publicação por M-Pesa, C2B single stage)
-import { createClient } from "npm:@supabase/supabase-js@2";
-import forge from "npm:node-forge@1.3.1";
+// BENGU 4.9.4 · Supabase Edge Function "sync-fixtures"
+// Vai buscar os jogos de futebol à API-Football e guarda-os na tabela sports_fixtures.
+// Segredos necessários: APIFOOTBALL_KEY, SYNC_SECRET (SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY já existem).
+// Desligue "Verify JWT" ao criar a função (a protecção é o cabeçalho x-sync-secret).
+const API = "https://v3.football.api-sports.io";
+const SB = Deno.env.get("SUPABASE_URL")!;
+const SRK = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const KEY = Deno.env.get("APIFOOTBALL_KEY")!;
+const SECRET = Deno.env.get("SYNC_SECRET")!;
+const day = (o: number) => new Date(Date.now() + o * 864e5).toISOString().slice(0, 10);
+const sbHead = { apikey: SRK, Authorization: `Bearer ${SRK}`, "Content-Type": "application/json" };
 
-const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
-const J = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
-
-// O M-Pesa não usa OAuth: o "Bearer" é a API Key cifrada com a Public Key (RSA, PKCS#1 v1.5), em base64.
-function bearer(): string {
-  let pk = Deno.env.get("MPESA_PUBLIC_KEY")!.trim();
-  if (!pk.includes("BEGIN")) pk = "-----BEGIN PUBLIC KEY-----\n" + pk.replace(/\s+/g, "").match(/.{1,64}/g)!.join("\n") + "\n-----END PUBLIC KEY-----";
-  const key = forge.pki.publicKeyFromPem(pk);
-  return forge.util.encode64(key.encrypt(Deno.env.get("MPESA_API_KEY")!, "RSAES-PKCS1-V1_5"));
+async function syncDay(d: string) {
+  const r = await fetch(`${API}/fixtures?date=${d}`, { headers: { "x-apisports-key": KEY } });
+  const j = await r.json().catch(() => ({}));
+  const errs = j.errors && !Array.isArray(j.errors) ? Object.values(j.errors) : [];
+  if (!r.ok || errs.length) return { date: d, saved: 0, error: errs.join("; ") || `HTTP ${r.status}` };
+  const now = new Date().toISOString();
+  const rows = (j.response || []).map((x: any) => ({
+    sport: "football",
+    ext_id: x.fixture.id,
+    league: x.league?.name ?? null,
+    country: x.league?.country ?? null,
+    home: x.teams?.home?.name ?? null,
+    away: x.teams?.away?.name ?? null,
+    home_score: x.goals?.home ?? null,
+    away_score: x.goals?.away ?? null,
+    status: x.fixture.status?.short ?? null,
+    kickoff: x.fixture.date,
+    updated_at: now,
+  }));
+  for (let i = 0; i < rows.length; i += 500) {
+    const res = await fetch(`${SB}/rest/v1/sports_fixtures?on_conflict=sport,ext_id`, {
+      method: "POST",
+      headers: { ...sbHead, Prefer: "resolution=merge-duplicates,return=minimal" },
+      body: JSON.stringify(rows.slice(i, i + 500)),
+    });
+    if (!res.ok) return { date: d, saved: i, error: await res.text() };
+  }
+  return { date: d, saved: rows.length };
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-  try {
-    const svc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const jwt = (req.headers.get("Authorization") || "").replace("Bearer ", "");
-    const { data: { user } } = await svc.auth.getUser(jwt);
-    if (!user) return J({ error: "Sessão inválida. Entre de novo." }, 401);
-
-    const { phone } = await req.json();
-    const msisdn = String(phone || "").replace(/\D/g, "");
-    if (!/^258(84|85)\d{7}$/.test(msisdn)) return J({ error: "Use um número M-Pesa (Vodacom) no formato 25884XXXXXXX." }, 400);
-
-    // o preço é calculado no servidor, nunca vem do telemóvel
-    const { data: q, error: qe } = await svc.rpc("fee_quote", { p_user: user.id });
-    if (qe || !q) return J({ error: qe?.message || "Erro a calcular a taxa." }, 400);
-    if (!q.amount_mzn || q.amount_mzn <= 0) return J({ error: "Não há taxa a pagar." }, 400);
-
-    const ref = ("BG" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)).toUpperCase().slice(0, 20);
-    const third = ("T" + Math.random().toString(36).slice(2, 12)).toUpperCase();
-    await svc.from("publication_fees").insert({ user_id: user.id, region: q.region, amount_mzn: q.amount_mzn, phone: msisdn, reference: ref });
-
-    const base = Deno.env.get("MPESA_BASE") || "https://api.vm.co.mz:18352"; // sandbox: https://api.sandbox.vm.co.mz:18352
-    const r = await fetch(base + "/ipg/v1x/c2bPayment/singleStage/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + bearer(), Origin: "developer.mpesa.vm.co.mz" },
-      body: JSON.stringify({
-        input_TransactionReference: ref,
-        input_CustomerMSISDN: msisdn,
-        input_Amount: String(q.amount_mzn),
-        input_ThirdPartyReference: third,
-        input_ServiceProviderCode: Deno.env.get("MPESA_SHORTCODE"),
-      }),
-    });
-    const d = await r.json().catch(() => ({}));
-    const ok = d.output_ResponseCode === "INS-0";
-    await svc.rpc("fee_mark", { p_ref: ref, p_ok: ok, p_code: d.output_ResponseCode ?? null, p_desc: d.output_ResponseDesc ?? null });
-    return J(ok ? { ok: true } : { error: d.output_ResponseDesc || "Pagamento não concluído." }, ok ? 200 : 402);
-  } catch (e) {
-    return J({ error: String(e) }, 500);
+  if (req.headers.get("x-sync-secret") !== SECRET) return new Response("unauthorized", { status: 401 });
+  const mode = new URL(req.url).searchParams.get("mode") || "today";
+  const days = mode === "window" ? [-4, -3, -2, -1, 1, 2, 3, 4] : [0];
+  const out = [];
+  for (const o of days) out.push(await syncDay(day(o)));
+  if (mode === "window") {
+    const old = new Date(Date.now() - 14 * 864e5).toISOString();
+    await fetch(`${SB}/rest/v1/sports_fixtures?kickoff=lt.${old}`, { method: "DELETE", headers: sbHead });
   }
+  return new Response(JSON.stringify(out), { headers: { "Content-Type": "application/json" } });
 });

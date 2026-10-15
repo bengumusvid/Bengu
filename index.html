@@ -8914,10 +8914,10 @@ function create(){stop();
   if(l=="distrital"&&!di.value)return;
   if(l=="regional"&&!rg.value)return;
   rpc("quote_competition",{p_level:l,p_country:l=="regional"?null:co.value,p_province:pr.value||null,p_district:di.value||null}).then(function(r){
-   q=r;fixed=r.fixed_vote_price!=null;
+   q=r;fixed=false;
    quote.replaceChildren(h("div",{},"Taxa de criação"),h("b",{style:"font-size:18px;color:#ffd166"},Number(r.fee_usd)===0?"Grátis":fmt(r.fee_usd,"USD")),
-    h("div",{style:DIM},fixed?"Voto fixo: 1 USD = "+fmt(r.fixed_vote_price,r.currency)+" por voto.":"Preço do voto definido por si, em "+r.currency+"."));
-   pc.style.display=fixed?"none":"";pc.placeholder="Preço de 1 voto ("+r.currency+")"}).catch(fail)}
+    h("div",{style:DIM},"Preço do voto definido por si, em "+r.currency+". Mínimo: "+fmt(r.min_vote_price,r.currency)+"."));
+   pc.style.display="";pc.placeholder="Preço de 1 voto ("+r.currency+"), mínimo "+r.min_vote_price}).catch(fail)}
  [lv,rg,co,pr,di].forEach(function(e){e.addEventListener("change",refresh)});
  vis();
  box.replaceChildren(h("h3",{style:"color:"+LITE},"Criar "+C.label.toLowerCase()),
@@ -8928,6 +8928,7 @@ function create(){stop();
   btn("Criar e pagar taxa",function(){
    if(!need())return;
    if(!q)return msg("Escolha o nível e o local.");
+   if(!(Number(pc.value)>0)||Number(pc.value)<Number(q.min_vote_price))return msg("O valor mínimo do voto é "+fmt(q.min_vote_price,q.currency)+".");
    if(!st.value||!en.value)return msg("Indique o início e o fim da competição.");
    if(new Date(en.value)<=new Date(st.value))return msg("O fim tem de ser depois do início.");
    var l=lv.value;

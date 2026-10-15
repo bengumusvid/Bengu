@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.9.9_15.10.2026" />
+    <meta name="bengu-build" content="4.9.10_15.10.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -3321,6 +3321,13 @@ function J_() {
                       title: "Torneios (futebol, andebol, basquetebol)",
                       className: "bg-comp bg-green",
                       children: u.jsx("span", { className: "bg-coin", "aria-hidden": "true", children: "🏆" }),
+                    }),
+                    u.jsx("button", {
+                      onClick: () => window.bengu_music_open && window.bengu_music_open(),
+                      "aria-label": "Música",
+                      title: "Música",
+                      className: "bg-comp bg-purple",
+                      children: u.jsx("span", { className: "bg-coin", "aria-hidden": "true", children: "🎵" }),
                     }),
                     u.jsx("button", {
                       onClick: () => at("search"),
@@ -8983,7 +8990,7 @@ var G="#22c55e",S="width:100%;box-sizing:border-box;padding:10px;margin:4px 0;bo
 B="padding:9px 13px;margin:4px 4px 4px 0;border:0;border-radius:8px;background:#22c55e;color:#06210f;font-weight:700;font-size:14px",
 CARD="background:#12301f;border-radius:10px;padding:12px;margin:8px 0",DIM="font-size:13px;opacity:.8",
 AVB="width:44px;height:44px;border-radius:50%;background:#0a1f14;border:1px dashed #2f6b45;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none;font-size:20px";
-document.head.append(h("style",{},"nav.fixed button{overflow:hidden}.bg-st>*{flex:0 0 auto!important;min-width:64px}.bg-comp{position:relative}.bg-comp.bg-green{--c:#12803a;--cg:rgba(34,197,94,.85);--c1:#d1fae5;--c2:#4ade80;padding:3px}"+
+document.head.append(h("style",{},"nav.fixed button{overflow:hidden}.bg-st>*{flex:0 0 auto!important;min-width:64px}.bg-comp{position:relative}.bg-comp.bg-green{--c:#12803a;--cg:rgba(34,197,94,.85);--c1:#d1fae5;--c2:#4ade80;padding:3px}.bg-comp.bg-purple{--c:#6a1b9a;--cg:rgba(171,71,188,.85);--c1:#f3e5f5;--c2:#ce93d8;padding:3px}"+
 "@keyframes bgBlink{0%,100%{opacity:1}50%{opacity:.35}}.bg-comp[data-live=\"1\"]::after{content:\"\";position:absolute;left:50%;bottom:-5px;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:#ff2d2d;box-shadow:0 0 0 2px #12183A;animation:bgBlink 1.2s infinite}"));
 var ov=h("div",{style:"display:none;position:fixed;inset:0;z-index:99999;background:#0a1f14;color:#fff;overflow:auto;padding:12px;padding-top:calc(12px + env(safe-area-inset-top,0px));font-family:system-ui,sans-serif"}),
 bar=h("div",{style:"display:flex;gap:6px;position:sticky;top:0;background:#0a1f14;padding-bottom:6px;z-index:2;overflow-x:auto"}),box=h("div"),INSC=window.bgInscBanner?window.bgInscBanner("#22c55e","Cria um Evento"):null;if(INSC){INSC.style.cursor="pointer";INSC.addEventListener("click",function(){create()})}INSC?ov.append(INSC,bar,box):ov.append(bar,box);document.body.append(ov);
@@ -9226,6 +9233,46 @@ function addNews(f,done){var me=uid();if(!me){alert("Entre na sua conta para pub
 var GCACHE={},gseq=0;
 function dayEv(K,sp2,d){var k=sp2+"|"+d,c=GCACHE[k];if(c&&Date.now()-c.t<600000)return Promise.resolve(c.v);
  return fetch("https://www.thesportsdb.com/api/v1/json/"+K+"/eventsday.php?d="+d+"&s="+sp2).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){var v=j&&j.events||[];GCACHE[k]={t:Date.now(),v:v};return v}).catch(function(){return null})}
+/* BENGU 4.9.10 - MÚSICA: links (YouTube/Spotify/SoundCloud) e músicas próprias */
+var MI="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cfd4e3;border-radius:10px;margin:6px 0;font:inherit",MBT="border:0;background:#eef0f6;border-radius:8px;padding:5px 10px;font-size:13px";
+function mmsg(e){var t=(e&&e.message)||"Erro.";if(/schema cache|does not exist|Could not find|Bucket not found/i.test(t))t="Falta executar o SQL 4.9.8 no Supabase (SQL Editor).";return t}
+function mEmbed(u){var m;u=String(u||"").trim();
+ if((m=/^https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:[^#]*&)?v=|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/.exec(u)))return{src:"https://www.youtube-nocookie.com/embed/"+m[1],h:210};
+ if((m=/^https?:\/\/open\.spotify\.com\/(?:intl-[a-z]+\/)?(track|album|playlist|episode)\/([A-Za-z0-9]{10,30})/.exec(u)))return{src:"https://open.spotify.com/embed/"+m[1]+"/"+m[2],h:m[1]=="track"?152:352};
+ if(/^https?:\/\/(?:www\.|m\.)?soundcloud\.com\/[^\s]+$/.test(u))return{src:"https://w.soundcloud.com/player/?url="+encodeURIComponent(u),h:166};
+ return null}
+window.bengu_music_open=function(){var b=sheet("🎵 Música"),me=uid(),all=[],isAdm=false,list=h("div",{}),q=h("input",{placeholder:"Pesquisar música ou artista",style:MI}),
+ add=h("button",{style:"width:100%;margin-top:12px;padding:11px;border:0;border-radius:12px;background:#6a1b9a;color:#fff;font-weight:800;font-size:15px"},"➕ Adicionar música");
+ function draw(){var t=q.value.trim().toLowerCase(),rows=all.filter(function(x){return !t||(x.title+" "+x.artist+" "+(x.genre||"")).toLowerCase().indexOf(t)>=0});
+  list.replaceChildren.apply(list,rows.length?rows.map(card):[h("p",{style:"opacity:.7"},all.length?"Nada encontrado.":"Ainda não há músicas. Seja a primeira pessoa a adicionar.")])}
+ function load(){api("music_tracks?select=id,author_id,title,artist,genre,kind,audio_url,link_url&status=eq.published&order=created_at.desc&limit=100").then(function(r){all=r||[];draw()}).catch(function(e){list.replaceChildren(h("p",{},mmsg(e)))})}
+ function card(x){var mine=!!me&&x.author_id==me,c=h("div",{style:"background:#fff;border-radius:12px;padding:10px 12px;margin:10px 0"});
+  c.append(h("div",{style:"font-weight:800"},x.title),h("div",{style:"font-size:13px;opacity:.75;margin-bottom:6px"},x.artist+(x.genre?" · "+x.genre:"")));
+  if(x.kind=="upload")c.append(h("audio",{controls:"",preload:"none",src:x.audio_url,style:"width:100%"}));
+  else{var em=mEmbed(x.link_url);if(em)c.append(h("iframe",{src:em.src,height:String(em.h),loading:"lazy",allow:"autoplay; encrypted-media; clipboard-write",referrerpolicy:"strict-origin-when-cross-origin",style:"width:100%;border:0;border-radius:10px"}));else c.append(h("div",{style:"font-size:13px;opacity:.7"},"Link não suportado."))}
+  var act=h("div",{style:"margin-top:8px;display:flex;gap:8px"});
+  if(!mine){var rp=h("button",{style:MBT},"🚩 Denunciar");rp.addEventListener("click",function(){if(!me){alert("Entre na sua conta para denunciar.");return}if(!confirm("Denunciar esta música (direitos de autor ou conteúdo impróprio)?"))return;
+   api("music_reports","POST",{track_id:x.id}).then(function(){alert("Obrigado. A denúncia foi enviada.")}).catch(function(e){alert(/duplicate|23505|unique/i.test(e&&e.message||"")?"Já denunciou esta música.":mmsg(e))})});act.append(rp)}
+  if(mine||isAdm){var dl=h("button",{style:MBT},"🗑 Apagar");dl.addEventListener("click",function(){if(!confirm("Apagar esta música?"))return;
+   api("music_tracks?id=eq."+x.id,"DELETE").then(function(){var m=/\/storage\/v1\/object\/public\/music\/(.+)$/.exec(x.audio_url||"");if(m)fetch(U+"/storage/v1/object/music/"+m[1],{method:"DELETE",headers:{apikey:K,Authorization:"Bearer "+tok()}}).catch(function(){});load()}).catch(function(e){alert(mmsg(e))})});act.append(dl)}
+  c.append(act);return c}
+ add.addEventListener("click",function(){if(!me){alert("Entre na sua conta para adicionar músicas.");return}
+  var b2=sheet("➕ Adicionar música"),fld=function(ph,t){return h("input",{placeholder:ph,type:t||"text",style:MI})},kd=h("select",{style:MI},[h("option",{value:"link"},"🔗 Colar link (YouTube, Spotify, SoundCloud)"),h("option",{value:"upload"},"⬆ Carregar a minha música (ficheiro)")]),
+  ti=fld("Título da música"),ar=fld("Nome do artista"),gn=fld("Género (opcional)"),lk=fld("Link da música"),fi=h("input",{type:"file",accept:"audio/*",style:MI}),
+  rg=h("input",{type:"checkbox"}),rl=h("label",{style:"display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:8px 0"},[rg,"Declaro que sou o autor desta música ou que tenho autorização do autor para a publicar."]),
+  go=h("button",{style:"width:100%;padding:12px;border:0;border-radius:12px;background:#6a1b9a;color:#fff;font-weight:800;font-size:16px;margin-top:10px"},"Publicar música");
+  function vis(){var up=kd.value=="upload";lk.style.display=up?"none":"";fi.style.display=up?"":"none";rl.style.display=up?"":"none"}kd.addEventListener("change",vis);vis();
+  function send(o){return api("music_tracks","POST",o).then(function(){b2.parentNode.remove();load()})}
+  go.addEventListener("click",function(){var t=ti.value.trim(),a=ar.value.trim();if(t.length<2||a.length<2){alert("Escreva o título e o artista.");return}
+   var o={author_id:me,title:t.slice(0,120),artist:a.slice(0,80),genre:gn.value.trim().slice(0,40)||null,kind:kd.value},p;
+   if(kd.value=="link"){var u=lk.value.trim();if(!mEmbed(u)){alert("Cole um link do YouTube, Spotify ou SoundCloud.");return}o.link_url=u.slice(0,300);p=send(o)}
+   else{var f=fi.files&&fi.files[0];if(!f){alert("Escolha o ficheiro de áudio.");return}if(f.size>15*1048576){alert("O ficheiro tem mais de 15 MB.");return}if(!rg.checked){alert("Tem de declarar que é o autor ou que tem autorização.");return}
+    var ext=(f.name.split(".").pop()||"mp3").toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,5)||"mp3",pth=me+"/"+Date.now()+"-"+Math.random().toString(36).slice(2,8)+"."+ext;
+    p=fetch(U+"/storage/v1/object/music/"+pth,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":f.type||"audio/mpeg"},body:f}).then(function(r){if(!r.ok)throw new Error("Não foi possível enviar o ficheiro (máx. 15 MB, formato de áudio). Execute o SQL 4.9.8.");return U+"/storage/v1/object/public/music/"+pth}).then(function(url){o.audio_url=url;o.rights_declared=true;return send(o)})}
+   go.disabled=true;go.textContent="A enviar…";p.catch(function(e){alert(mmsg(e));go.disabled=false;go.textContent="Publicar música"})});
+  b2.append(h("p",{style:"margin:10px 0 4px;font-size:13px;opacity:.75"},"Publique só músicas suas ou com autorização. Músicas copiadas são removidas e a conta pode ser suspensa."),kd,ti,ar,gn,lk,fi,rl,go)});
+ q.addEventListener("input",draw);b.append(add,q,list);list.append(h("p",{},"A carregar…"));load();
+ if(me)api("rpc/is_admin","POST",{}).then(function(r){if(r===true){isAdm=true;draw()}}).catch(function(){})};
 window.bengu_news_open=function(){var b=sheet("📰 Notícias"),o=b.parentNode,admin=false,cur=0,sub=0,spt="Soccer";o.classList.add("bgnews-open");o.style.background="#FBF6E9";
  var mast=h("div",{class:"bgn-mast",style:"position:sticky;top:56px;z-index:5;margin:8px 0 0;padding:5px 0;border-radius:8px;overflow:hidden;white-space:nowrap;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.45);font:900 15px Georgia,serif;letter-spacing:2px;background:linear-gradient(90deg,#E53935,#FB8C00,#FDD835 50%,#43A047,#1E88E5)"},h("span",{},"BENGU NOTÍCIAS  \u2605  BENGU NOTÍCIAS  \u2605  BENGU NOTÍCIAS  \u2605")),
  tabs=h("div",{style:"display:flex;gap:8px;overflow-x:auto;padding:12px 0"}),list=h("div");b.append(mast,tabs,list);var hd0=b.parentNode.firstChild;if(hd0&&hd0.offsetHeight)mast.style.top=hd0.offsetHeight+"px";
@@ -9375,7 +9422,7 @@ window.addEventListener("userscreenshot",function(){on(2500)});
 </script>
   <script>/* BENGU 4.3: actualização automática (cache / service worker) */
 (function(){
-var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.9.9_15.10.2026",KEY="bg_build",TRY="bg_build_try";
+var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.9.10_15.10.2026",KEY="bg_build",TRY="bg_build_try";
 function wipe(){var p=[];try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(n){return caches.delete(n)}))}))}catch(e){}
  try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}))}catch(e){}
  return Promise.all(p).catch(function(){})}

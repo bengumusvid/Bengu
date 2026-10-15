@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.9.4_15.10.2026" />
+    <meta name="bengu-build" content="4.9.5_15.10.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -9243,9 +9243,48 @@ window.bengu_news_open=function(){var b=sheet("📰 Notícias"),o=b.parentNode,a
   if(admin||(mine&&!rep))bar.append(sb("🗑 Apagar",function(){if(!confirm("Apagar esta notícia? Não pode ser desfeito."))return;api("bengu_news?id=eq."+n.id,"DELETE").then(function(){delete NC[f.k];show(cur)}).catch(function(e){alert(nmsg(e))})},"#B71C1C"));
   else if(mine&&rep)bar.append(h("span",{style:"font-size:12px;opacity:.7;align-self:center"},"Denunciada: só o administrador pode apagar."));
   c.append(bar);return c}
+ function normC(c){return String(c||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toUpperCase()}
+ function isMZ(c){var n=normC(c);return n=="MZ"||n=="MOCAMBIQUE"||n=="MOZAMBIQUE"}
+ function gmsg(e){var t=(e&&e.message)||"Erro.";if(/schema cache|does not exist|Could not find/i.test(t))t="Falta executar o SQL 4.9.5 no Supabase (SQL Editor).";return t}
+ var GI="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cfd4e3;border-radius:10px;margin:6px 0;font:inherit",MB="border:0;background:#eef0f6;border-radius:8px;padding:4px 8px;margin-left:2px";
+ function addGame(kind,done){var me=uid();if(!me){alert("Entre na sua conta para adicionar jogos.");return}
+  var b=sheet("➕ Adicionar jogo"),fld=function(ph,t){return h("input",{placeholder:ph,type:t||"text",style:GI})},
+  sel=function(opts){var s2=h("select",{style:GI});opts.forEach(function(o){s2.append(h("option",{value:o[0]},o[1]))});return s2},
+  sp=sel([["Soccer","⚽ Futebol"],["Basketball","🏀 Basquetebol"],["Handball","🤾 Andebol"],["Volleyball","🏐 Voleibol"]]),st=sel([["1","A realizar"],["2","Realizado (com resultado)"]]),
+  lg=fld("Competição / liga (ex.: Moçambola)"),hm=fld("Equipa da casa"),aw=fld("Equipa visitante"),dtf=fld("","datetime-local"),
+  hs=fld("Golos/pontos da casa","number"),as2=fld("Golos/pontos do visitante","number"),sc=h("div",{},[hs,as2]),pm=fld("Meio de pagamento da taxa (ex.: M-Pesa, PayPal)"),
+  info=h("div",{style:"padding:10px;border-radius:10px;background:#E8F5E9;margin:8px 0;font-size:14px"},"A verificar o seu país…"),
+  go=h("button",{style:"width:100%;padding:12px;border:0;border-radius:12px;background:#43A047;color:#fff;font-weight:800;font-size:16px;margin-top:10px"},"Publicar jogo"),mz=null;
+  sp.value=spt;st.value=String(kind||1);
+  function vis(){sc.style.display=st.value=="2"?"":"none";pm.style.display=mz===false?"":"none"}
+  st.addEventListener("change",vis);
+  api("profiles?select=country&id=eq."+me).then(function(r){var c=r&&r[0]&&r[0].country;mz=isMZ(c);info.style.background=mz?"#E8F5E9":"#FFF3E0";
+   info.textContent=mz?"🇲🇿 Moçambique: publicação gratuita.":"Fora de Moçambique é cobrada uma taxa de 3 USD por jogo. O jogo só aparece depois de o pagamento ser confirmado."+(c?"":" (Defina o seu país no perfil.)");vis()}).catch(function(){mz=false;info.textContent="Não foi possível verificar o país. Fora de Moçambique é cobrada uma taxa de 3 USD por jogo.";vis()});
+  vis();
+  go.addEventListener("click",function(){var H=hm.value.trim(),A=aw.value.trim();if(H.length<2||A.length<2){alert("Escreva as duas equipas.");return}
+   if(!dtf.value){alert("Indique a data e a hora.");return}var t=new Date(dtf.value).getTime();
+   var o={author_id:me,sport:sp.value,league:lg.value.trim().slice(0,80)||null,home:H.slice(0,60),away:A.slice(0,60),kickoff:new Date(t).toISOString()};
+   if(st.value=="2"){if(t>Date.now()+3e5){alert("Um jogo realizado não pode ter data futura.");return}if(hs.value===""||as2.value===""||+hs.value<0||+as2.value<0){alert("Indique o resultado.");return}o.home_score=Math.floor(+hs.value);o.away_score=Math.floor(+as2.value)}
+   if(mz===false){if(pm.value.trim().length<2){alert("Indique o meio de pagamento da taxa.");return}o.pay_method=pm.value.trim().slice(0,60)}
+   go.disabled=true;go.textContent="A enviar…";
+   api("sports_user_games","POST",o).then(function(r){var g=r&&r[0]||{};done();
+    if(g.status=="published"){b.parentNode.remove();alert("Jogo publicado.")}
+    else b.replaceChildren(h("div",{style:"background:#fff;border-radius:12px;padding:14px;margin-top:12px"},[h("b",{},"Pedido criado — falta pagar a taxa"),h("p",{},"Pague "+(g.fee_usd||3)+" USD (não reembolsável). O jogo aparece assim que o pagamento for confirmado."),h("div",{style:"font-size:13px;opacity:.7"},"Referência: "+String(g.id||"").slice(0,8))]))}).catch(function(e){alert(gmsg(e));go.disabled=false;go.textContent="Publicar jogo"})});
+  b.append(h("p",{style:"margin:10px 0 4px;font-size:13px;opacity:.7"},"Publique só jogos verdadeiros. O administrador pode apagar jogos falsos."),sp,st,lg,hm,aw,h("div",{style:"font-size:13px;opacity:.7"},"Data e hora do jogo"),dtf,sc,info,pm,go)}
+ function usrGames(up,sp2){var now=Date.now(),a=new Date(now-14*864e5).toISOString(),z=new Date(now+(up?30*864e5:0)).toISOString(),me=uid();
+  return api("sports_user_games?select=id,author_id,league,home,away,home_score,away_score,kickoff&status=eq.published&sport=eq."+sp2+"&kickoff=gte."+a+"&kickoff=lte."+z+"&order=kickoff."+(up?"asc":"desc")+"&limit=200").then(function(r){var ev=[];
+   (r||[]).forEach(function(x){var d=x.home_score!=null&&x.away_score!=null,t=Date.parse(x.kickoff)||0,mine=!!me&&x.author_id==me;if(up?d:!d)return;if(up&&t<now-72e5&&!mine)return;
+    ev.push({e:{strHomeTeam:x.home,strAwayTeam:x.away,strLeague:(x.league||"Jogos publicados")+" 📣",intHomeScore:x.home_score,intAwayScore:x.away_score},t:t,done:d,id:x.id,mine:mine})});return ev}).catch(function(){return[]})}
+ function mineBtns(x){var ed=h("button",{style:MB},"✏"),dl=h("button",{style:MB},"🗑");
+  ed.addEventListener("click",function(){var v=prompt("Resultado (ex.: 2-1)","");if(v===null)return;var m=/^\s*(\d+)\s*[-–:xX]\s*(\d+)\s*$/.exec(v);if(!m){alert("Use o formato 2-1.");return}api("sports_user_games?id=eq."+x.id,"PATCH",{home_score:+m[1],away_score:+m[2]}).then(function(){show(cur)}).catch(function(e){alert(gmsg(e))})});
+  dl.addEventListener("click",function(){if(!confirm("Apagar este jogo?"))return;api("sports_user_games?id=eq."+x.id,"DELETE").then(function(){show(cur)}).catch(function(e){alert(gmsg(e))})});return[ed,dl]}
+ function pendCard(rows){if(!rows||!rows.length)return null;var c=h("div",{style:"background:#FFF8E1;border:1px solid #FFB020;border-radius:12px;padding:10px 12px;margin-bottom:10px"},[h("div",{style:"font-weight:800;margin-bottom:4px"},"⏳ Aguardam confirmação do pagamento ("+rows.length+")")]);
+  rows.forEach(function(x){var r=h("div",{style:"padding:6px 0;border-top:1px solid #f0e2b8;font-size:13px"},[h("div",{style:"font-weight:700"},x.home+" vs "+x.away),h("div",{style:"opacity:.75"},(x.league||"")+" · "+when(x.kickoff)+" · "+x.fee_usd+" USD · "+(x.pay_method||"—")+" · Ref. "+String(x.id).slice(0,8))]);
+   if(admin){[["✔ Publicar","published","#43A047"],["✖ Rejeitar","rejected","#B71C1C"]].forEach(function(q){var bt=h("button",{style:"margin:6px 6px 0 0;padding:5px 12px;border:0;border-radius:8px;font-weight:700;color:#fff;background:"+q[2]},q[0]);bt.addEventListener("click",function(){api("rpc/admin_set_game_status","POST",{p_id:x.id,p_status:q[1]}).then(function(){show(cur)}).catch(function(e){alert(gmsg(e))})});r.append(bt)})}
+   c.append(r)});return c}
  function subBar(){var w=h("div",{style:"margin:0 0 10px"}),r1=h("div",{style:"display:flex;gap:6px;overflow-x:auto;padding-bottom:6px"});
   [["📰 Notícias",0],["📅 Jogos a realizar",1],["✅ Jogos realizados",2]].forEach(function(x){var on=sub==x[1],bt=h("button",{style:"flex:none;padding:7px 13px;border:2px solid #1E88E5;border-radius:999px;font-weight:800;font-size:13px;background:"+(on?"#1E88E5":"#fff")+";color:"+(on?"#fff":"#1E88E5")},x[0]);bt.addEventListener("click",function(){sub=x[1];show(cur)});r1.append(bt)});w.append(r1);
-  if(sub>0){var r2=h("div",{style:"display:flex;gap:6px;overflow-x:auto"});[["Soccer","⚽ Futebol"],["Basketball","🏀 Basquetebol"],["Handball","🤾 Andebol"],["Volleyball","🏐 Voleibol"]].forEach(function(x){var on=spt==x[0],bt=h("button",{style:"flex:none;padding:5px 11px;border:1px solid #12183A;border-radius:999px;font-size:13px;background:"+(on?"#12183A":"#fff")+";color:"+(on?"#fff":"#12183A")},x[1]);bt.addEventListener("click",function(){spt=x[0];show(cur)});r2.append(bt)});w.append(r2)}
+  if(sub>0){var r2=h("div",{style:"display:flex;gap:6px;overflow-x:auto"});[["Soccer","⚽ Futebol"],["Basketball","🏀 Basquetebol"],["Handball","🤾 Andebol"],["Volleyball","🏐 Voleibol"]].forEach(function(x){var on=spt==x[0],bt=h("button",{style:"flex:none;padding:5px 11px;border:1px solid #12183A;border-radius:999px;font-size:13px;background:"+(on?"#12183A":"#fff")+";color:"+(on?"#fff":"#12183A")},x[1]);bt.addEventListener("click",function(){spt=x[0];show(cur)});r2.append(bt)});w.append(r2);var ab=h("button",{style:"width:100%;margin-top:8px;padding:10px;border:0;border-radius:12px;background:#43A047;color:#fff;font-weight:800;font-size:15px"},sub==1?"➕ Adicionar jogo a realizar":"➕ Adicionar jogo realizado");ab.addEventListener("click",function(){addGame(sub,function(){show(cur)})});w.append(ab,h("div",{style:"font-size:12px;opacity:.65;margin:4px 0 0"},"Moçambique: publicação gratuita · outros países: taxa de 3 USD por jogo."))}
   return w}
  function sbGames(up){var now=Date.now(),a=new Date(now-(up?72e5:4*864e5)).toISOString(),z=new Date(now+(up?5*864e5:0)).toISOString();
   return api("sports_fixtures?select=ext_id,league,country,home,away,home_score,away_score,status,kickoff&sport=eq.football&kickoff=gte."+a+"&kickoff=lte."+z+"&order=kickoff."+(up?"asc":"desc")+"&limit=400").then(function(r){
@@ -9262,16 +9301,19 @@ window.bengu_news_open=function(){var b=sheet("📰 Notícias"),o=b.parentNode,a
      done=e.intHomeScore!=null&&e.intHomeScore!==""&&e.intAwayScore!=null&&e.intAwayScore!=="";
     if(!e.strHomeTeam||!e.strAwayTeam)return;if(up?(done||(ts||0)<now-72e5):!done)return;ev.push({e:e,t:ts||0,done:done})});
    return{ev:ev,src:"TheSportsDB"}})}
- function drawEv(up,ev,src){ev.sort(function(a,b){return up?a.t-b.t:b.t-a.t});
+ function drawEv(up,ev,src,pc){ev.sort(function(a,b){return up?a.t-b.t:b.t-a.t});
   var lg={},order=[];ev.slice(0,300).forEach(function(x){var k=x.e.strLeague||"Outras competições";if(!lg[k]){lg[k]=[];order.push(k)}lg[k].push(x)});
-  var out=[subBar()];if(!order.length)out.push(h("p",{style:"opacity:.7"},up?"Não há jogos marcados para os próximos dias.":"Ainda não há resultados dos últimos dias."));
+  var out=[subBar()];if(pc)out.push(pc);if(!order.length)out.push(h("p",{style:"opacity:.7"},up?"Não há jogos marcados para os próximos dias.":"Ainda não há resultados dos últimos dias."));
   order.forEach(function(k){var c=h("div",{style:"background:#fff;border-radius:12px;padding:10px 12px;margin-bottom:10px"},[h("div",{style:"font-weight:800;margin-bottom:4px"},k)]);
-   lg[k].forEach(function(x){var e=x.e,sc=(x.done||x.live)&&e.intHomeScore!=null&&e.intAwayScore!=null;c.append(h("div",{style:"display:flex;align-items:center;gap:6px;padding:6px 0;border-top:1px solid #eef0f6;font-size:14px"},[h("span",{style:"width:74px;flex:none;font-size:12px;opacity:.7"},x.pst?"Adiado":x.t?new Date(x.t).toLocaleString("pt-PT",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"—"),h("span",{style:"flex:1;text-align:right;font-weight:700"},e.strHomeTeam),h("b",{style:"min-width:46px;text-align:center"+(x.live?";color:#E53935":"")},sc?e.intHomeScore+" – "+e.intAwayScore:"vs"),h("span",{style:"flex:1;font-weight:700"},e.strAwayTeam+(x.live?" 🔴":""))]))});out.push(c)});
-  out.push(h("div",{style:"font-size:12px;opacity:.6;margin:6px 0"},"Jogos do mundo · dados "+src+" · horas no seu fuso horário."));
+   lg[k].forEach(function(x){var e=x.e,sc=(x.done||x.live)&&e.intHomeScore!=null&&e.intAwayScore!=null;c.append(h("div",{style:"display:flex;align-items:center;gap:6px;padding:6px 0;border-top:1px solid #eef0f6;font-size:14px"},[h("span",{style:"width:74px;flex:none;font-size:12px;opacity:.7"},x.pst?"Adiado":x.t?new Date(x.t).toLocaleString("pt-PT",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"—"),h("span",{style:"flex:1;text-align:right;font-weight:700"},e.strHomeTeam),h("b",{style:"min-width:46px;text-align:center"+(x.live?";color:#E53935":"")},sc?e.intHomeScore+" – "+e.intAwayScore:"vs"),h("span",{style:"flex:1;font-weight:700"},e.strAwayTeam+(x.live?" 🔴":""))].concat((x.mine||admin)&&x.id?mineBtns(x):[])))});out.push(c)});
+  out.push(h("div",{style:"font-size:12px;opacity:.6;margin:6px 0"},"Jogos do mundo · dados "+src+" · 📣 = publicado por utilizadores · horas no seu fuso horário."));
   list.replaceChildren.apply(list,out)}
  function games(){var up=sub==1,seq=++gseq,sp2=spt;list.replaceChildren(subBar(),h("p",{},"A carregar jogos…"));
-  (sp2=="Soccer"?sbGames(up):Promise.resolve(null)).then(function(r){return r&&r.ev.length?r:tsGames(up,sp2)}).then(function(r){if(seq!=gseq)return;
-   if(!r){list.replaceChildren(subBar(),h("p",{},"Não foi possível carregar os jogos agora. Tente de novo."));return}drawEv(up,r.ev,r.src)})}
+  Promise.all([(sp2=="Soccer"?sbGames(up):Promise.resolve(null)).then(function(r){return r&&r.ev.length?r:tsGames(up,sp2)}).catch(function(){return null}),usrGames(up,sp2),
+   tok()?api("sports_user_games?select=id,home,away,league,kickoff,fee_usd,pay_method&status=eq.pending_payment&order=created_at.desc&limit=50").catch(function(){return[]}):Promise.resolve([])]).then(function(z){if(seq!=gseq)return;
+   var r=z[0],ev=(r?r.ev:[]).concat(z[1]);
+   if(!r&&!ev.length&&!(z[2]&&z[2].length)){list.replaceChildren(subBar(),h("p",{},"Não foi possível carregar os jogos agora. Tente de novo."));return}
+   drawEv(up,ev,r?r.src:"Bengu",pendCard(z[2]))})}
  function show(i){cur=i;drawTabs();var f=FEEDS[i];if(f.k=="desporto"&&sub>0){games();return}list.replaceChildren(h("p",{},"A carregar…"));
   loadTab(f,true).then(function(c){seenSet(f.k,c.latest||Date.now());dotState();drawTabs();var out=f.k=="desporto"?[subBar()]:[];
    if(f.c){var ad=h("button",{style:"width:100%;padding:12px;border:0;border-radius:12px;background:#43A047;color:#fff;font-weight:800;font-size:16px;margin-bottom:10px"},"➕ Adicionar notícia");ad.addEventListener("click",function(){addNews(f,function(){show(cur)})});out.push(ad);
@@ -9333,7 +9375,7 @@ window.addEventListener("userscreenshot",function(){on(2500)});
 </script>
   <script>/* BENGU 4.3: actualização automática (cache / service worker) */
 (function(){
-var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.9.4_15.10.2026",KEY="bg_build",TRY="bg_build_try";
+var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.9.5_15.10.2026",KEY="bg_build",TRY="bg_build_try";
 function wipe(){var p=[];try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(n){return caches.delete(n)}))}))}catch(e){}
  try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}))}catch(e){}
  return Promise.all(p).catch(function(){})}

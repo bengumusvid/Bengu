@@ -8805,6 +8805,13 @@ function open(){ov.style.display="block";INSC.style.setProperty("--ic",PINK);
  list()}
 function phase(c){var n=Date.now(),a=new Date(c.starts_at).getTime(),b=new Date(c.ends_at).getTime();
  return n<a?{k:"soon",t:"Começa em "+dt(c.starts_at)}:n<b?{k:"live",t:"A decorrer · termina em "+dt(c.ends_at)}:{k:"end",t:"Terminada — a encerrar"}}
+/* inscrições abertas = concurso não terminou e o criador não as fechou */
+function regOpen(c){return phase(c).k!="end"&&!c.registration_closed_at}
+/* partilhar o concurso: abre o menu de partilha do telemóvel ou copia o link */
+function shareComp(c){var url=location.origin+location.pathname+"?concurso="+c.id,txt="Participa e vota em «"+c.title+"» no Bengu";
+ if(navigator.share){navigator.share({title:c.title,text:txt,url:url}).catch(function(){})}
+ else if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(function(){msg("Link copiado: "+url,1)}).catch(function(){prompt("Copie o link:",url)})}
+ else prompt("Copie o link:",url)}
 
 /* ───── lista de concursos da categoria ───── */
 function list(){stop();
@@ -8814,29 +8821,33 @@ function list(){stop();
  var all=[];
  function draw(){var r=all.filter(function(c){return!f.value||c.level==f.value});
   area.replaceChildren.apply(area,r.length?r.map(function(c){var p=phase(c);
-   return h("div",{style:CARD},[h("b",{},c.title),window.bgEvStrip(p.k!="end"),
+   return h("div",{style:CARD},[h("b",{},c.title),window.bgEvStrip(regOpen(c)),
     h("div",{style:DIM},LV[c.level]+" · "+fmt(c.vote_price,c.currency)+" por voto"),
     h("div",{style:DIM},p.t),
-    btn(p.k=="live"?"Ver lista e votar":"Ver lista",function(){detail(c)},1)])}):[h("p",{},"Ainda não há concursos abertos nesta categoria.")])}
+    btn(p.k=="live"?"Ver lista e votar":"Ver lista",function(){detail(c)},1),
+    btn("📤 Partilhar",function(){shareComp(c)})])}):[h("p",{},"Ainda não há concursos abertos nesta categoria.")])}
  f.addEventListener("change",draw);
  area.append(h("p",{},"A carregar…"));
- get("competitions","select=id,title,level,category,country_code,region,vote_price,currency,starts_at,ends_at,status&status=eq.open&category=eq."+cat+"&order=ends_at.asc").then(function(r){all=r;draw()}).catch(fail)}
+ get("competitions","select=id,title,level,category,country_code,region,vote_price,currency,starts_at,ends_at,status,registration_closed_at,top_size&status=eq.open&category=eq."+cat+"&order=ends_at.asc").then(function(r){all=r;draw()}).catch(fail)}
 
 /* ───── detalhe: lista vertical do 1º ao último, com Votar em cada um (em tempo real) ───── */
 function detail(c){stop();
  var C=CATS[cat],board=h("div"),openId=null,formEl=null,mineBox=h("div"),earnMap=null;
  var p=phase(c);
- box.replaceChildren(btn("← Voltar",list),h("h3",{style:"color:"+LITE},c.title),window.bgEvStrip(p.k!="end"),
+ box.replaceChildren(btn("← Voltar",list),h("h3",{style:"color:"+LITE},c.title),window.bgEvStrip(regOpen(c)),btn("📤 Partilhar",function(){shareComp(c)}),
   h("div",{style:DIM},LV[c.level]+" · "+fmt(c.vote_price,c.currency)+" por voto"),
   h("div",{style:DIM},"Início: "+dt(c.starts_at)+" · Fim: "+dt(c.ends_at)),
   h("div",{style:"font-weight:700;margin:4px 0;color:#ffd166"},p.t),
   h("div",{style:DIM},"Classificação ao vivo — atualiza sozinha"),
-  (p.k=="end"?h("div",{style:DIM},"🔒 Inscrições fechadas."):btn("Entrar como "+C.one,function(){if(!need())return;rpc("enter_competition",{p_competition:c.id}).then(function(){msg("Inscrito!",1);load()}).catch(fail)})),
+  (!regOpen(c)?h("div",{style:DIM},"🔒 Inscrições fechadas."):btn("Entrar como "+C.one,function(){if(!need())return;rpc("enter_competition",{p_competition:c.id}).then(function(){msg("Inscrito!",1);load()}).catch(fail)})),
   mineBox,board);
  function voting(){return phase(c).k=="live"}
+ /* depois de fechar as inscrições só aparece o Top definido automaticamente (5, 10, 20, 30...) */
+ function rowsOf(r){return c.top_size?r.filter(function(x){return x.position<=c.top_size}):r}
+ function topHdr(r){return c.top_size?[h("div",{style:CARD+";border:1px solid #ffd166;text-align:center"},[h("b",{style:"color:#ffd166;font-size:17px"},"🏆 Top "+c.top_size),h("div",{style:DIM},"Lista definida automaticamente ao fechar as inscrições ("+r.length+" inscritos)")])]:[]}
  function render(r){
   if(!r.length){board.replaceChildren(h("p",{},"Ainda não há concorrentes inscritos."));return}
-  board.replaceChildren.apply(board,r.map(function(x){
+  board.replaceChildren.apply(board,topHdr(r).concat(rowsOf(r).map(function(x){
    var top=x.position<=4,mine=x.is_me;
    var card=h("div",{style:CARD+(top?";border:1px solid "+PINK:"")+(mine?";box-shadow:0 0 0 2px #ffd166":"")},[
     h("div",{style:"display:flex;justify-content:space-between;gap:8px"},[h("b",{},(x.position<=3?MEDAL[x.position-1]+" ":x.position+"º ")+x.stage_name+(mine?" (você)":"")),h("b",{},x.votes+" votos ("+x.percent+"%)")]),
@@ -8844,7 +8855,7 @@ function detail(c){stop();
     h("div",{style:"height:6px;border-radius:3px;background:#3a4175;margin:6px 0"},h("div",{style:"height:6px;border-radius:3px;background:"+PINK+";width:"+Math.min(100,x.percent)+"%"})),
     voting()?btn("Votar",function(){openId=openId==x.entry_id?null:x.entry_id;formEl=openId?voteForm(c,x):null;render(r)},1):h("div",{style:DIM},"Votação fechada neste momento")]);
    if(openId==x.entry_id&&formEl)card.append(formEl);
-   return card}))}
+   return card})))}
  var last=[];
  function load(){rpc("get_live_board",{p_competition:c.id}).then(function(r){last=r;render(r)}).catch(function(){});
   if(tok())rpc("my_earnings").then(function(e){var m=e.filter(function(z){return z.competition_id==c.id})[0];
@@ -8953,14 +8964,24 @@ function earn(){stop();
 function mine(){stop();
  if(!need())return;
  box.replaceChildren(h("h3",{style:"color:"+LITE},"Os meus concursos"),h("p",{},"A carregar…"));
- rpc("my_competitions").then(function(r){
+ Promise.all([rpc("my_competitions"),get("competitions","select=id,registration_closed_at,top_size,cancelled_at,status&organizer_id=eq."+uid()).catch(function(){return[]})]).then(function(z){
+  var ex={};z[1].forEach(function(e){ex[e.id]=e});
+  var r=z[0].map(function(c){var e=ex[c.id]||{};return Object.assign({},c,{registration_closed_at:e.registration_closed_at||c.registration_closed_at,top_size:e.top_size||c.top_size,cancelled_at:e.cancelled_at||c.cancelled_at,status:e.status||c.status})});
   box.replaceChildren.apply(box,[h("h3",{style:"color:"+LITE},"Os meus concursos")].concat(r.length?r.map(function(c){
    var ended=new Date(c.ends_at)<new Date();
-   var kids=[h("b",{},c.title),h("div",{style:DIM},CATS[c.category].one+" · "+LV[c.level]+" · "+({pending_fee:"à espera da taxa",open:"aberto",closed:"encerrado — pagamentos a processar",paid_out:"pago"})[c.status]),h("div",{style:DIM},dt(c.starts_at)+" → "+dt(c.ends_at))];
+   var kids=[h("b",{},c.title),h("div",{style:DIM},CATS[c.category].one+" · "+LV[c.level]+" · "+({pending_fee:"à espera da taxa",open:"aberto",closed:"encerrado — pagamentos a processar",paid_out:"pago",cancelled:"cancelado"})[c.status]+(c.registration_closed_at&&c.status=="open"?" · inscrições fechadas (Top "+c.top_size+")":"")),h("div",{style:DIM},dt(c.starts_at)+" → "+dt(c.ends_at))];
    var canDel=c.status=="pending_fee"||(c.status=="open"&&new Date(c.starts_at)>new Date());
    function delBtn(){return btn("🗑 Apagar concurso",function(){if(!confirm("Apagar este concurso? Só o criador pode fazer isto e não pode ser desfeito."))return;rpc("delete_competition",{p_competition:String(c.id)}).then(function(){msg("Concurso apagado.",1);mine()}).catch(fail)},1)}
    if(c.status=="pending_fee"){kids.push(h("div",{style:"color:#ffd166"},"Taxa a pagar: "+fmt(c.fee_usd,"USD")+" · ref. "+c.id));kids.push(delBtn())}
+   else if(c.status=="cancelled"){kids.push(h("div",{style:"color:#ff9a9a"},"Concurso cancelado."))}
    else{if(canDel)kids.push(delBtn());kids.push(btn("Painel",function(){dash(c)}));
+    if(c.status=="open")kids.push(btn("📤 Partilhar",function(){shareComp(c)}));
+    if(c.status=="open"&&!c.registration_closed_at&&!ended)kids.push(btn("🔒 Fechar inscrições",function(){
+     if(!confirm("Fechar as inscrições? Depois ninguém mais se inscreve e o sistema define automaticamente o Top (5, 10, 20, 30, 40...) conforme o número de inscritos."))return;
+     rpc("close_registrations",{p_competition:String(c.id)}).then(function(r){alert("Inscrições fechadas. "+r.entries+" inscritos — Top "+r.top_size+" definido automaticamente.");mine()}).catch(fail)},1));
+    if(c.status=="open")kids.push(btn("⛔ Cancelar concurso",function(){
+     var why=prompt("Cancelar este concurso? Escreva o motivo (opcional) e confirme. Esta ação não pode ser desfeita.");if(why===null)return;
+     rpc("cancel_competition",{p_competition:String(c.id),p_reason:why}).then(function(){alert("Concurso cancelado.");mine()}).catch(fail)}));
     if(c.status=="open"&&ended)kids.push(btn("Encerrar e pagar agora",function(){rpc("close_competition",{p_competition:c.id}).then(function(){msg("Concurso encerrado. Os pagamentos foram colocados em fila.",1);mine()}).catch(fail)},1))}
    return h("div",{style:CARD},kids)}):[h("p",{},"Ainda não criou concursos.")]))}).catch(fail)}
 function dash(c){
@@ -8983,6 +9004,12 @@ function dash(c){
    h("div",{},d.payments.map(function(p){return h("div",{style:"font-size:13px;padding:4px 0;border-bottom:1px solid #3a4175"},dt(p.created_at)+" · "+p.method+" · "+fmt(p.amount,cu)+" · "+p.votes+" votos · "+p.status)})))}).catch(fail)}
 
 document.body.append(ov);
+/* link partilhado (?concurso=ID): abre logo esse concurso */
+(function(){var m=/[?&]concurso=([0-9a-fA-F-]{36})/.exec(location.search);if(!m)return;
+ get("competitions","select=id,title,level,category,country_code,region,vote_price,currency,starts_at,ends_at,status,registration_closed_at,top_size&id=eq."+m[1]+"&limit=1").then(function(r){
+  var c=r[0];if(!c){alert("Este concurso já não está disponível.");return}
+  if(c.status=="cancelled"){alert("Este concurso foi cancelado.");return}
+  setCat(CATS[c.category]?c.category:"cantores");open();detail(c)}).catch(function(){})})();
 })();
 </script>
     <script>/* BENGU 4.4: torneios de futebol, andebol e basquetebol (tabelas, fotos, marcadores) + ponto vermelho nas competições */

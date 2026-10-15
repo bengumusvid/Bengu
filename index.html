@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.9.13_15.10.2026" />
+    <meta name="bengu-build" content="4.9.14_15.10.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -9268,19 +9268,19 @@ window.bengu_music_open=function(){var b=sheet("🎵 Música"),me=uid(),all=[],i
   rg=h("input",{type:"checkbox"}),rl=h("label",{style:"display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:8px 0"},[rg,"Declaro que sou o autor desta música ou que tenho autorização do autor para a publicar."]),
   go=h("button",{style:"width:100%;padding:12px;border:0;border-radius:12px;background:#6a1b9a;color:#fff;font-weight:800;font-size:16px;margin-top:10px;position:sticky;bottom:12px;z-index:3;box-shadow:0 4px 14px rgba(0,0,0,.35)"},"Publicar música");
   function vis(){var up=kd.value=="upload";lk.style.display=up?"none":"";ok.style.display=up?"none":"";fi.style.display=up?"":"none";rl.style.display=up?"":"none"}kd.addEventListener("change",vis);vis();
-  var tm;function prov(u){return /youtu/.test(u)?"YouTube":/spotify/.test(u)?"Spotify":"SoundCloud"}
-  function fill(){var u=lk.value.trim();if(!u){ok.textContent="";return}
+  var tm,thumb=null;function prov(u){return /youtu/.test(u)?"YouTube":/spotify/.test(u)?"Spotify":"SoundCloud"}
+  function fill(){var u=lk.value.trim();thumb=null;if(!u){ok.textContent="";return}
    if(!mEmbed(u)){ok.style.color="#c62828";ok.textContent="Link não reconhecido. Use YouTube, Spotify ou SoundCloud.";return}
-   ok.style.color="#2e7d32";ok.textContent="✔ Link do "+prov(u)+" reconhecido. Confira o título e toque em Publicar música.";
+   ok.style.color="#2e7d32";ok.textContent="✔ Link do "+prov(u)+" reconhecido. A procurar o título…";var msg2=function(){if(!go.disabled&&lk.value.trim()==u)ok.textContent="✔ Link do "+prov(u)+" reconhecido. Confira o título e o artista e toque em Publicar música."};
    var ep=/youtu/.test(u)?"https://www.youtube.com/oembed?format=json&url=":/spotify/.test(u)?"https://open.spotify.com/oembed?url=":"https://soundcloud.com/oembed?format=json&url=";
-   fetch(ep+encodeURIComponent(u)).then(function(r){return r.ok?r.json():null}).then(function(j){if(!j)return;if(j.title&&!ti.value.trim())ti.value=String(j.title).slice(0,120);if(j.author_name&&!ar.value.trim())ar.value=String(j.author_name).slice(0,80)}).catch(function(){})}
+   fetch(ep+encodeURIComponent(u)).then(function(r){return r.ok?r.json():null}).then(function(j){if(!j){msg2();return}var auto=!ti.value.trim()&&!ar.value.trim();if(j.title&&!ti.value.trim())ti.value=String(j.title).slice(0,120);if(j.author_name&&!ar.value.trim())ar.value=String(j.author_name).slice(0,80);if(j.thumbnail_url&&/^https:\/\//.test(j.thumbnail_url))thumb=j.thumbnail_url;if(auto&&ti.value.trim()&&ar.value.trim()&&!go.disabled&&lk.value.trim()==u){ok.textContent="A adicionar à lista…";go.click()}else msg2()}).catch(function(){msg2()})}
   lk.addEventListener("input",function(){clearTimeout(tm);tm=setTimeout(fill,400)});lk.addEventListener("change",fill);
   [lk,ti,ar,gn].forEach(function(i){i.addEventListener("keydown",function(e){if(e.key=="Enter"){e.preventDefault();go.click()}})});
-  function send(o){return api("music_tracks","POST",o).then(function(){b2.parentNode.remove();load()})}
-  function finish(o){var f2=cv.files&&cv.files[0];return(f2?mUp(f2,me):Promise.resolve(null)).then(function(cu){if(cu)o.cover_url=cu;return send(o)})}
+  function send(o){return api("music_tracks","POST",o).then(function(){b2.parentNode.remove();load();try{toast("🎵 Música adicionada à lista")}catch(e){}})}
+  function finish(o){var f2=cv.files&&cv.files[0];return(f2?mUp(f2,me):Promise.resolve(null)).then(function(cu){var th=false;if(cu)o.cover_url=cu;else if(thumb&&kd.value=="link"){o.cover_url=thumb;th=true}return send(o).catch(function(e){if(th){delete o.cover_url;return send(o)}throw e})})}
   go.addEventListener("click",function(){var t=ti.value.trim(),a=ar.value.trim();if(t.length<2||a.length<2){alert("Escreva o título e o artista.");return}
    var o={author_id:me,title:t.slice(0,120),artist:a.slice(0,80),genre:gn.value.trim().slice(0,40)||null,kind:kd.value},p;
-   if(kd.value=="link"){var u=lk.value.trim();if(!mEmbed(u)){alert("Cole um link do YouTube, Spotify ou SoundCloud.");return}o.link_url=u.slice(0,300);p=finish(o)}
+   if(kd.value=="link"){var u=lk.value.trim();if(!mEmbed(u)){alert("Cole um link do YouTube, Spotify ou SoundCloud.");return}if(all.some(function(x){return x.link_url==u})){alert("Esta música já está na lista.");return}o.link_url=u.slice(0,300);p=finish(o)}
    else{var f=fi.files&&fi.files[0];if(!f){alert("Escolha o ficheiro de áudio.");return}if(f.size>15*1048576){alert("O ficheiro tem mais de 15 MB.");return}if(!rg.checked){alert("Tem de declarar que é o autor ou que tem autorização.");return}
     var ext=(f.name.split(".").pop()||"mp3").toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,5)||"mp3",pth=me+"/"+Date.now()+"-"+Math.random().toString(36).slice(2,8)+"."+ext;
     p=fetch(U+"/storage/v1/object/music/"+pth,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":f.type||"audio/mpeg"},body:f}).then(function(r){if(!r.ok)throw new Error("Não foi possível enviar o ficheiro (máx. 15 MB, formato de áudio). Execute o SQL 4.9.8.");return U+"/storage/v1/object/public/music/"+pth}).then(function(url){o.audio_url=url;o.rights_declared=true;return finish(o)})}
@@ -9437,7 +9437,7 @@ window.addEventListener("userscreenshot",function(){on(2500)});
 </script>
   <script>/* BENGU 4.3: actualização automática (cache / service worker) */
 (function(){
-var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.9.13_15.10.2026",KEY="bg_build",TRY="bg_build_try";
+var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.9.14_15.10.2026",KEY="bg_build",TRY="bg_build_try";
 function wipe(){var p=[];try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(n){return caches.delete(n)}))}))}catch(e){}
  try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}))}catch(e){}
  return Promise.all(p).catch(function(){})}

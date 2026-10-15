@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.9.5_15.10.2026" />
+    <meta name="bengu-build" content="4.9.7_15.10.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -8767,14 +8767,14 @@ window.bgEvStrip=function(open){var d=document.createElement("div");d.className=
  var t=document.createElement("span");t.className="bg-ev-track";
  function st(ch,dl){var e=document.createElement("span");e.className="bg-evs";e.textContent=ch;if(dl)e.style.animationDelay=dl;return e}
  t.append(st("\u2605"),st("\u2726",".3s"),document.createTextNode(open?"Inscri\u00e7\u00f5es Abertas":"Inscri\u00e7\u00f5es Fechadas"),st("\u2726",".6s"),st("\u2605",".9s"));d.append(t);return d};
-window.bgInscBanner=function(c){var d=document.createElement("div");d.className="bg-insc";d.setAttribute("role","note");
+window.bgInscBanner=function(c,txt){var d=document.createElement("div");d.className="bg-insc";d.setAttribute("role","note");
  if(c)d.style.setProperty("--ic",c);
  var t=document.createElement("span");t.className="bg-insc-track";
  var s1=document.createElement("span");s1.className="bg-star";s1.textContent="\u2605";
  var s2=document.createElement("span");s2.className="bg-star";s2.textContent="\u2605";s2.style.animationDelay=".4s";
- t.append(s1,document.createTextNode("Inscri\u00e7\u00f5es Abertas"),s2);d.append(t);return d};
-var INSC=window.bgInscBanner("#ff1fa9");
-var box=h("div");ov.append(bar,INSC,box);
+ t.append(s1,document.createTextNode(txt||"Inscri\u00e7\u00f5es Abertas"),s2);d.append(t);return d};
+var INSC=window.bgInscBanner("#ff1fa9","Cria uma Competi\u00e7\u00e3o");INSC.style.cursor="pointer";INSC.addEventListener("click",function(){create()});
+var box=h("div");ov.append(INSC,bar,box);
 var timer=null;
 function stop(){if(timer){clearInterval(timer);timer=null}}
 function msg(t,ok){box.prepend(h("div",{style:"padding:8px;border-radius:8px;margin:6px 0;background:"+(ok?"#1e6b3a":"#8a2b2b")},t))}
@@ -8812,7 +8812,7 @@ function detail(c){stop();
   h("div",{style:DIM},"Início: "+dt(c.starts_at)+" · Fim: "+dt(c.ends_at)),
   h("div",{style:"font-weight:700;margin:4px 0;color:#ffd166"},p.t),
   h("div",{style:DIM},"Classificação ao vivo — atualiza sozinha"),
-  btn("Entrar como "+C.one,function(){if(!need())return;rpc("enter_competition",{p_competition:c.id}).then(function(){msg("Inscrito!",1);load()}).catch(fail)}),
+  (p.k=="end"?h("div",{style:DIM},"🔒 Inscrições fechadas."):btn("Entrar como "+C.one,function(){if(!need())return;rpc("enter_competition",{p_competition:c.id}).then(function(){msg("Inscrito!",1);load()}).catch(fail)})),
   mineBox,board);
  function voting(){return phase(c).k=="live"}
  function render(r){
@@ -8986,7 +8986,7 @@ AVB="width:44px;height:44px;border-radius:50%;background:#0a1f14;border:1px dash
 document.head.append(h("style",{},"nav.fixed button{overflow:hidden}.bg-st>*{flex:0 0 auto!important;min-width:64px}.bg-comp{position:relative}.bg-comp.bg-green{--c:#12803a;--cg:rgba(34,197,94,.85);--c1:#d1fae5;--c2:#4ade80;padding:3px}"+
 "@keyframes bgBlink{0%,100%{opacity:1}50%{opacity:.35}}.bg-comp[data-live=\"1\"]::after{content:\"\";position:absolute;left:50%;bottom:-5px;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:#ff2d2d;box-shadow:0 0 0 2px #12183A;animation:bgBlink 1.2s infinite}"));
 var ov=h("div",{style:"display:none;position:fixed;inset:0;z-index:99999;background:#0a1f14;color:#fff;overflow:auto;padding:12px;padding-top:calc(12px + env(safe-area-inset-top,0px));font-family:system-ui,sans-serif"}),
-bar=h("div",{style:"display:flex;gap:6px;position:sticky;top:0;background:#0a1f14;padding-bottom:6px;z-index:2;overflow-x:auto"}),box=h("div"),INSC=window.bgInscBanner?window.bgInscBanner("#22c55e"):null;INSC?ov.append(bar,INSC,box):ov.append(bar,box);document.body.append(ov);
+bar=h("div",{style:"display:flex;gap:6px;position:sticky;top:0;background:#0a1f14;padding-bottom:6px;z-index:2;overflow-x:auto"}),box=h("div"),INSC=window.bgInscBanner?window.bgInscBanner("#22c55e","Cria um Evento"):null;if(INSC){INSC.style.cursor="pointer";INSC.addEventListener("click",function(){create()})}INSC?ov.append(INSC,bar,box):ov.append(bar,box);document.body.append(ov);
 function btn(t,f){return h("button",{style:B+";flex:none",on:{click:f}},t)}
 function sbtn(t,f){return h("button",{style:B+";padding:4px 10px;margin:0",on:{click:f}},t)}
 function inp(ph,t){return h("input",{placeholder:ph,type:t||"text",style:S})}
@@ -9098,8 +9098,8 @@ function detail(t){var me=uid(),own=!!(me&&t.owner_id==me),again=function(){deta
    return h("div",{style:"display:none;padding:2px 0 8px 40px;font-size:14px;line-height:1.4"},[ln("Treinador",x.coach_name?[x.coach_name]:[]),ln("Capitão",x.captain_name?[x.captain_name]:[]),ln("Jogadores",fl.map(function(p){return p.name+(cp&&p.name.toLowerCase()==cp?" (C)":"")})),(P.gk||gk.length)?ln("Guarda-redes",gk.map(function(p){return p.name+(cp&&p.name.toLowerCase()==cp?" (C)":"")})):""])};
   var tc=[h("b",{},"Equipas ("+T.length+")")];T.forEach(function(x){var mine=own||x.owner_id==me;var det=teamDet(x);tc.push(h("div",{style:"border-top:1px solid #2f6b45"},[h("div",{style:"display:flex;align-items:center;gap:8px;padding:5px 0"},[h("span",{style:"display:inline-flex;align-items:center;gap:8px;flex:1;cursor:pointer",on:{click:function(){det.style.display=det.style.display=="none"?"block":"none"}}},[av(x.logo_url,x.name,32),x.name,h("span",{style:DIM},"▾")]),(own&&fmt!="campeonato")?h("select",{style:S+";width:auto;display:inline-block;padding:4px",onchange:function(){var v=this.value;api("tournament_teams?id=eq."+x.id,"PATCH",{group_name:v||null}).then(again).catch(fail)}},[h("option",{value:""},"Grupo —")].concat(GL.map(function(l){var o=h("option",{value:l},"Grupo "+l);if(x.group_name==l)o.selected=true;return o}))):(x.group_name?h("span",{style:DIM},"Grupo "+x.group_name):""),mine?sbtn("📷",function(){chg("tournament_teams",x.id,"logo_url",again)}):"",mine?sbtn("✕",function(){api("tournament_teams?id=eq."+x.id,"DELETE").then(again).catch(fail)}):""]),det]))});
   var tn=inp("Nome da equipa"),tp=pic("Foto / logótipo da equipa"),co=inp("Treinador (nome)"),cap=inp("Capitão (nome)"),pls=area("Jogadores — um nome por linha"),gks=P.gk?area("Guarda-redes — um nome por linha"):null;
-  if(!regOpen(t)&&!own)tc.push(h("p",{style:DIM},"As inscrições estão fechadas."));
-  else tc.push(h("b",{style:"display:block;margin-top:10px"},"Inscrever a minha equipa"),tn,tp.el,co,cap,pls,gks||"",btn("Inscrever a minha equipa",function(){if(!need())return;if(tn.value.trim().length<2)return msg("Escreva o nome da equipa.");
+  if(!regOpen(t))tc.push(h("p",{style:DIM},"🔒 As inscrições estão fechadas."));
+  else tc.push(h("b",{style:"display:block;margin-top:10px"},"Inscrever a minha equipa"),tn,tp.el,co,cap,pls,gks||"",btn("Inscrever a minha equipa",function(){if(!need())return;if(!regOpen(t))return msg("As inscrições estão fechadas.");if(tn.value.trim().length<2)return msg("Escreva o nome da equipa.");
    var pn=lines(pls.value),gn2=gks?lines(gks.value):[];
    maybeUp(tp,"equipa").then(function(u){var o={tournament_id:t.id,owner_id:uid(),name:tn.value.trim()};if(u)o.logo_url=u;if(co.value.trim())o.coach_name=co.value.trim();if(cap.value.trim())o.captain_name=cap.value.trim();return api("tournament_teams","POST",o)}).then(function(r){var id=r&&r[0]&&r[0].id,rows=[];
     if(id){gn2.forEach(function(n){rows.push({tournament_id:t.id,team_id:id,name:n,is_gk:true})});pn.forEach(function(n){if(gn2.map(function(g){return g.toLowerCase()}).indexOf(n.toLowerCase())<0)rows.push({tournament_id:t.id,team_id:id,name:n,is_gk:false})})}
@@ -9375,7 +9375,7 @@ window.addEventListener("userscreenshot",function(){on(2500)});
 </script>
   <script>/* BENGU 4.3: actualização automática (cache / service worker) */
 (function(){
-var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.9.5_15.10.2026",KEY="bg_build",TRY="bg_build_try";
+var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.9.7_15.10.2026",KEY="bg_build",TRY="bg_build_try";
 function wipe(){var p=[];try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(n){return caches.delete(n)}))}))}catch(e){}
  try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}))}catch(e){}
  return Promise.all(p).catch(function(){})}

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.9.11_15.10.2026" />
+    <meta name="bengu-build" content="4.9.12_15.10.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -3323,13 +3323,6 @@ function J_() {
                       children: u.jsx("span", { className: "bg-coin", "aria-hidden": "true", children: "🏆" }),
                     }),
                     u.jsx("button", {
-                      onClick: () => window.bengu_music_open && window.bengu_music_open(),
-                      "aria-label": "Música",
-                      title: "Música",
-                      className: "bg-comp bg-purple",
-                      children: u.jsx("span", { className: "bg-coin", "aria-hidden": "true", children: "🎵" }),
-                    }),
-                    u.jsx("button", {
                       onClick: () => at("search"),
                       "aria-label": x("search"),
                       className: "p-1.5",
@@ -3591,6 +3584,12 @@ function J_() {
                     className: "px-4 pt-5 pb-3 text-xl font-extrabold",
                     style: { background: k.card, color: k.ink },
                     children: x("music"),
+                  }),
+                  u.jsx("button", {
+                    onClick: () => window.bengu_music_open && window.bengu_music_open(),
+                    className: "text-sm font-extrabold rounded-xl",
+                    style: { background: "#6a1b9a", color: "#fff", margin: "0 16px 12px", padding: "10px 14px", width: "calc(100% - 32px)" },
+                    children: "🎵 Colar links e carregar músicas",
                   }),
                   Bi.length === 0
                     ? u.jsx("p", {
@@ -3862,7 +3861,7 @@ function J_() {
                         style: {
                           flex: "1 1 0",
                           minWidth: 0,
-                          color: le ? k.ink : k.mute,
+                          color: I === "music" ? "#ce93d8" : le ? k.ink : k.mute,
                         },
                         "aria-current": le ? "page" : void 0,
                         children: [
@@ -9430,7 +9429,7 @@ window.addEventListener("userscreenshot",function(){on(2500)});
 </script>
   <script>/* BENGU 4.3: actualização automática (cache / service worker) */
 (function(){
-var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.9.11_15.10.2026",KEY="bg_build",TRY="bg_build_try";
+var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.9.12_15.10.2026",KEY="bg_build",TRY="bg_build_try";
 function wipe(){var p=[];try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(n){return caches.delete(n)}))}))}catch(e){}
  try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}))}catch(e){}
  return Promise.all(p).catch(function(){})}

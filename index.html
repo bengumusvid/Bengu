@@ -8808,7 +8808,7 @@ function phase(c){var n=Date.now(),a=new Date(c.starts_at).getTime(),b=new Date(
 /* inscrições abertas = concurso não terminou e o criador não as fechou */
 function regOpen(c){return phase(c).k!="end"&&!c.registration_closed_at}
 /* partilhar o concurso: abre o menu de partilha do telemóvel ou copia o link */
-function shareComp(c){var url=location.origin+location.pathname+"?concurso="+c.id,txt="Participa e vota em «"+c.title+"» no Bengu";
+function shareComp(c,x){var url=location.origin+location.pathname+"?concurso="+c.id+(x?"&concorrente="+x.entry_id:""),txt=x?"Vota em "+x.stage_name+" no concurso «"+c.title+"» do Bengu":"Participa e vota em «"+c.title+"» no Bengu";
  if(navigator.share){navigator.share({title:c.title,text:txt,url:url}).catch(function(){})}
  else if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(function(){msg("Link copiado: "+url,1)}).catch(function(){prompt("Copie o link:",url)})}
  else prompt("Copie o link:",url)}
@@ -8831,8 +8831,8 @@ function list(){stop();
  get("competitions","select=id,title,level,category,country_code,region,vote_price,currency,starts_at,ends_at,status,registration_closed_at,top_size&status=eq.open&category=eq."+cat+"&order=ends_at.asc").then(function(r){all=r;draw()}).catch(fail)}
 
 /* ───── detalhe: lista vertical do 1º ao último, com Votar em cada um (em tempo real) ───── */
-function detail(c){stop();
- var C=CATS[cat],board=h("div"),openId=null,formEl=null,mineBox=h("div"),earnMap=null;
+function detail(c,focus){stop();
+ var C=CATS[cat],board=h("div"),openId=focus||null,formEl=null,mineBox=h("div"),earnMap=null;
  var p=phase(c);
  box.replaceChildren(btn("← Voltar",list),h("h3",{style:"color:"+LITE},c.title),window.bgEvStrip(regOpen(c)),btn("📤 Partilhar",function(){shareComp(c)}),
   h("div",{style:DIM},LV[c.level]+" · "+fmt(c.vote_price,c.currency)+" por voto"),
@@ -8853,7 +8853,9 @@ function detail(c){stop();
     h("div",{style:"display:flex;justify-content:space-between;gap:8px"},[h("b",{},(x.position<=3?MEDAL[x.position-1]+" ":x.position+"º ")+x.stage_name+(mine?" (você)":"")),h("b",{},x.votes+" votos ("+x.percent+"%)")]),
     h("div",{style:DIM},[x.district,x.province,x.country].filter(Boolean).join(", ")),
     h("div",{style:"height:6px;border-radius:3px;background:#3a4175;margin:6px 0"},h("div",{style:"height:6px;border-radius:3px;background:"+PINK+";width:"+Math.min(100,x.percent)+"%"})),
+    btn(mine?"📤 Partilhar o meu link e conquistar votos":"📤 Partilhar "+x.stage_name,function(){shareComp(c,x)},mine),
     voting()?btn("Votar",function(){openId=openId==x.entry_id?null:x.entry_id;formEl=openId?voteForm(c,x):null;render(r)},1):h("div",{style:DIM},"Votação fechada neste momento")]);
+   if(openId==x.entry_id&&!formEl&&voting())formEl=voteForm(c,x);
    if(openId==x.entry_id&&formEl)card.append(formEl);
    return card})))}
  var last=[];
@@ -9009,7 +9011,7 @@ document.body.append(ov);
  get("competitions","select=id,title,level,category,country_code,region,vote_price,currency,starts_at,ends_at,status,registration_closed_at,top_size&id=eq."+m[1]+"&limit=1").then(function(r){
   var c=r[0];if(!c){alert("Este concurso já não está disponível.");return}
   if(c.status=="cancelled"){alert("Este concurso foi cancelado.");return}
-  setCat(CATS[c.category]?c.category:"cantores");open();detail(c)}).catch(function(){})})();
+  setCat(CATS[c.category]?c.category:"cantores");open();var f=/[?&]concorrente=([0-9a-fA-F-]{36})/.exec(location.search);detail(c,f?f[1]:null)}).catch(function(){})})();
 })();
 </script>
     <script>/* BENGU 4.4: torneios de futebol, andebol e basquetebol (tabelas, fotos, marcadores) + ponto vermelho nas competições */

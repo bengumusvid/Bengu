@@ -9553,7 +9553,7 @@ function modal(list){var o=document.createElement("div");o.style.cssText="positi
  list.forEach(function(x){var d=document.createElement("div");d.style.cssText="padding:8px;margin:6px 0;border-radius:8px;background:#8a2b2b;font-size:14px;word-break:break-all";d.textContent=x.email+" ("+x.origem+")";c.appendChild(d)});
  var b=document.createElement("button");b.textContent="Fechar";b.style.cssText="margin-top:10px;padding:10px 16px;border:0;border-radius:10px;background:#f5b400;font-weight:700";b.onclick=function(){o.remove()};c.appendChild(b);o.appendChild(c);document.body.appendChild(o)}
 function show(list){if(!list||!list.length){rm();return}
- if(!dot){dot=document.createElement("button");dot.style.cssText="position:fixed;left:10px;bottom:80px;z-index:99999;border:0;border-radius:20px;padding:8px 12px;background:#d62828;color:#fff;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.5)";dot.onclick=function(){modal(dot._l||[])};document.body.appendChild(dot)}
+ if(!dot){dot=document.createElement("button");dot.style.cssText="position:fixed;right:10px;bottom:90px;z-index:99999;border:0;border-radius:20px;padding:6px 10px;font-size:13px;opacity:.9;background:#d62828;color:#fff;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.5)";dot.onclick=function(){modal(dot._l||[])};document.body.appendChild(dot)}
  dot._l=list;dot.textContent="🔴 "+list.length}
 function check(){if(!tok()){rm();return}
  rpc("is_admin").then(function(a){if(a!==true){rm();return}return rpc("admin_extra_admins").then(show)}).catch(function(){})}

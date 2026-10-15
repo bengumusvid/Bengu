@@ -9533,5 +9533,40 @@ function check(){if(shown||!tok()||document.visibilityState!=="visible")return;
 setTimeout(check,5000);setInterval(check,60000);
 })();
 </script>
+<script>/* BENGU 4.11: assistente IA (chat). A chave da IA fica no servidor (função bengu-ai). */
+(function(){
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ";
+function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
+function h(t,s,x){var e=document.createElement(t);if(s)e.style.cssText=s;if(x!=null)e.textContent=x;return e}
+var hist=[],ov=null;
+function bubble(list,who,txt){var me=who=="user";var b=h("div","max-width:86%;margin:6px 0;padding:9px 12px;border-radius:14px;white-space:pre-wrap;line-height:1.4;font-size:15px;"+(me?"align-self:flex-end;background:#ff1fa9;color:#fff":"align-self:flex-start;background:#1b2250;color:#fff"),txt);list.append(b);list.scrollTop=list.scrollHeight;return b}
+function openAI(){
+ if(ov){ov.style.display="flex";return}
+ ov=h("div","position:fixed;inset:0;z-index:100002;background:#12183A;color:#fff;display:flex;flex-direction:column;font-family:system-ui,sans-serif;padding-top:env(safe-area-inset-top,0px)");
+ var top=h("div","display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #3a4175");
+ var x=h("button","padding:8px 11px;border:0;border-radius:8px;background:#f5b301;color:#12183A;font-weight:700","✕");x.onclick=function(){ov.style.display="none"};
+ top.append(x,h("b","font-size:16px","🤖 Assistente Bengu"));
+ var list=h("div","flex:1;overflow:auto;padding:10px 12px;display:flex;flex-direction:column");
+ bubble(list,"assistant","Olá! Sou o assistente do Bengu. Posso ajudar a escrever publicações, apresentações, pedir votos num concurso ou tirar dúvidas.");
+ var row=h("div","display:flex;gap:8px;padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid #3a4175");
+ var inp=h("textarea","flex:1;resize:none;height:44px;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid #3a4175;background:#1b2250;color:#fff;font-size:16px");inp.placeholder="Escreva a sua pergunta…";inp.maxLength=2000;
+ var go=h("button","padding:0 16px;border:0;border-radius:10px;background:#ff1fa9;color:#fff;font-weight:700;font-size:15px","Enviar");
+ var busy=false;
+ function send(){var t=inp.value.trim();if(!t||busy)return;
+  if(!tok()){bubble(list,"assistant","Inicie sessão no Bengu para usar a IA.");return}
+  inp.value="";hist.push({role:"user",content:t});bubble(list,"user",t);busy=true;go.disabled=true;
+  var w=bubble(list,"assistant","A pensar…");
+  fetch(U+"/functions/v1/bengu-ai",{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/json"},body:JSON.stringify({messages:hist.slice(-10)})})
+   .then(function(r){return r.json().catch(function(){return{}}).then(function(j){if(!r.ok)throw new Error(j.error||"Erro "+r.status);return j})})
+   .then(function(j){w.textContent=j.reply;hist.push({role:"assistant",content:j.reply})})
+   .catch(function(e){w.textContent=e.message;hist.pop()})
+   .then(function(){busy=false;go.disabled=false;list.scrollTop=list.scrollHeight})}
+ go.onclick=send;inp.addEventListener("keydown",function(e){if(e.key=="Enter"&&!e.shiftKey){e.preventDefault();send()}});
+ row.append(inp,go);ov.append(top,list,row);document.body.append(ov)}
+window.bengu_ai_open=openAI;
+var fab=h("button","position:fixed;right:14px;bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:99990;width:52px;height:52px;border:0;border-radius:50%;background:linear-gradient(135deg,#ff1fa9,#7b2cff);color:#fff;font-size:24px;box-shadow:0 4px 14px rgba(0,0,0,.4)","🤖");
+fab.setAttribute("aria-label","Assistente IA");fab.onclick=openAI;document.body.append(fab);
+})();
+</script>
 </body>
 </html>

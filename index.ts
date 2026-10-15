@@ -1,58 +1,59 @@
-// BENGU · Supabase Edge Function "sms-hook" (Send SMS hook) com Mocean
-// Segredos (Edge Functions > Secrets): MOCEAN_TOKEN, SEND_SMS_HOOK_SECRET, e opcional MOCEAN_FROM (nome do remetente)
-// Ao criar a função, desligue "Verify JWT" (a protecção é a assinatura do hook).
-import { Webhook } from "npm:standardwebhooks@1.0.0";
+// Assistente IA do Bengu. A chave da IA fica SÓ aqui (segredo do servidor), nunca na app.
+// Deploy: supabase functions deploy bengu-ai
+// Segredo: supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const hookSecret = (Deno.env.get("SEND_SMS_HOOK_SECRET") || "").replace("v1,whsec_", "");
-const TOKEN = Deno.env.get("MOCEAN_TOKEN");
-const FROM = Deno.env.get("MOCEAN_FROM") || "Bengu";
+const MODEL = "claude-haiku-5-5";
+const cors = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+const SYSTEM = `Você é o assistente do Bengu, uma rede social africana em português com publicações, mensagens, notícias, torneios de futebol/andebol/basquetebol e competições de cantores, humoristas e criadores de conteúdo digital.
+Responda sempre em português claro e simples, de forma curta e amigável.
+Pode ajudar a: escrever legendas e publicações, ideias de conteúdo, apresentação (bio) de concorrentes, como pedir votos de forma educada, como criar e gerir um concurso (fechar inscrições, partilhar, cancelar), e dúvidas gerais.
+Não invente regras, preços ou funcionalidades do Bengu que não conheça; diga que não tem essa informação e sugira contactar a administração.
+Recuse conteúdo ilegal, violento, sexual envolvendo menores, assédio ou burlas. Não peça nem aceite palavras-passe ou dados de pagamento.`;
 
-const fail = (code: number, message: string) =>
-  new Response(JSON.stringify({ error: { http_code: code, message } }), {
-    status: code,
-    headers: { "Content-Type": "application/json" },
-  });
+const json = (b: unknown, s = 200) =>
+  new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
 
 Deno.serve(async (req) => {
-  if (req.method !== "POST") return new Response("not allowed", { status: 405 });
-  if (!hookSecret || !TOKEN) return fail(500, "Configuração em falta");
-
-  let user: any, sms: any;
+  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  if (req.method !== "POST") return json({ error: "método inválido" }, 405);
   try {
-    const payload = await req.text();
-    ({ user, sms } = new Webhook(hookSecret).verify(payload, Object.fromEntries(req.headers)));
-  } catch {
-    return fail(401, "Assinatura inválida");
-  }
-
-  const to = String(user?.phone || "").replace(/\D/g, "");
-  if (!to || !sms?.otp) return fail(400, "Pedido inválido");
-
-  const body = new URLSearchParams({
-    "mocean-from": FROM,
-    "mocean-to": to,
-    "mocean-text": `Bengu: o seu código é ${sms.otp}`,
-    "mocean-resp-format": "json",
-  });
-
-  try {
-    const r = await fetch("https://rest.moceanapi.com/rest/2/sms", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/x-www-form-urlencoded" },
-      body,
+    const auth = req.headers.get("Authorization") ?? "";
+    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: auth } },
     });
-    const j = await r.json().catch(() => ({}));
-    const ok = r.ok && (Array.isArray(j.messages)
-      ? j.messages.every((m: any) => Number(m.status) === 0)
-      : Number(j.status ?? 0) === 0);
-    if (!ok) {
-      console.error("Mocean respondeu", r.status, JSON.stringify(j));
-      return fail(502, "Falha ao enviar o SMS");
-    }
-  } catch (e) {
-    console.error("Erro a chamar o Mocean", e);
-    return fail(502, "Falha ao enviar o SMS");
-  }
+    const { data: u } = await sb.auth.getUser();
+    if (!u?.user) return json({ error: "Inicie sessão para usar a IA." }, 401);
 
-  return new Response("{}", { headers: { "Content-Type": "application/json" } });
+    const body = await req.json().catch(() => ({}));
+    const msgs = (Array.isArray(body.messages) ? body.messages : [])
+      .filter((m: any) => (m?.role === "user" || m?.role === "assistant") && typeof m.content === "string" && m.content.trim())
+      .slice(-10)
+      .map((m: any) => ({ role: m.role, content: m.content.slice(0, 2000) }));
+    if (!msgs.length || msgs[msgs.length - 1].role !== "user") return json({ error: "Escreva uma mensagem." }, 400);
+
+    const { data: ok, error: qe } = await sb.rpc("ai_take_quota");
+    if (qe) return json({ error: "Serviço de IA ainda não configurado (SQL 4.11)." }, 500);
+    if (!ok) return json({ error: "Atingiu o limite de mensagens por hora. Tente mais tarde." }, 429);
+
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": Deno.env.get("ANTHROPIC_API_KEY") ?? "",
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ model: MODEL, max_tokens: 700, system: SYSTEM, messages: msgs }),
+    });
+    const j = await r.json();
+    if (!r.ok) return json({ error: "A IA não respondeu agora. Tente de novo." }, 502);
+    const reply = (j.content ?? []).filter((c: any) => c.type === "text").map((c: any) => c.text).join("\n").trim();
+    return json({ reply: reply || "Não consegui responder. Reformule a pergunta." });
+  } catch (_e) {
+    return json({ error: "Erro inesperado. Tente de novo." }, 500);
+  }
 });

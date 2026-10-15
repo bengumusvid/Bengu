@@ -9540,5 +9540,25 @@ function check(){if(shown||!tok()||document.visibilityState!=="visible")return;
 setTimeout(check,5000);setInterval(check,60000);
 })();
 </script>
+<script>/* BENGU 4.14: ponto vermelho para contas administradoras a mais (só o administrador vê) */
+(function(){
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",dot=null;
+function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
+function rpc(n){return fetch(U+"/rest/v1/rpc/"+n,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/json"},body:"{}"}).then(function(r){if(!r.ok)throw 0;return r.json()})}
+function rm(){if(dot){dot.remove();dot=null}}
+function modal(list){var o=document.createElement("div");o.style.cssText="position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:16px";
+ var c=document.createElement("div");c.style.cssText="background:#14163a;color:#fff;border-radius:14px;padding:16px;max-width:420px;width:100%;max-height:80vh;overflow:auto;font-family:inherit";
+ var t=document.createElement("b");t.textContent="🔴 Contas administradoras a mais";c.appendChild(t);
+ var p=document.createElement("p");p.style.cssText="font-size:13px;opacity:.8";p.textContent="Só horacioeduardo1111@gmail.com é administrador. Estas contas foram adicionadas por engano e já não têm acesso ao painel. Para as remover da lista, apague-as nas tabelas indicadas (SQL 4.14, ponto 4).";c.appendChild(p);
+ list.forEach(function(x){var d=document.createElement("div");d.style.cssText="padding:8px;margin:6px 0;border-radius:8px;background:#8a2b2b;font-size:14px;word-break:break-all";d.textContent=x.email+" ("+x.origem+")";c.appendChild(d)});
+ var b=document.createElement("button");b.textContent="Fechar";b.style.cssText="margin-top:10px;padding:10px 16px;border:0;border-radius:10px;background:#f5b400;font-weight:700";b.onclick=function(){o.remove()};c.appendChild(b);o.appendChild(c);document.body.appendChild(o)}
+function show(list){if(!list||!list.length){rm();return}
+ if(!dot){dot=document.createElement("button");dot.style.cssText="position:fixed;left:10px;bottom:80px;z-index:99999;border:0;border-radius:20px;padding:8px 12px;background:#d62828;color:#fff;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.5)";dot.onclick=function(){modal(dot._l||[])};document.body.appendChild(dot)}
+ dot._l=list;dot.textContent="🔴 "+list.length}
+function check(){if(!tok()){rm();return}
+ rpc("is_admin").then(function(a){if(a!==true){rm();return}return rpc("admin_extra_admins").then(show)}).catch(function(){})}
+setTimeout(check,4000);setInterval(check,60000);
+})();
+</script>
 </body>
 </html>

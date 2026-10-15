@@ -8591,7 +8591,6 @@ u.jsxs("div", {
                       }),
                   ],
                 }),
-                z && u.jsxs("div", { className: "flex gap-2", children: [["email", "Email"], ["phone", "Telefone"]].map(([k2, l2]) => u.jsx("button", { type: "button", onClick: () => { o(k2); sctc(""); p("form"); }, className: "flex-1 py-2.5 rounded-lg text-sm font-semibold", style: Ae(a === k2), children: l2 }, k2)) }),
                 z && u.jsxs("div", { children: [
                   u.jsx("input", { value: ctc, onChange: (X) => sctc(a === "email" ? X.target.value.trim() : X.target.value.replace(/[^\d+\s\-()]/g, "")), placeholder: a === "email" ? "nome@email.com" : "+258 86 0289 885", "aria-label": a === "email" ? "Email" : "Telefone", type: a === "email" ? "email" : "tel", inputMode: a === "email" ? "email" : "tel", autoComplete: a === "email" ? "email" : "tel", className: te, style: be }),
                   a === "phone" && u.jsx("div", { className: "text-[11px] mt-1", style: { color: k.mute }, children: "Escreva o número com o indicativo do país, começando por +. Exemplo: +258 86 0289 885 (+258 = Moçambique). Vai receber um código por SMS." }),

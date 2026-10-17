@@ -3511,7 +3511,7 @@ function J_() {
                     ].map(([I, V]) => I === "bell" ? u.jsx("button", {
                         key: "bell",
                         "aria-label": "Notificações",
-                        onClick: () => window.bengu_notif_open && window.bengu_notif_open(),
+                        onClick: () => window.bengu_notif_center && window.bengu_notif_center(),
                         className: "px-3 py-3 text-lg",
                         style: { borderBottom: "3px solid transparent" },
                         children: V,
@@ -4585,17 +4585,28 @@ function tx({ posts: e, cardProps: t }) {
         .filter((s) => s.kind === "video")
         .map((s, i) => ({ post: n, item: s, key: `${n.id}-${i}` })),
     );
-  return r.length
-    ? u.jsx("div", {
-        className: "overflow-y-scroll snap-y snap-mandatory",
-        style: { height: "calc(100vh - 56px - 46px)" },
-        children: r.map((n) => u.jsx(ex, { r: n, cardProps: t }, n.key)),
-      })
-    : u.jsx("p", {
-        className: "text-center px-8 py-16 text-sm",
-        style: { color: k.mute },
-        children: x("noReels"),
-      });
+  return u.jsxs("div", {
+    style: { position: "relative" },
+    children: [
+      u.jsx("button", {
+        onClick: () => window.bengu_open_live && window.bengu_open_live(),
+        "aria-label": "Reel ao vivo",
+        style: { position: "absolute", top: 8, right: 8, zIndex: 5, border: "1px solid rgba(255,255,255,.3)", borderRadius: 18, padding: "6px 12px", background: "rgba(18,24,58,.85)", color: "#fff", fontWeight: 800, fontSize: 13 },
+        children: "🔴 Ao vivo",
+      }),
+      r.length
+        ? u.jsx("div", {
+            className: "overflow-y-scroll snap-y snap-mandatory",
+            style: { height: "calc(100vh - 56px - 46px)" },
+            children: r.map((n) => u.jsx(ex, { r: n, cardProps: t }, n.key)),
+          })
+        : u.jsx("p", {
+            className: "text-center px-8 py-16 text-sm",
+            style: { color: k.mute },
+            children: x("noReels"),
+          }),
+    ],
+  });
 }
 function mf({ title: e, empty: t, posts: r, cardProps: n }) {
   return u.jsxs("div", {
@@ -5683,6 +5694,7 @@ function Ad_({ onBack: e, say: t }) {
           ),
         ],
       }),
+      u.jsx("div", { className: "px-4 pb-2", children: u.jsx("button", { onClick: () => window.bengu_admin_earnings && window.bengu_admin_earnings(), className: "w-full rounded-xl py-3 text-sm font-bold", style: { background: k.saffron, color: k.onAccent }, children: "💰 Comissão e levantamentos" }) }),
       u.jsx("h2", {
         className: "px-4 pt-3 pb-2 text-sm font-bold",
         style: { color: k.mute },
@@ -9644,36 +9656,51 @@ function run(){var L=window.__bgLang;if(!L){if(++tries<40)setTimeout(run,500);re
 run();
 })();
 </script>
-<script>/* BENGU 4.16: centro de notificações (🔔 com número) e memórias */
+<script>/* BENGU 4.19: centro de notificações no 🔔 ao lado de "Para si", com categorias */
 (function(){
-var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",bell=null,list=[],busy=false;
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",list=[],busy=false;
+var CATS=["Comentários","Identificações","Lembretes","Mais atividade sobre ti","Atualizações de amigos","Pedidos de amizade","Pessoas que talvez conheças","Aniversários","Grupos","Reels","Eventos","Páginas que geres","Páginas que segues","Marketplace","Angariações de fundos e situações críticas","Lembretes sobre eleições","Mensagens","Memórias","Outras notificações"];
+var KIND={like:"Mais atividade sobre ti",comment:"Comentários",follow:"Atualizações de amigos",friend_accept:"Atualizações de amigos",tag:"Identificações",reminder:"Lembretes",friend_request:"Pedidos de amizade",suggestion:"Pessoas que talvez conheças",birthday:"Aniversários",group:"Grupos",reel:"Reels",event:"Eventos",page_manage:"Páginas que geres",page_follow:"Páginas que segues",market:"Marketplace",fundraiser:"Angariações de fundos e situações críticas",election:"Lembretes sobre eleições",message:"Mensagens",memory:"Memórias"};
 function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
 function hd(){return{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/json"}}
+function cat(n){return KIND[n.kind]||"Outras notificações"}
+function prefs(){try{return JSON.parse(localStorage.getItem("bg_notif"))||{}}catch(e){return{}}}
+function off(c){var v=prefs()["c:"+c];return v?v.length===0:c==="Páginas que segues"}
+function vis(){return list.filter(function(n){return!off(cat(n))})}
+function unread(){return vis().filter(function(n){return!n.read_at}).length}
 function ago(t){var s=(Date.now()-new Date(t))/1000;if(s<60)return"agora";if(s<3600)return"há "+Math.floor(s/60)+" min";if(s<86400)return"há "+Math.floor(s/3600)+" h";if(s<172800)return"ontem";return new Date(t).toLocaleDateString("pt-PT")}
-function unread(){return list.filter(function(n){return!n.read_at}).length}
-function paint(){if(!tok()){if(bell){bell.remove();bell=null}return}
- if(!bell){bell=document.createElement("button");bell.setAttribute("aria-label","Notificações");
-  bell.style.cssText="position:fixed;right:10px;bottom:140px;z-index:99998;border:0;border-radius:22px;padding:8px 12px;background:#12183A;color:#fff;font-weight:800;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.25)";
-  bell.onclick=openList;document.body.appendChild(bell)}
- var n=unread();bell.textContent="🔔"+(n?" "+(n>99?"99+":n):"");bell.style.background=n?"#d62828":"#12183A"}
+function el(t,css,txt){var e=document.createElement(t);if(css)e.style.cssText=css;if(txt!=null)e.textContent=txt;return e}
+/* número vermelho no 🔔 ao lado de "Para si" */
+function paint(){var b=document.querySelector('button[aria-label="Notificações"]');if(!b)return;var n=tok()?unread():0,s=b.querySelector("[data-bgbadge]");
+ if(!n){if(s)s.remove();return}
+ if(!s){s=el("span","position:absolute;top:2px;right:0;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#d62828;color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center;box-sizing:border-box");s.setAttribute("data-bgbadge","1");b.style.position="relative";b.appendChild(s)}
+ s.textContent=n>99?"99+":String(n)}
 function load(){if(!tok()||busy)return;busy=true;
- fetch(U+"/rest/v1/bengu_notifications?select=id,kind,title,body,created_at,read_at&order=created_at.desc&limit=50",{headers:hd()}).then(function(r){return r.ok?r.json():null}).then(function(r){busy=false;if(Array.isArray(r)){list=r;paint()}}).catch(function(){busy=false})}
-function markRead(){var ids=list.filter(function(n){return!n.read_at});if(!ids.length)return;var now=new Date().toISOString();
+ fetch(U+"/rest/v1/bengu_notifications?select=id,kind,title,body,created_at,read_at&order=created_at.desc&limit=100",{headers:hd()}).then(function(r){return r.ok?r.json():null}).then(function(r){busy=false;if(Array.isArray(r)){list=r;paint()}}).catch(function(){busy=false})}
+function markRead(){if(!list.some(function(n){return!n.read_at}))return;var now=new Date().toISOString();
  fetch(U+"/rest/v1/bengu_notifications?read_at=is.null",{method:"PATCH",headers:hd(),body:JSON.stringify({read_at:now})}).then(function(r){if(r.ok){list.forEach(function(n){if(!n.read_at)n.read_at=now});paint()}}).catch(function(){})}
-function openList(){var o=document.createElement("div");o.style.cssText="position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center";
- var c=document.createElement("div");c.style.cssText="background:#14163a;color:#fff;border-radius:16px 16px 0 0;padding:16px;width:100%;max-width:520px;max-height:80vh;overflow:auto;font-family:inherit";
- var hh=document.createElement("div");hh.style.cssText="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px";
- var t=document.createElement("b");t.style.fontSize="18px";t.textContent="🔔 Notificações";var x=document.createElement("button");x.textContent="Fechar";x.style.cssText="border:0;border-radius:10px;padding:8px 14px;background:#f5b400;font-weight:700";x.onclick=function(){o.remove()};hh.append(t,x);c.appendChild(hh);
- var wasUnread={};list.forEach(function(n){if(!n.read_at)wasUnread[n.id]=1});
- if(!list.length){var e=document.createElement("p");e.style.opacity=".7";e.textContent="Ainda não há notificações.";c.appendChild(e)}
- list.forEach(function(n){var d=document.createElement("div");d.style.cssText="padding:10px;margin:6px 0;border-radius:10px;background:"+(wasUnread[n.id]?"#26306b":"#1b1f48");
-  var a=document.createElement("div");a.style.fontWeight=wasUnread[n.id]?"800":"600";a.textContent=(wasUnread[n.id]?"● ":"")+n.title;d.appendChild(a);
-  if(n.body){var b=document.createElement("div");b.style.cssText="font-size:13px;opacity:.8;margin-top:2px";b.textContent=n.body;d.appendChild(b)}
-  var m=document.createElement("div");m.style.cssText="font-size:12px;opacity:.55;margin-top:4px";m.textContent=ago(n.created_at);d.appendChild(m);c.appendChild(d)});
- o.onclick=function(ev){if(ev.target===o)o.remove()};o.appendChild(c);document.body.appendChild(o);setTimeout(markRead,1200)}
+window.bengu_notif_center=function(){
+ if(!tok()){alert("Inicie sessão para ver as notificações.");return}
+ var sel="Todas",o=el("div","position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center"),
+  c=el("div","background:#14163a;color:#fff;border-radius:16px 16px 0 0;padding:16px;width:100%;max-width:520px;max-height:85vh;overflow:auto;box-sizing:border-box;font-family:inherit"),
+  hh=el("div","display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px"),
+  gear=el("button","border:0;border-radius:10px;padding:8px 12px;background:#2a2f66;color:#fff;font-weight:700","⚙️"),x=el("button","border:0;border-radius:10px;padding:8px 14px;background:#f5b400;font-weight:700","Fechar"),
+  chips=el("div","display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px"),box=el("div"),was={};
+ list.forEach(function(n){if(!n.read_at)was[n.id]=1});
+ gear.setAttribute("aria-label","Definições de notificações");gear.onclick=function(){o.remove();if(window.bengu_notif_open)window.bengu_notif_open()};
+ x.onclick=function(){o.remove()};hh.append(el("b","font-size:18px;flex:1","🔔 Notificações"),gear,x);
+ function drawChips(){chips.replaceChildren();["Todas"].concat(CATS.filter(function(k){return!off(k)})).forEach(function(k){
+  var n=vis().filter(function(z){return(k==="Todas"||cat(z)===k)&&was[z.id]}).length,b=el("button","border:0;border-radius:16px;padding:7px 12px;white-space:nowrap;font-size:13px;font-weight:700;background:"+(k===sel?"#f5b400":"#2a2f66")+";color:"+(k===sel?"#14163a":"#fff"),k+(n?" · "+n:""));
+  b.onclick=function(){sel=k;drawChips();draw()};chips.append(b)})}
+ function draw(){box.replaceChildren();var items=vis().filter(function(n){return sel==="Todas"||cat(n)===sel});
+  if(!items.length)box.append(el("p","opacity:.7",sel==="Todas"?"Ainda não há notificações.":"Sem notificações em “"+sel+"”."));
+  items.forEach(function(n){var d=el("div","padding:10px;margin:6px 0;border-radius:10px;background:"+(was[n.id]?"#26306b":"#1b1f48"));
+   d.append(el("div","font-size:11px;opacity:.6;margin-bottom:2px",cat(n)),el("div","font-weight:"+(was[n.id]?800:600),(was[n.id]?"● ":"")+n.title));
+   if(n.body)d.append(el("div","font-size:13px;opacity:.8;margin-top:2px",n.body));d.append(el("div","font-size:12px;opacity:.55;margin-top:4px",ago(n.created_at)));box.append(d)})}
+ c.append(hh,chips,box);o.onclick=function(ev){if(ev.target===o)o.remove()};o.append(c);document.body.append(o);drawChips();draw();load();setTimeout(markRead,1200)};
 function memories(){if(!tok())return;var k="bg_mem_"+new Date().toISOString().slice(0,10);try{if(localStorage.getItem(k))return}catch(e){}
  fetch(U+"/rest/v1/rpc/bengu_check_memories",{method:"POST",headers:hd(),body:"{}"}).then(function(r){if(r.ok){try{localStorage.setItem(k,"1")}catch(e){}load()}}).catch(function(){})}
-setTimeout(function(){memories();load()},4000);setInterval(load,30000);
+setTimeout(function(){memories();load()},4000);setInterval(load,30000);setInterval(paint,1500);
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")load()});
 })();
 </script>
@@ -9793,11 +9820,6 @@ window.bengu_admin_earnings=function(){
 function paintAdm(){if(!admBtn)return;admBtn.textContent="💰"+(pendN?" "+pendN:"");admBtn.style.background=pendN?"#d62828":"#12183A"}
 function pollAdmin(){if(!admBtn||!tok())return;rpc("bengu_admin_commission").then(function(c){pendN=c.pending_count||0;paintAdm()}).catch(function(){})}
 function floater(txt,label,bottom,fn){var b=el("button","position:fixed;right:10px;bottom:"+bottom+"px;z-index:99998;border:1px solid rgba(255,255,255,.25);border-radius:22px;padding:8px 12px;background:#12183A;color:#fff;font-weight:800;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.5)",txt);b.setAttribute("aria-label",label);b.onclick=fn;document.body.appendChild(b);return b}
-var liveBtn=null;
-function boot(){if(!tok()){if(admBtn){admBtn.remove();admBtn=null}if(liveBtn){liveBtn.remove();liveBtn=null}return}
- if(!liveBtn)liveBtn=floater("🔴","Reel ao vivo",190,openLive);
- if(!admBtn&&!boot.chk){boot.chk=true;rpc("is_admin").then(function(a){if(a===true){admBtn=floater("💰","Comissão do Bengu",240,window.bengu_admin_earnings);pollAdmin()}}).catch(function(){boot.chk=false})}}
-
 /* ===== REEL AO VIVO COM FILTROS ===== */
 function openLive(){
  var stream=null,liveId=null,beat=null,cur=FILTERS[0][2];
@@ -9817,7 +9839,7 @@ function openLive(){
    beat=setInterval(function(){rest("bengu_lives?id=eq."+liveId,"PATCH",{last_seen:new Date().toISOString()},{Prefer:"return=minimal"}).catch(function(){})},30000);list()}).catch(function(e){msg(box,"Não foi possível iniciar: "+e.message,false)})};
  window.addEventListener("pagehide",stop,{once:true})}
 
-boot();setInterval(boot,3000);setInterval(pollAdmin,60000);
+window.bengu_open_live=function(){if(!tok()){alert("Inicie sessão.");return}openLive()};
 })();
 </script>
 </body>

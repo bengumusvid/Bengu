@@ -4558,7 +4558,7 @@ function tx({ posts: e, cardProps: t }) {
       r.length
         ? u.jsx("div", {
             className: "overflow-y-scroll snap-y snap-mandatory",
-            style: { height: "calc(100vh - 56px - 46px)" },
+            style: { height: "calc(100dvh - 56px)" },
             children: r.map((n) => u.jsx(ex, { r: n, cardProps: t }, n.key)),
           })
         : u.jsx("p", {
@@ -9876,7 +9876,7 @@ window.bengu_open_record=window.bengu_open_live=function(){
     if(vw>vh&&portrait){fill=false;cv.style.objectFit="contain"}else{fill=true;cv.style.objectFit="cover";fitB.textContent="⤡"}
     hq.textContent=(sh>=1080?"FHD":sh>=720?"HD":"SD")+" "+Math.round(st.frameRate||30)+"fps"+(vw>vh&&portrait?" ↔":"")})})}
  function stopAll(){closed=true;cancelAnimationFrame(raf);clearInterval(timer);try{if(rec&&rec.state!=="inactive")rec.stop()}catch(e){}
-  [cam,micStream].forEach(function(s){if(s)s.getTracks().forEach(function(t){t.stop()})});if(musicEl){musicEl.pause();musicEl.src=""}if(actx)try{actx.close()}catch(e){}
+  [cam,micStream].forEach(function(s){if(s)s.getTracks().forEach(function(t){t.stop()})});if(musicEl){musicEl.pause();musicEl.src=""}stopPrev();if(actx)try{actx.close()}catch(e){}
   if(blob&&pv.src)try{URL.revokeObjectURL(pv.src)}catch(e){}}
  close.onclick=function(){if(recording&&!confirm("Parar e sair? A gravação atual será perdida."))return;stopAll();o.remove()};
 
@@ -9915,9 +9915,16 @@ window.bengu_open_record=window.bengu_open_live=function(){
  var mus=el("div",""),msel=el("select","width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid #3a4175;background:#0f1233;color:#fff;font-size:14px"),
   mfile=el("input","display:none"),mpick=el("button",G+"margin-top:6px;width:100%","🎵 Escolher música do telemóvel"),mnote=el("div","font-size:12px;opacity:.7;margin-top:6px","A música toca durante a gravação e fica no vídeo. Use auscultadores se também gravar a voz.");
  mfile.type="file";mfile.accept="audio/*,.mp3";mpick.onclick=function(){mfile.click()};
- var tracks=[],o0=el("option","","Sem música");o0.value="";msel.append(o0);mus.append(msel,mpick,mfile,mnote);
+ var mstart=0,mdur=0,prev=null,segW=el("div","display:none;margin-top:10px;padding-top:8px;border-top:1px solid #3a4175"),segL=el("div","font-size:13px;font-weight:700;margin-bottom:4px"),seg=el("input","width:100%;accent-color:#f5b400"),segP=el("button",G+"width:100%;margin-top:6px","▶ Ouvir esta parte");
+ seg.type="range";seg.min=0;seg.step=0.5;seg.value=0;segW.append(segL,seg,segP);
+ function segTxt(){segL.textContent="Começar a música em "+mm(mstart)+" · usa "+mm(Math.max(0,Math.min(MAXS,mdur-mstart)))}
+ function stopPrev(){if(prev){try{prev.pause()}catch(e){}prev=null}segP.textContent="▶ Ouvir esta parte"}
+ seg.oninput=function(){mstart=Number(seg.value);segTxt();if(prev)try{prev.currentTime=mstart}catch(e){}};
+ segP.onclick=function(){if(prev){stopPrev();return}if(!music)return;prev=new Audio();prev.src=music;prev.onloadedmetadata=function(){try{prev.currentTime=mstart}catch(e){}prev.play().catch(function(){})};prev.onended=stopPrev;segP.textContent="⏸ Parar"};
+ var tracks=[],o0=el("option","","Sem música");o0.value="";msel.append(o0);mus.append(msel,mpick,mfile,mnote,segW);
  fetch(U+"/rest/v1/music_tracks?select=id,title,artist,audio_url&status=eq.published&audio_url=not.is.null&order=created_at.desc&limit=60",{headers:hd()}).then(function(r){return r.ok?r.json():[]}).then(function(r){tracks=r||[];tracks.forEach(function(t,i){var op=el("option","",(t.title||"Sem título")+(t.artist?" · "+t.artist:""));op.value=String(i);msel.append(op)})}).catch(function(){});
- function setMusic(url,label){music=url;musicLabel=label;if(musicEl){musicEl.pause()}musicEl=null;musicSrc=null;if(url){mic.checked=false}else mic.checked=true;paintMic()}
+ function setMusic(url,label){stopPrev();music=url;musicLabel=label;mstart=0;mdur=0;seg.value=0;segW.style.display="none";if(musicEl){musicEl.pause()}musicEl=null;musicSrc=null;if(url){mic.checked=false;
+  var a=new Audio();a.preload="metadata";a.onloadedmetadata=function(){if(url!==music)return;mdur=a.duration;if(isFinite(mdur)&&mdur>4){seg.max=Math.max(1,Math.floor(mdur-3));segTxt();segW.style.display="block"}};a.src=url}else mic.checked=true;paintMic()}
  msel.onchange=function(){if(msel.value==="")setMusic(null,"");else{var t=tracks[Number(msel.value)];setMusic(t.audio_url,t.title||"")}};
  mfile.onchange=function(){var f=mfile.files[0];if(!f)return;setMusic(URL.createObjectURL(f),f.name.replace(/\.[a-z0-9]{1,5}$/i,""));msel.value="";mnote.textContent="Música escolhida: "+musicLabel};
 
@@ -9931,12 +9938,12 @@ window.bengu_open_record=window.bengu_open_live=function(){
  flip.onclick=function(){if(recording){say("Não pode trocar de câmara durante a gravação.");return}facing=facing==="user"?"environment":"user";startCam().catch(function(){facing=facing==="user"?"environment":"user";say("Não foi possível usar essa câmara.")})};
 
  function ensureAudio(){if(actx)return;actx=new (window.AudioContext||window.webkitAudioContext)();dest=actx.createMediaStreamDestination()}
- function startRecording(){
+ function startRecording(){stopPrev();
   var out=cv.captureStream?cv.captureStream(30):null;if(!out){say("Este navegador não suporta gravação com filtros.");return Promise.resolve()}
   var needAudio=!!music||mic.checked;var p=Promise.resolve();
   if(needAudio){ensureAudio();if(actx.state==="suspended")actx.resume();
    if(mic.checked)p=navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}).then(function(s){micStream=s;actx.createMediaStreamSource(s).connect(dest)}).catch(function(){mic.checked=false;paintMic();say("Sem acesso ao microfone. A gravar sem voz.")});
-   p=p.then(function(){if(music){musicEl=new Audio();musicEl.crossOrigin="anonymous";musicEl.src=music;musicEl.loop=false;var s=actx.createMediaElementSource(musicEl);s.connect(dest);s.connect(actx.destination);musicEl.currentTime=0;return musicEl.play().catch(function(){say("Não foi possível tocar a música.")})}})}
+   p=p.then(function(){if(music){musicEl=new Audio();musicEl.crossOrigin="anonymous";musicEl.src=music;musicEl.loop=false;var s=actx.createMediaElementSource(musicEl);s.connect(dest);s.connect(actx.destination);return new Promise(function(r){var go=function(){try{musicEl.currentTime=mstart}catch(e){}r()};if(musicEl.readyState>=1)go();else musicEl.addEventListener("loadedmetadata",go,{once:true})}).then(function(){return musicEl.play().catch(function(){say("Não foi possível tocar a música.")})})}})}
   return p.then(function(){
    if(dest&&dest.stream.getAudioTracks().length&&(music||mic.checked))dest.stream.getAudioTracks().forEach(function(t){out.addTrack(t)});
    var BR=W>=1080?10000000:6000000;
@@ -9967,6 +9974,17 @@ window.bengu_open_record=window.bengu_open_live=function(){
 
  startCam().then(function(){draw()}).catch(function(){say("Sem acesso à câmara. Permita a câmara nas definições do navegador.")});
 };
+})();
+</script>
+<script>/* BENGU: nas Reels, deslizar para cima esconde os atalhos de baixo; deslizar para baixo mostra-os */
+(function(){
+var st=document.createElement("style");st.textContent="nav.fixed{transition:transform .25s ease}body.bg-nav-hide nav.fixed{transform:translateY(110%)}";document.head.appendChild(st);
+var last=new WeakMap(),acc=0;
+document.addEventListener("scroll",function(e){var t=e.target;if(!t||!t.classList||!t.classList.contains("snap-y")||!t.classList.contains("snap-mandatory"))return;
+ var prev=last.has(t)?last.get(t):t.scrollTop,d=t.scrollTop-prev;last.set(t,t.scrollTop);
+ if(Math.abs(d)<1)return;acc=(acc*d>0)?acc+d:d;
+ if(acc>14)document.body.classList.add("bg-nav-hide");else if(acc<-14||t.scrollTop<4)document.body.classList.remove("bg-nav-hide")},true);
+setInterval(function(){if(document.body.classList.contains("bg-nav-hide")&&!document.querySelector(".snap-y.snap-mandatory"))document.body.classList.remove("bg-nav-hide")},400);
 })();
 </script>
 </body>

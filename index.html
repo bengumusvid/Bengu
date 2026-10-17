@@ -3347,15 +3347,25 @@ function J_() {
                       className: "p-1.5",
                       children: u.jsx(Fc, { size: 20, color: "#fff" }),
                     }),
-                    u.jsx("button", {
-                      onClick: fr,
-                      "aria-label": x("refresh"),
-                      className: "p-1.5",
-                      children: u.jsx(T_, {
-                        size: 20,
-                        color: "#fff",
-                        className: ae ? "animate-spin" : "",
-                      }),
+                    u.jsxs("button", {
+                      onClick: () => {
+                        if ("Notification" in window && Notification.permission === "default")
+                          try {
+                            Notification.requestPermission();
+                          } catch {}
+                        at("messages");
+                      },
+                      "aria-label": x("messages"),
+                      className: "p-1.5 relative",
+                      children: [
+                        u.jsx(gg, { size: 20, color: "#fff", strokeWidth: X === "messages" ? 2.6 : 1.8 }),
+                        z > 0 &&
+                          u.jsx("span", {
+                            className: "absolute flex items-center justify-center rounded-full text-[10px] font-bold",
+                            style: { top: -2, right: -2, minWidth: 16, height: 16, background: k.like, color: "#fff", padding: "0 4px" },
+                            children: z > 9 ? "9+" : z,
+                          }),
+                      ],
                     }),
                     u.jsx("button", {
                       onClick: () => se(!0),
@@ -3367,55 +3377,6 @@ function J_() {
                 }),
               ],
             }),
-        h &&
-          X !== "chat" &&
-          u.jsxs("div", {
-            className: "sticky z-30 flex items-center gap-1 px-4 py-1.5",
-            style: { top: 56, background: k.card, borderBottom: `1px solid ${k.line}` },
-            children: [
-              u.jsxs("button", {
-                onClick: () => {
-                  (Ie("me"), at("profile"));
-                },
-                "aria-label": h.name,
-                className: "flex-1 min-w-0 text-left py-1",
-                children: [
-                  u.jsx("div", { className: "text-sm font-bold truncate", style: { color: k.ink }, children: h.name }),
-                  u.jsx("div", { className: "text-[11px] truncate", style: { color: k.mute }, children: "@" + h.handle }),
-                ],
-              }),
-              u.jsx("button", {
-                onClick: () => {
-                  (Ie("me"), at("profile"));
-                },
-                "aria-label": x("profile"),
-                className: "p-2",
-                style: { color: X === "profile" ? k.ink : k.mute },
-                children: u.jsx(hf, { size: 23, strokeWidth: X === "profile" ? 2.6 : 1.8 }),
-              }),
-              u.jsxs("button", {
-                onClick: () => {
-                  if ("Notification" in window && Notification.permission === "default")
-                    try {
-                      Notification.requestPermission();
-                    } catch {}
-                  at("messages");
-                },
-                "aria-label": x("messages"),
-                className: "p-2 relative",
-                style: { color: X === "messages" ? k.ink : k.mute },
-                children: [
-                  u.jsx(gg, { size: 23, strokeWidth: X === "messages" ? 2.6 : 1.8 }),
-                  z > 0 &&
-                    u.jsx("span", {
-                      className: "absolute flex items-center justify-center rounded-full text-[10px] font-bold",
-                      style: { top: 2, right: 0, minWidth: 16, height: 16, background: k.like, color: "#fff", padding: "0 4px" },
-                      children: z > 9 ? "9+" : z,
-                    }),
-                ],
-              }),
-            ],
-          }),
             Te &&
               u.jsxs("div", {
                 className: "px-4 py-2",

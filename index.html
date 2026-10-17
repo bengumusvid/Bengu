@@ -5731,6 +5731,7 @@ function Ad_({ onBack: e, say: t }) {
                         }),
                         u.jsx("button", { onClick: () => warn(r.id, null), className: btn, style: { background: k.paper, color: k.ink }, children: "Avisar" }),
                         u.jsx("button", { onClick: () => delUser(r.id), className: btn, style: { background: k.paper, color: k.like }, children: "Apagar perfil" }),
+                          u.jsx("button", { onClick: () => window.bengu_creator_panel && window.bengu_creator_panel(r.id, r.name), className: btn, style: { background: k.saffron, color: k.onAccent }, children: "📊 Painel do criador" }),
                       ],
                     }),
                   ],
@@ -5780,7 +5781,8 @@ function Ad_({ onBack: e, say: t }) {
                   u.jsxs("div", {
                     className: "flex gap-2 flex-wrap",
                     children: [
-                      u.jsx("button", {
+                      u.jsx("button", { onClick: () => window.bengu_creator_panel && window.bengu_creator_panel(r.author_id, r.author_name), className: btn, style: { background: k.saffron, color: k.onAccent }, children: "📊 Painel do autor" }),
+                    u.jsx("button", {
                         onClick: () => del(r.post_id),
                         className: btn,
                         style: { background: k.like, color: "#fff" },
@@ -9270,13 +9272,14 @@ var FEEDS=[
  {k:"mundo",n:"Mundo",u:"https://news.google.com/rss/headlines/section/topic/WORLD?hl=pt-PT&gl=PT&ceid=PT:pt-150"},
  {k:"africa",n:"África",u:"https://news.google.com/rss/search?q=%C3%81frica&hl=pt-PT&gl=PT&ceid=PT:pt-150"},
  {k:"mocambique",n:"Moçambique",c:1,u:"https://news.google.com/rss/search?q=Mo%C3%A7ambique&hl=pt-PT&gl=MZ&ceid=MZ:pt-150"},
- {k:"desporto",n:"Desporto",c:1,u:"https://news.google.com/rss/headlines/section/topic/SPORTS?hl=pt-PT&gl=PT&ceid=PT:pt-150"}];
+ {k:"desporto",n:"Desporto",c:1,u:"https://news.google.com/rss/headlines/section/topic/SPORTS?hl=pt-PT&gl=PT&ceid=PT:pt-150"},
+ {k:"jornal",n:"📰 Jornal",j:1}];
 var NC={},NSK="bg_news_seen";
 function seenGet(){try{return JSON.parse(localStorage.getItem(NSK))||{}}catch(e){return{}}}
 function seenSet(k,t){var o=seenGet();o[k]=t;try{localStorage.setItem(NSK,JSON.stringify(o))}catch(e){}}
-function rssItems(f){return fetch("https://api.rss2json.com/v1/api.json?rss_url="+encodeURIComponent(f.u)).then(function(r){return r.json()}).then(function(j){return(j.items||[]).slice(0,30).map(function(it){return{title:it.title,link:it.link,t:Date.parse(String(it.pubDate||"").replace(" ","T")+"Z")||0}})}).catch(function(){return[]})}
+function rssItems(f){return fetch("https://api.rss2json.com/v1/api.json?rss_url="+encodeURIComponent(f.u)).then(function(r){return r.json()}).then(function(j){return(j.items||[]).slice(0,30).map(function(it){return{title:it.title,link:it.link,desc:it.description||it.content||"",thumb:it.thumbnail||(it.enclosure&&it.enclosure.link)||"",t:Date.parse(String(it.pubDate||"").replace(" ","T")+"Z")||0}})}).catch(function(){return[]})}
 function comItems(f){if(!f.c)return Promise.resolve([]);return api("bengu_news?select=*&section=eq."+f.k+"&order=created_at.desc&limit=40").catch(function(){return[]})}
-function loadTab(f,force){var c=NC[f.k];if(c&&!force)return Promise.resolve(c);return Promise.all([rssItems(f),comItems(f)]).then(function(r){var lt=0;r[0].forEach(function(x){lt=Math.max(lt,x.t)});r[1].forEach(function(x){lt=Math.max(lt,Date.parse(x.created_at)||0)});return NC[f.k]={rss:r[0],com:r[1],latest:lt}})}
+function loadTab(f,force){var c=NC[f.k];if(c&&!force)return Promise.resolve(c);return Promise.all([f.j?Promise.resolve([]):rssItems(f),f.j?api("bengu_journals?select=*&order=created_at.desc&limit=40").catch(function(){return[]}):comItems(f)]).then(function(r){var lt=0;r[0].forEach(function(x){lt=Math.max(lt,x.t)});r[1].forEach(function(x){lt=Math.max(lt,Date.parse(x.created_at)||0)});return NC[f.k]={rss:r[0],com:r[1],latest:lt}})}
 function isNew(f){var c=NC[f.k];if(!c||!c.latest)return false;var s=seenGet()[f.k];return!s||c.latest>s}
 function dotState(){window.__bgNewsDot=FEEDS.some(isNew);try{window.dispatchEvent(new Event("bgnewsdot"))}catch(e){}}
 function refreshDots(){return Promise.all(FEEDS.map(function(f){return loadTab(f,true)})).then(dotState).catch(function(){})}
@@ -9374,6 +9377,44 @@ window.bengu_music_open=function(){var b=sheet("🎵 Música"),me=uid(),all=[],i
   b2.append(h("p",{style:"margin:10px 0 4px;font-size:13px;opacity:.75"},"Publique só músicas suas ou com autorização. Músicas copiadas são removidas e a conta pode ser suspensa."),kd,lk,ok,ti,ar,gn,fi,h("div",{style:"font-size:13px;opacity:.75;margin-top:6px"},"Capa (opcional)"),cv,rl,go)});
  q.addEventListener("input",draw);b.append(add,q,bar,list);list.append(h("p",{},"A carregar…"));load();
  if(me)api("rpc/is_admin","POST",{}).then(function(r){if(r===true){isAdm=true;draw()}}).catch(function(){})};
+/* BENGU 4.16: jornal em PDF e leitor de notícias dentro da app */
+function stripHtml(x){try{return new DOMParser().parseFromString(String(x||""),"text/html").body.textContent.replace(/\s+/g," ").trim()}catch(e){return""}}
+function openArticle(it){var b=sheet("📰 Notícia"),ti=String(it.title||""),m=ti.match(/^(.*)\s-\s([^-]{2,40})$/),head=m?m[1]:ti,src=m?m[2]:"",txt=stripHtml(it.desc);
+ b.parentNode.style.background="#FBF6E9";
+ if(it.thumb&&/^https:/.test(it.thumb))b.append(h("img",{src:it.thumb,style:"width:100%;border-radius:12px;margin:10px 0 0",loading:"lazy",referrerpolicy:"no-referrer"}));
+ b.append(h("h2",{style:"margin:12px 0 4px;line-height:1.25;font-family:Georgia,serif;color:#12183A"},head));
+ b.append(h("div",{style:"font-size:13px;opacity:.65;margin-bottom:10px"},(src?src+" · ":"")+(it.t?when(it.t):"")));
+ if(txt&&txt.length>40&&txt.indexOf(head.slice(0,30))!==0)b.append(h("p",{style:"white-space:pre-wrap;line-height:1.5;color:#12183A"},txt));
+ else b.append(h("p",{style:"opacity:.75;line-height:1.5"},"Esta fonte só partilha o título. Toque em “Ler artigo completo” para ver a notícia inteira."));
+ var bar=h("div",{style:"display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"}),bt=function(t,fn,col){var x=h("button",{style:"padding:10px 16px;border:0;border-radius:10px;font-weight:800;background:"+(col||"#eef0f6")+";color:"+(col?"#fff":"#12183A")},t);x.addEventListener("click",fn);return x};
+ bar.append(bt("🌐 Ler artigo completo",function(){window.open(it.link,"_blank","noopener")},"#1E88E5"),bt("📤 Partilhar",function(){shareNews(head,"",it.link)}));b.append(bar)}
+function loadPdfJs(){if(window.pdfjsLib)return Promise.resolve(window.pdfjsLib);return new Promise(function(ok,no){var s2=document.createElement("script");s2.src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";s2.onload=function(){try{window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";ok(window.pdfjsLib)}catch(e){no(e)}};s2.onerror=no;document.head.append(s2)})}
+function openPdf(n){var b=sheet("📰 "+n.title);b.parentNode.style.background="#e9e6dc";
+ var info=h("p",{style:"font-size:13px;opacity:.7;margin:8px 0"},"A abrir o jornal…"),box=h("div",{style:"display:flex;flex-direction:column;gap:10px"});
+ var dl=h("a",{href:n.pdf_url,target:"_blank",rel:"noopener",style:"display:inline-block;margin:4px 0 10px;font-weight:700;color:#1E88E5"},"⬇ Abrir / descarregar o PDF");
+ b.append(info,dl,box);
+ loadPdfJs().then(function(L){return L.getDocument({url:n.pdf_url}).promise}).then(function(pdf){info.textContent=pdf.numPages+" páginas · deslize para ler";
+  var W=Math.min(b.clientWidth||360,900),dpr=Math.min(2,window.devicePixelRatio||1),io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){io.unobserve(e.target);e.target.__go()}})},{rootMargin:"700px 0px"});
+  pdf.getPage(1).then(function(p1){var v1=p1.getViewport({scale:1}),ratio=v1.height/v1.width;
+   for(var i=1;i<=pdf.numPages;i++)(function(i){var w=h("div",{style:"background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.25);width:100%;min-height:"+Math.round(W*ratio)+"px;position:relative"}),done=false;
+    w.__go=function(){if(done)return;done=true;pdf.getPage(i).then(function(pg){var v0=pg.getViewport({scale:1}),sc=(W/v0.width)*dpr,vp=pg.getViewport({scale:sc}),cv=document.createElement("canvas");cv.width=Math.floor(vp.width);cv.height=Math.floor(vp.height);cv.style.cssText="width:100%;display:block";w.style.minHeight="0";w.append(cv);return pg.render({canvasContext:cv.getContext("2d"),viewport:vp}).promise}).catch(function(){})};
+    box.append(w);io.observe(w)})(i)})
+ }).catch(function(){info.textContent="Não foi possível mostrar o PDF aqui. Use a ligação abaixo para o abrir."})}
+function addJournal(done){var me=uid();if(!me){alert("Entre na sua conta para adicionar um jornal.");return}
+ var b=sheet("➕ Adicionar jornal (PDF)"),GI2="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cfd4e3;border-radius:10px;margin:6px 0;font:inherit",
+ ti=h("input",{placeholder:"Nome do jornal e data (ex.: Notícias, 17 Out 2026)",style:GI2,maxlength:120}),fi=h("input",{type:"file",accept:"application/pdf",style:GI2}),
+ rl=h("label",{style:"display:block;font-size:13px;margin:8px 0"}),rc=h("input",{type:"checkbox"}),
+ go=h("button",{style:"width:100%;padding:12px;border:0;border-radius:12px;background:#43A047;color:#fff;font-weight:800;font-size:16px;margin-top:10px"},"Publicar jornal");
+ rl.append(rc," Declaro que sou o autor ou tenho autorização para publicar este jornal.");
+ go.addEventListener("click",function(){var t=ti.value.trim(),f=fi.files&&fi.files[0];
+  if(t.length<2){alert("Escreva o nome do jornal.");return}if(!f){alert("Escolha o ficheiro PDF.");return}
+  if(f.type!=="application/pdf"&&!/\.pdf$/i.test(f.name)){alert("O ficheiro tem de ser PDF.");return}
+  if(f.size>15*1048576){alert("O PDF tem mais de 15 MB.");return}if(!rc.checked){alert("Tem de declarar que é o autor ou que tem autorização.");return}
+  var pth=me+"/"+Date.now()+"-"+Math.random().toString(36).slice(2,8)+".pdf";go.disabled=true;go.textContent="A enviar…";
+  fetch(U+"/storage/v1/object/journals/"+pth,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/pdf"},body:f}).then(function(r){if(!r.ok)throw new Error("Não foi possível enviar o PDF (máx. 15 MB). Execute o SQL 4.16.");return U+"/storage/v1/object/public/journals/"+pth})
+  .then(function(url){return api("bengu_journals","POST",{author_id:me,title:t.slice(0,120),pdf_url:url})}).then(function(){b.parentNode.remove();done()})
+  .catch(function(e){alert((e&&e.message)||"Erro ao publicar.");go.disabled=false;go.textContent="Publicar jornal"})});
+ b.append(h("p",{style:"margin:10px 0 4px;font-size:13px;opacity:.75"},"Publique só jornais seus ou com autorização. Jornais copiados são removidos."),ti,fi,rl,go)}
 window.bengu_news_open=function(){var b=sheet("📰 Notícias"),o=b.parentNode,admin=false,cur=0,sub=0,spt="Soccer";o.classList.add("bgnews-open");o.style.background="#FBF6E9";
  var mast=h("div",{class:"bgn-mast",style:"position:sticky;top:56px;z-index:5;margin:8px 0 0;padding:5px 0;border-radius:8px;overflow:hidden;white-space:nowrap;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.45);font:900 15px Georgia,serif;letter-spacing:2px;background:linear-gradient(90deg,#E53935,#FB8C00,#FDD835 50%,#43A047,#1E88E5)"},h("span",{},"BENGU NOTÍCIAS  \u2605  BENGU NOTÍCIAS  \u2605  BENGU NOTÍCIAS  \u2605")),
  tabs=h("div",{style:"display:flex;gap:8px;overflow-x:auto;padding:12px 0"}),list=h("div");b.append(mast,tabs,list);var hd0=b.parentNode.firstChild;if(hd0&&hd0.offsetHeight)mast.style.top=hd0.offsetHeight+"px";
@@ -9462,12 +9503,24 @@ window.bengu_news_open=function(){var b=sheet("📰 Notícias"),o=b.parentNode,a
    var r=z[0],ev=(r?r.ev:[]).concat(z[1]);ev=sp2=="Soccer"?mergeLiga(ev,z[3]):ev;
    if(!r&&!ev.length&&!(z[2]&&z[2].length)){list.replaceChildren(subBar(),h("p",{},"Não foi possível carregar os jogos agora. Tente de novo."));return}
    drawEv(up,ev,r?r.src:"Bengu",pendCard(z[2]))})}
+ function jView(c,f){var out=[],ad=h("button",{style:"width:100%;padding:12px;border:0;border-radius:12px;background:#43A047;color:#fff;font-weight:800;font-size:16px;margin-bottom:10px"},"➕ Adicionar jornal (PDF)");
+  ad.addEventListener("click",function(){addJournal(function(){delete NC[f.k];show(cur)})});out.push(ad);
+  (c.com||[]).forEach(function(n){var mine=uid()&&n.author_id==uid(),cd=h("div",{style:"background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;border-left:5px solid #FB8C00"}),
+   au=h("div",{style:"font-size:12px;opacity:.65;margin-top:2px"},"Por membro · "+when(n.created_at)),bar=h("div",{style:"display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"}),
+   sb=function(t,fn,col){var x=h("button",{style:"padding:8px 14px;border:0;border-radius:8px;font-weight:700;background:"+(col||"#eef0f6")+";color:"+(col?"#fff":"#12183A")},t);x.addEventListener("click",fn);return x};
+   cd.append(h("div",{style:"font-weight:800;line-height:1.3"},"📰 "+n.title),au);
+   api("profiles?select=name&id=eq."+n.author_id).then(function(r){if(r&&r[0]&&r[0].name)au.textContent="Por "+r[0].name+" · "+when(n.created_at)}).catch(function(){});
+   bar.append(sb("📖 Ler agora",function(){openPdf(n)},"#1E88E5"),sb("📤 Partilhar",function(){shareNews(n.title,"",location.origin+location.pathname)}));
+   if(admin||mine)bar.append(sb("🗑 Apagar",function(){if(!confirm("Apagar este jornal? Não pode ser desfeito."))return;api("bengu_journals?id=eq."+n.id,"DELETE").then(function(){var m=String(n.pdf_url||"").split("/object/public/journals/")[1];if(m)fetch(U+"/storage/v1/object/journals/"+m,{method:"DELETE",headers:{apikey:K,Authorization:"Bearer "+tok()}}).catch(function(){});delete NC[f.k];show(cur)}).catch(function(e){alert((e&&e.message)||"Erro.")})},"#B71C1C"));
+   cd.append(bar);out.push(cd)});
+  if(!(c.com||[]).length)out.push(h("p",{style:"opacity:.7"},"Ainda não há jornais. Toque em “Adicionar jornal” para publicar o primeiro."));
+  list.replaceChildren.apply(list,out)}
  function show(i){cur=i;drawTabs();var f=FEEDS[i];if(f.k=="desporto"&&sub>0){games();return}list.replaceChildren(h("p",{},"A carregar…"));
-  loadTab(f,true).then(function(c){seenSet(f.k,c.latest||Date.now());dotState();drawTabs();var out=f.k=="desporto"?[subBar()]:[];
+  loadTab(f,true).then(function(c){seenSet(f.k,c.latest||Date.now());dotState();drawTabs();if(f.j){jView(c,f);return}var out=f.k=="desporto"?[subBar()]:[];
    if(f.c){var ad=h("button",{style:"width:100%;padding:12px;border:0;border-radius:12px;background:#43A047;color:#fff;font-weight:800;font-size:16px;margin-bottom:10px"},"➕ Adicionar notícia");ad.addEventListener("click",function(){addNews(f,function(){show(cur)})});out.push(ad);
     c.com.forEach(function(n){out.push(card(n,f))});if(!c.com.length)out.push(h("p",{style:"opacity:.7"},"Ainda não há notícias publicadas por membros."));
     out.push(h("div",{style:"font-weight:800;margin:14px 0 8px"},"Outras notícias"))}
-   c.rss.forEach(function(it){var sh=h("button",{style:"margin-top:6px;padding:5px 12px;border:0;border-radius:8px;font-weight:700;background:#eef0f6;color:#12183A"},"📤 Partilhar");sh.addEventListener("click",function(){shareNews(it.title,"",it.link)});out.push(h("div",{style:"background:#fff;border-radius:12px;padding:12px;margin-bottom:8px"},[h("a",{href:it.link,target:"_blank",rel:"noopener",style:"display:block;color:#12183A;text-decoration:none"},[h("div",{style:"font-weight:700;line-height:1.3"},it.title),h("div",{style:"font-size:12px;opacity:.65;margin-top:4px"},it.t?when(it.t):"")]),sh]))});
+   c.rss.forEach(function(it){var sh=h("button",{style:"margin-top:6px;padding:5px 12px;border:0;border-radius:8px;font-weight:700;background:#eef0f6;color:#12183A"},"📤 Partilhar");sh.addEventListener("click",function(){shareNews(it.title,"",it.link)});out.push(h("div",{style:"background:#fff;border-radius:12px;padding:12px;margin-bottom:8px"},[h("div",{style:"display:block;color:#12183A;cursor:pointer",on:{click:function(){openArticle(it)}}},[h("div",{style:"font-weight:700;line-height:1.3"},it.title),h("div",{style:"font-size:12px;opacity:.65;margin-top:4px"},it.t?when(it.t):"")]),sh]))});
    if(!c.rss.length&&!f.c)out.push(h("p",{},"Não foi possível carregar as notícias agora. Tente de novo."));
    list.replaceChildren.apply(list,out)}).catch(function(){list.replaceChildren(h("p",{},"Não foi possível carregar as notícias agora. Tente de novo."))})}
  drawTabs();show(0);refreshDots().then(drawTabs);
@@ -9588,6 +9641,69 @@ function run(){var L=window.__bgLang;if(!L){if(++tries<40)setTimeout(run,500);re
    fetch("langs/"+c+".json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(j){reg(c,j)}).catch(function(){})})
  }).catch(function(){})}
 run();
+})();
+</script>
+<script>/* BENGU 4.16: centro de notificações (🔔 com número) e memórias */
+(function(){
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",bell=null,list=[],busy=false;
+function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
+function hd(){return{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/json"}}
+function ago(t){var s=(Date.now()-new Date(t))/1000;if(s<60)return"agora";if(s<3600)return"há "+Math.floor(s/60)+" min";if(s<86400)return"há "+Math.floor(s/3600)+" h";if(s<172800)return"ontem";return new Date(t).toLocaleDateString("pt-PT")}
+function unread(){return list.filter(function(n){return!n.read_at}).length}
+function paint(){if(!tok()){if(bell){bell.remove();bell=null}return}
+ if(!bell){bell=document.createElement("button");bell.setAttribute("aria-label","Notificações");
+  bell.style.cssText="position:fixed;right:10px;bottom:140px;z-index:99998;border:0;border-radius:22px;padding:8px 12px;background:#12183A;color:#fff;font-weight:800;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.25)";
+  bell.onclick=openList;document.body.appendChild(bell)}
+ var n=unread();bell.textContent="🔔"+(n?" "+(n>99?"99+":n):"");bell.style.background=n?"#d62828":"#12183A"}
+function load(){if(!tok()||busy)return;busy=true;
+ fetch(U+"/rest/v1/bengu_notifications?select=id,kind,title,body,created_at,read_at&order=created_at.desc&limit=50",{headers:hd()}).then(function(r){return r.ok?r.json():null}).then(function(r){busy=false;if(Array.isArray(r)){list=r;paint()}}).catch(function(){busy=false})}
+function markRead(){var ids=list.filter(function(n){return!n.read_at});if(!ids.length)return;var now=new Date().toISOString();
+ fetch(U+"/rest/v1/bengu_notifications?read_at=is.null",{method:"PATCH",headers:hd(),body:JSON.stringify({read_at:now})}).then(function(r){if(r.ok){list.forEach(function(n){if(!n.read_at)n.read_at=now});paint()}}).catch(function(){})}
+function openList(){var o=document.createElement("div");o.style.cssText="position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center";
+ var c=document.createElement("div");c.style.cssText="background:#14163a;color:#fff;border-radius:16px 16px 0 0;padding:16px;width:100%;max-width:520px;max-height:80vh;overflow:auto;font-family:inherit";
+ var hh=document.createElement("div");hh.style.cssText="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px";
+ var t=document.createElement("b");t.style.fontSize="18px";t.textContent="🔔 Notificações";var x=document.createElement("button");x.textContent="Fechar";x.style.cssText="border:0;border-radius:10px;padding:8px 14px;background:#f5b400;font-weight:700";x.onclick=function(){o.remove()};hh.append(t,x);c.appendChild(hh);
+ var wasUnread={};list.forEach(function(n){if(!n.read_at)wasUnread[n.id]=1});
+ if(!list.length){var e=document.createElement("p");e.style.opacity=".7";e.textContent="Ainda não há notificações.";c.appendChild(e)}
+ list.forEach(function(n){var d=document.createElement("div");d.style.cssText="padding:10px;margin:6px 0;border-radius:10px;background:"+(wasUnread[n.id]?"#26306b":"#1b1f48");
+  var a=document.createElement("div");a.style.fontWeight=wasUnread[n.id]?"800":"600";a.textContent=(wasUnread[n.id]?"● ":"")+n.title;d.appendChild(a);
+  if(n.body){var b=document.createElement("div");b.style.cssText="font-size:13px;opacity:.8;margin-top:2px";b.textContent=n.body;d.appendChild(b)}
+  var m=document.createElement("div");m.style.cssText="font-size:12px;opacity:.55;margin-top:4px";m.textContent=ago(n.created_at);d.appendChild(m);c.appendChild(d)});
+ o.onclick=function(ev){if(ev.target===o)o.remove()};o.appendChild(c);document.body.appendChild(o);setTimeout(markRead,1200)}
+function memories(){if(!tok())return;var k="bg_mem_"+new Date().toISOString().slice(0,10);try{if(localStorage.getItem(k))return}catch(e){}
+ fetch(U+"/rest/v1/rpc/bengu_check_memories",{method:"POST",headers:hd(),body:"{}"}).then(function(r){if(r.ok){try{localStorage.setItem(k,"1")}catch(e){}load()}}).catch(function(){})}
+setTimeout(function(){memories();load()},4000);setInterval(load,30000);
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")load()});
+})();
+</script>
+<script>/* BENGU 4.16: o administrador vê o painel do criador de qualquer utilizador */
+(function(){
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ";
+function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
+function hd(x){var o={apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/json"};if(x)for(var k in x)o[k]=x[k];return o}
+function get(path,extra){return fetch(U+"/rest/v1/"+path,{headers:hd(extra)}).then(function(r){if(!r.ok)throw 0;return r})}
+function el(t,css,txt){var e=document.createElement(t);if(css)e.style.cssText=css;if(txt!=null)e.textContent=txt;return e}
+function fmt(n){return Number(n||0).toLocaleString("pt-PT")}
+window.bengu_creator_panel=function(id,name){
+ var o=el("div","position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.75);display:flex;align-items:flex-end;justify-content:center"),
+ c=el("div","background:#14163a;color:#fff;border-radius:16px 16px 0 0;padding:16px;width:100%;max-width:560px;max-height:88vh;overflow:auto");
+ var hh=el("div","display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"),t=el("b","font-size:17px","📊 Painel do criador · "+(name||"")),x=el("button","border:0;border-radius:10px;padding:8px 14px;background:#f5b400;font-weight:700","Fechar");
+ x.onclick=function(){o.remove()};hh.append(t,x);c.append(hh);var body=el("div","","A carregar…");c.append(body);o.onclick=function(e){if(e.target===o)o.remove()};o.append(c);document.body.append(o);
+ Promise.all([
+  get("posts?select=id,type,body,views,created_at,likes(user_id)&user_id=eq."+id+"&order=created_at.desc&limit=200").then(function(r){return r.json()}),
+  get("follows?select=follower_id&following_id=eq."+id,{Prefer:"count=exact",Range:"0-0"}).then(function(r){var m=(r.headers.get("content-range")||"").split("/")[1];return Number(m)||0}),
+  get("reports?select=post_id").then(function(r){return r.json()}).catch(function(){return[]})
+ ]).then(function(z){var posts=z[0]||[],fol=z[1],rep={};(z[2]||[]).forEach(function(r){rep[r.post_id]=(rep[r.post_id]||0)+1});
+  var views=0,likes=0,now=Date.now(),w=0,m=0,y=0;
+  posts.forEach(function(p){views+=p.views||0;likes+=(p.likes||[]).length;var d=(now-new Date(p.created_at))/864e5;if(d<=7)w++;if(d<=30)m++;if(d<=365)y++});
+  body.replaceChildren();var g=el("div","display:grid;grid-template-columns:1fr 1fr;gap:8px");
+  [["Seguidores",fol],["Publicações",posts.length],["Visualizações",views],["Gostos",likes],["Posts 7 dias",w],["Posts 30 dias",m],["Posts 12 meses",y]].forEach(function(q){var d=el("div","background:#1b1f48;border-radius:10px;padding:10px;text-align:center");d.append(el("div","font-size:20px;font-weight:800",fmt(q[1])),el("div","font-size:11px;opacity:.7",q[0]));g.append(d)});body.append(g);
+  body.append(el("div","margin:14px 0 6px;font-weight:800","Publicações recentes"));
+  if(!posts.length)body.append(el("p","opacity:.7","Sem publicações."));
+  posts.slice(0,30).forEach(function(p){var d=el("div","padding:10px;margin:6px 0;border-radius:10px;background:"+(rep[p.id]?"#6b2330":"#1b1f48"));
+   d.append(el("div","font-size:14px;word-break:break-word",String(p.body||"(sem texto)").replace(/@@[^@]*@@/g,"").slice(0,160)),
+    el("div","font-size:12px;opacity:.7;margin-top:4px",p.type+" · 👀 "+fmt(p.views)+" · ♥ "+(p.likes||[]).length+" · "+new Date(p.created_at).toLocaleDateString("pt-PT")+(rep[p.id]?" · 🚩 "+rep[p.id]+" denúncia(s)":"")));body.append(d)});
+ }).catch(function(){body.textContent="Não foi possível carregar os dados deste utilizador."})}
 })();
 </script>
 </body>

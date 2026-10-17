@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.9.14_15.10.2026" />
+    <meta name="bengu-build" content="4.19.1_17.10.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -9776,7 +9776,7 @@ function tabs(box,items,draw){var row=el("div","display:flex;gap:6px;margin:8px 
 /* ===== PAINEL DE GANHOS DO CRIADOR ===== */
 window.bengu_earnings_panel=function(){
  if(!tok()){alert("Inicie sessão.");return}
- var m=modal("💰 Ganhos estimados"),box=m.body;box.append(el("p","opacity:.7","A carregar…"));
+ var m=modal("💰 Ganhos estimados · v4.19.1"),box=m.body;box.append(el("p","opacity:.7","A carregar…"));
  rpc("bengu_creator_stats").then(function(s){
   var k=s.rpm*s.creator_pct/100/1000,earn=function(v){return v*k};
   var wk=s.weeks.length?s.weeks[s.weeks.length-1].views:0,mo=s.months.length?s.months[s.months.length-1].views:0,yr=s.months.reduce(function(a,x){return a+x.views},0);
@@ -9802,7 +9802,7 @@ window.bengu_earnings_panel=function(){
 /* ===== PAINEL DE COMISSÃO DO ADMINISTRADOR ===== */
 var admBtn=null,pendN=0;
 window.bengu_admin_earnings=function(){
- var m=modal("💰 Comissão do Bengu"),box=m.body;box.append(el("p","opacity:.7","A carregar…"));
+ var m=modal("💰 Comissão do Bengu · v4.19.1"),box=m.body;box.append(el("p","opacity:.7","A carregar…"));
  Promise.all([rpc("bengu_admin_commission"),rpc("bengu_admin_withdrawals"),rpc("bengu_admin_get_setting",{p_key:"usd_mzn_rate"}).catch(function(){return 64})]).then(function(z){var c=z[0],w=z[1];c.fx=z[2];box.replaceChildren();
   var g=el("div","display:grid;grid-template-columns:1fr 1fr;gap:8px");
   [["Comissão do Bengu ("+c.bengu_pct+"%)",usd(c.bengu_commission)],["Para criadores",usd(c.creators_total)],["Criadores elegíveis",num(c.eligible_creators)],["Pedidos pendentes",num(c.pending_count)+" · "+usd(c.pending_amount)],["Já pago",usd(c.paid_amount)],["Receita bruta estimada",usd(c.gross)]].forEach(function(q){var d=el("div","background:#1b1f48;border-radius:10px;padding:10px;text-align:center");d.append(el("div","font-size:15px;font-weight:800",q[1]),el("div","font-size:11px;opacity:.7",q[0]));g.append(d)});box.append(g);

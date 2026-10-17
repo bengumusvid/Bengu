@@ -9743,7 +9743,7 @@ var FILTERS=[["none","Normal","none"],["bw","Preto e branco","grayscale(1)"],["s
 function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
 function me(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).user.id}catch(e){return null}}
 function hd(x){var o={apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/json"};if(x)for(var k in x)o[k]=x[k];return o}
-function rpc(n,a){return fetch(U+"/rest/v1/rpc/"+n,{method:"POST",headers:hd(),body:JSON.stringify(a||{})}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j&&j.message||"Erro");return j})})}
+function rpc(n,a){return fetch(U+"/rest/v1/rpc/"+n,{method:"POST",headers:hd(),body:JSON.stringify(a||{})}).then(function(r){return r.text().then(function(t){var j=null;try{j=t?JSON.parse(t):null}catch(e){}if(!r.ok)throw new Error(j&&j.message||"Erro "+r.status);return j})})}
 function rest(p,m,b,x){return fetch(U+"/rest/v1/"+p,{method:m||"GET",headers:hd(x),body:b?JSON.stringify(b):undefined,keepalive:true}).then(function(r){return r.text().then(function(t){var j=t?JSON.parse(t):null;if(!r.ok)throw new Error(j&&j.message||"Erro");return j})})}
 function el(t,css,txt){var e=document.createElement(t);if(css)e.style.cssText=css;if(txt!=null)e.textContent=txt;return e}
 function usd(n){return Number(n||0).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})+" US$"}

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.19.1_17.10.2026" />
+    <meta name="bengu-build" content="4.20.0_17.10.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -4589,10 +4589,10 @@ function tx({ posts: e, cardProps: t }) {
     style: { position: "relative" },
     children: [
       u.jsx("button", {
-        onClick: () => window.bengu_open_live && window.bengu_open_live(),
-        "aria-label": "Reel ao vivo",
+        onClick: () => window.bengu_open_record && window.bengu_open_record(),
+        "aria-label": "Gravar reel",
         style: { position: "absolute", top: 8, right: 8, zIndex: 5, border: "1px solid rgba(255,255,255,.3)", borderRadius: 18, padding: "6px 12px", background: "rgba(18,24,58,.85)", color: "#fff", fontWeight: 800, fontSize: 13 },
-        children: "🔴 Ao vivo",
+        children: "🎬 Gravar reel",
       }),
       r.length
         ? u.jsx("div", {
@@ -6534,7 +6534,7 @@ function lx({
           }),
         ],
       }),
-      u.jsx("section", { className: C, style: { background: k.card }, children: [u.jsx("button", { onClick: () => window.bengu_notif_open && window.bengu_notif_open(), className: "w-full text-left text-sm font-bold py-1", style: { color: k.ink }, children: "🔔 Notificações" })] }),
+      u.jsx("section", { className: C, style: { background: k.card }, children: [u.jsx("button", { onClick: () => window.bengu_notif_open && window.bengu_notif_open(), className: "w-full text-left text-sm font-bold py-1", style: { color: k.ink }, children: "🔔 Notificações: escolher o que quer receber" })] }),
       u.jsxs("section", {
         className: C,
         style: { background: k.card },
@@ -9684,11 +9684,10 @@ window.bengu_notif_center=function(){
  var sel="Todas",o=el("div","position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center"),
   c=el("div","background:#14163a;color:#fff;border-radius:16px 16px 0 0;padding:16px;width:100%;max-width:520px;max-height:85vh;overflow:auto;box-sizing:border-box;font-family:inherit"),
   hh=el("div","display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px"),
-  gear=el("button","border:0;border-radius:10px;padding:8px 12px;background:#2a2f66;color:#fff;font-weight:700","⚙️"),x=el("button","border:0;border-radius:10px;padding:8px 14px;background:#f5b400;font-weight:700","Fechar"),
+  x=el("button","border:0;border-radius:10px;padding:8px 14px;background:#f5b400;font-weight:700","Fechar"),
   chips=el("div","display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px"),box=el("div"),was={};
  list.forEach(function(n){if(!n.read_at)was[n.id]=1});
- gear.setAttribute("aria-label","Definições de notificações");gear.onclick=function(){o.remove();if(window.bengu_notif_open)window.bengu_notif_open()};
- x.onclick=function(){o.remove()};hh.append(el("b","font-size:18px;flex:1","🔔 Notificações"),gear,x);
+ x.onclick=function(){o.remove()};hh.append(el("b","font-size:18px;flex:1","🔔 Notificações"),x);
  function drawChips(){chips.replaceChildren();["Todas"].concat(CATS.filter(function(k){return!off(k)})).forEach(function(k){
   var n=vis().filter(function(z){return(k==="Todas"||cat(z)===k)&&was[z.id]}).length,b=el("button","border:0;border-radius:16px;padding:7px 12px;white-space:nowrap;font-size:13px;font-weight:700;background:"+(k===sel?"#f5b400":"#2a2f66")+";color:"+(k===sel?"#14163a":"#fff"),k+(n?" · "+n:""));
   b.onclick=function(){sel=k;drawChips();draw()};chips.append(b)})}
@@ -9776,7 +9775,7 @@ function tabs(box,items,draw){var row=el("div","display:flex;gap:6px;margin:8px 
 /* ===== PAINEL DE GANHOS DO CRIADOR ===== */
 window.bengu_earnings_panel=function(){
  if(!tok()){alert("Inicie sessão.");return}
- var m=modal("💰 Ganhos estimados · v4.19.1"),box=m.body;box.append(el("p","opacity:.7","A carregar…"));
+ var m=modal("💰 Ganhos estimados · v4.20"),box=m.body;box.append(el("p","opacity:.7","A carregar…"));
  rpc("bengu_creator_stats").then(function(s){
   var k=s.rpm*s.creator_pct/100/1000,earn=function(v){return v*k};
   var wk=s.weeks.length?s.weeks[s.weeks.length-1].views:0,mo=s.months.length?s.months[s.months.length-1].views:0,yr=s.months.reduce(function(a,x){return a+x.views},0);
@@ -9802,7 +9801,7 @@ window.bengu_earnings_panel=function(){
 /* ===== PAINEL DE COMISSÃO DO ADMINISTRADOR ===== */
 var admBtn=null,pendN=0;
 window.bengu_admin_earnings=function(){
- var m=modal("💰 Comissão do Bengu · v4.19.1"),box=m.body;box.append(el("p","opacity:.7","A carregar…"));
+ var m=modal("💰 Comissão do Bengu · v4.20"),box=m.body;box.append(el("p","opacity:.7","A carregar…"));
  Promise.all([rpc("bengu_admin_commission"),rpc("bengu_admin_withdrawals"),rpc("bengu_admin_get_setting",{p_key:"usd_mzn_rate"}).catch(function(){return 64})]).then(function(z){var c=z[0],w=z[1];c.fx=z[2];box.replaceChildren();
   var g=el("div","display:grid;grid-template-columns:1fr 1fr;gap:8px");
   [["Comissão do Bengu ("+c.bengu_pct+"%)",usd(c.bengu_commission)],["Para criadores",usd(c.creators_total)],["Criadores elegíveis",num(c.eligible_creators)],["Pedidos pendentes",num(c.pending_count)+" · "+usd(c.pending_amount)],["Já pago",usd(c.paid_amount)],["Receita bruta estimada",usd(c.gross)]].forEach(function(q){var d=el("div","background:#1b1f48;border-radius:10px;padding:10px;text-align:center");d.append(el("div","font-size:15px;font-weight:800",q[1]),el("div","font-size:11px;opacity:.7",q[0]));g.append(d)});box.append(g);
@@ -9840,6 +9839,100 @@ function openLive(){
  window.addEventListener("pagehide",stop,{once:true})}
 
 window.bengu_open_live=function(){if(!tok()){alert("Inicie sessão.");return}openLive()};
+})();
+</script>
+<script>/* BENGU 4.20: gravar reel com câmara frontal/traseira, música e filtros (não é direto) */
+(function(){
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",MAXS=60;
+var FILTERS=[["Normal","none"],["Preto e branco","grayscale(1)"],["Sépia","sepia(.85)"],["Quente","sepia(.3) saturate(1.5) hue-rotate(-15deg)"],["Frio","saturate(1.2) hue-rotate(15deg) brightness(1.05)"],["Vívido","saturate(1.8) contrast(1.1)"],["Suave","blur(.6px) brightness(1.1) saturate(1.1)"],["Dramático","contrast(1.5) brightness(.9)"],["Vintage","sepia(.5) contrast(.9) brightness(1.1) saturate(.8)"],["Néon","hue-rotate(90deg) saturate(2) contrast(1.2)"]];
+function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
+function me(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).user.id}catch(e){return null}}
+function hd(x){var o={apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/json"};if(x)for(var k in x)o[k]=x[k];return o}
+function el(t,css,txt){var e=document.createElement(t);if(css)e.style.cssText=css;if(txt!=null)e.textContent=txt;return e}
+var BTN="border:0;border-radius:12px;padding:10px 14px;font-weight:700;font-size:14px;cursor:pointer;",Y=BTN+"background:#f5b400;color:#14163a",G=BTN+"background:#2a2f66;color:#fff";
+function pickMime(){var c=["video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4","video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"];
+ for(var i=0;i<c.length;i++){try{if(window.MediaRecorder&&MediaRecorder.isTypeSupported(c[i]))return c[i]}catch(e){}}return""}
+function mm(s){s=Math.floor(s);return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
+
+window.bengu_open_record=window.bengu_open_live=function(){
+ if(!tok()){alert("Inicie sessão para gravar um reel.");return}
+ if(!navigator.mediaDevices||!window.MediaRecorder){alert("Este navegador não permite gravar vídeo.");return}
+ var W=720,H=1280,facing="user",filter="none",cam=null,micStream=null,raf=0,rec=null,chunks=[],blob=null,mime=pickMime(),t0=0,timer=null,
+  actx=null,dest=null,music=null,musicEl=null,musicSrc=null,musicLabel="",recording=false,closed=false;
+ var o=el("div","position:fixed;inset:0;z-index:100003;background:#000;color:#fff;display:flex;flex-direction:column;font-family:inherit"),
+  top=el("div","display:flex;justify-content:space-between;align-items:center;padding:10px 12px;gap:8px"),
+  title=el("b","font-size:16px","🎬 Gravar reel"),close=el("button",G,"Fechar"),
+  stage=el("div","flex:1;min-height:0;display:flex;align-items:center;justify-content:center;position:relative"),
+  cv=el("canvas","max-width:100%;max-height:100%;aspect-ratio:9/16;background:#111;border-radius:12px"),
+  vid=document.createElement("video"),pv=el("video","display:none;max-width:100%;max-height:100%;aspect-ratio:9/16;border-radius:12px;background:#111"),
+  badge=el("div","position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);border-radius:14px;padding:4px 12px;font-weight:800;display:none","0:00"),
+  panel=el("div","padding:10px 12px;background:#14163a;border-radius:16px 16px 0 0;max-height:46vh;overflow:auto");
+ cv.width=W;cv.height=H;vid.muted=true;vid.playsInline=true;vid.setAttribute("playsinline","");pv.controls=true;pv.playsInline=true;
+ stage.append(cv,pv,badge);top.append(title,close);o.append(top,stage,panel);document.body.append(o);
+ var ctx=cv.getContext("2d");
+ function say(t,ok){var m=el("div","margin:6px 0;padding:8px 10px;border-radius:8px;font-size:13px;background:"+(ok?"#1f5a3a":"#6b2330"),t);panel.prepend(m);setTimeout(function(){m.remove()},5000)}
+ function draw(){if(closed)return;raf=requestAnimationFrame(draw);if(vid.readyState<2)return;
+  var vw=vid.videoWidth,vh=vid.videoHeight,s=Math.max(W/vw,H/vh),dw=vw*s,dh=vh*s;ctx.save();try{ctx.filter=filter}catch(e){}
+  if(facing==="user"){ctx.translate(W,0);ctx.scale(-1,1)}ctx.drawImage(vid,(W-dw)/2,(H-dh)/2,dw,dh);ctx.restore()}
+ function startCam(){if(cam){cam.getTracks().forEach(function(t){t.stop()});cam=null}
+  return navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:facing},width:{ideal:720},height:{ideal:1280}},audio:false}).then(function(s){cam=s;vid.srcObject=s;return vid.play()})}
+ function stopAll(){closed=true;cancelAnimationFrame(raf);clearInterval(timer);try{if(rec&&rec.state!=="inactive")rec.stop()}catch(e){}
+  [cam,micStream].forEach(function(s){if(s)s.getTracks().forEach(function(t){t.stop()})});if(musicEl){musicEl.pause();musicEl.src=""}if(actx)try{actx.close()}catch(e){}
+  if(blob&&pv.src)try{URL.revokeObjectURL(pv.src)}catch(e){}}
+ close.onclick=function(){if(recording&&!confirm("Parar e sair? A gravação atual será perdida."))return;stopAll();o.remove()};
+
+ /* ---- controlos de gravação ---- */
+ var row1=el("div","display:flex;gap:8px;margin-bottom:8px"),flip=el("button",G+"flex:1","🔄 Trocar câmara"),micB=el("label","display:flex;align-items:center;gap:6px;font-size:13px;flex:1;justify-content:center"),
+  mic=el("input"),recB=el("button",BTN+"flex:1.2;background:#d62828;color:#fff","⏺ Gravar");mic.type="checkbox";mic.checked=true;micB.append(mic,"Gravar voz");
+ row1.append(flip,micB,recB);
+ var fr=el("div","display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px");
+ FILTERS.forEach(function(f,i){var b=el("button",(i?G:Y)+"white-space:nowrap;padding:7px 11px;font-size:13px",f[0]);b.onclick=function(){filter=f[1];[].forEach.call(fr.children,function(c){c.style.cssText=G+"white-space:nowrap;padding:7px 11px;font-size:13px"});b.style.cssText=Y+"white-space:nowrap;padding:7px 11px;font-size:13px"};fr.append(b)});
+ var mus=el("div","background:#1b1f48;border-radius:12px;padding:10px;margin-bottom:8px"),msel=el("select","width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid #3a4175;background:#0f1233;color:#fff;font-size:14px"),
+  mfile=el("input","display:none"),mpick=el("button",G+"margin-top:6px;width:100%","🎵 Escolher música do telemóvel"),mnote=el("div","font-size:12px;opacity:.7;margin-top:6px","A música toca durante a gravação e fica no vídeo. Use auscultadores se também gravar a voz.");
+ mfile.type="file";mfile.accept="audio/*,.mp3";mpick.onclick=function(){mfile.click()};
+ var tracks=[],o0=el("option","","Sem música");o0.value="";msel.append(o0);mus.append(el("b","","Música"),msel,mpick,mfile,mnote);
+ fetch(U+"/rest/v1/music_tracks?select=id,title,artist,audio_url&status=eq.published&audio_url=not.is.null&order=created_at.desc&limit=60",{headers:hd()}).then(function(r){return r.ok?r.json():[]}).then(function(r){tracks=r||[];tracks.forEach(function(t,i){var op=el("option","",(t.title||"Sem título")+(t.artist?" · "+t.artist:""));op.value=String(i);msel.append(op)})}).catch(function(){});
+ function setMusic(url,label){music=url;musicLabel=label;if(musicEl){musicEl.pause()}musicEl=null;musicSrc=null;if(url){mic.checked=false}else mic.checked=true}
+ msel.onchange=function(){if(msel.value==="")setMusic(null,"");else{var t=tracks[Number(msel.value)];setMusic(t.audio_url,t.title||"")}};
+ mfile.onchange=function(){var f=mfile.files[0];if(!f)return;setMusic(URL.createObjectURL(f),f.name.replace(/\.[a-z0-9]{1,5}$/i,""));msel.value="";mnote.textContent="Música escolhida: "+musicLabel};
+ panel.append(row1,fr,mus);
+
+ flip.onclick=function(){if(recording){say("Não pode trocar de câmara durante a gravação.");return}facing=facing==="user"?"environment":"user";startCam().catch(function(){facing=facing==="user"?"environment":"user";say("Não foi possível usar essa câmara.")})};
+
+ function ensureAudio(){if(actx)return;actx=new (window.AudioContext||window.webkitAudioContext)();dest=actx.createMediaStreamDestination()}
+ function startRecording(){
+  var out=cv.captureStream?cv.captureStream(30):null;if(!out){say("Este navegador não suporta gravação com filtros.");return Promise.resolve()}
+  var needAudio=!!music||mic.checked;var p=Promise.resolve();
+  if(needAudio){ensureAudio();if(actx.state==="suspended")actx.resume();
+   if(mic.checked)p=navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}).then(function(s){micStream=s;actx.createMediaStreamSource(s).connect(dest)}).catch(function(){mic.checked=false;say("Sem acesso ao microfone. A gravar sem voz.")});
+   p=p.then(function(){if(music){musicEl=new Audio();musicEl.crossOrigin="anonymous";musicEl.src=music;musicEl.loop=false;var s=actx.createMediaElementSource(musicEl);s.connect(dest);s.connect(actx.destination);musicEl.currentTime=0;return musicEl.play().catch(function(){say("Não foi possível tocar a música.")})}})}
+  return p.then(function(){
+   if(dest&&dest.stream.getAudioTracks().length&&(music||mic.checked))dest.stream.getAudioTracks().forEach(function(t){out.addTrack(t)});
+   chunks=[];try{rec=new MediaRecorder(out,mime?{mimeType:mime,videoBitsPerSecond:2500000}:{videoBitsPerSecond:2500000})}catch(e){rec=new MediaRecorder(out)}
+   rec.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data)};
+   rec.onstop=function(){recording=false;clearInterval(timer);badge.style.display="none";if(musicEl)musicEl.pause();if(micStream){micStream.getTracks().forEach(function(t){t.stop()});micStream=null}
+    blob=new Blob(chunks,{type:(rec.mimeType||mime||"video/webm").split(";")[0]});review()};
+   rec.start(500);recording=true;t0=Date.now();badge.style.display="block";recB.textContent="⏹ Parar";flip.disabled=true;mic.disabled=true;msel.disabled=true;mpick.disabled=true;
+   timer=setInterval(function(){var s=(Date.now()-t0)/1000;badge.textContent="🔴 "+mm(s)+" / "+mm(MAXS);if(s>=MAXS)stopRec()},250)})}
+ function stopRec(){if(rec&&rec.state!=="inactive")rec.stop()}
+ recB.onclick=function(){if(recording)stopRec();else startRecording().catch(function(e){say("Não foi possível gravar: "+e.message)})};
+
+ /* ---- revisão: guardar ou publicar ---- */
+ function review(){var ext=/mp4/.test(blob.type)?"mp4":"webm",url=URL.createObjectURL(blob);cv.style.display="none";pv.style.display="block";pv.src=url;pv.play().catch(function(){});
+  panel.replaceChildren();var cap=el("input","width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid #3a4175;background:#0f1233;color:#fff;font-size:15px;margin-bottom:8px");cap.placeholder="Legenda (opcional)";cap.maxLength=300;
+  var save=el("button",G+"width:100%;margin-bottom:6px","💾 Guardar no telemóvel"),pub=el("button",Y+"width:100%;margin-bottom:6px","📤 Publicar nos Reels"),again=el("button",G+"width:100%","↩ Gravar de novo"),size=el("div","font-size:12px;opacity:.7;margin-bottom:8px",(blob.size/1048576).toFixed(1).replace(".",",")+" MB · "+ext.toUpperCase()+(musicLabel?" · música: "+musicLabel:""));
+  panel.append(size,cap,pub,save,again);
+  save.onclick=function(){var a=document.createElement("a");a.href=url;a.download="bengu-reel-"+Date.now()+"."+ext;document.body.appendChild(a);a.click();a.remove();say("Guardado no telemóvel.",true)};
+  again.onclick=function(){try{URL.revokeObjectURL(url)}catch(e){}pv.pause();pv.removeAttribute("src");pv.style.display="none";cv.style.display="";blob=null;recording=false;recB.textContent="⏺ Gravar";flip.disabled=false;mic.disabled=false;msel.disabled=false;mpick.disabled=false;panel.replaceChildren(row1,fr,mus)};
+  pub.onclick=function(){pub.disabled=true;pub.textContent="A enviar…";var uid=me(),path=uid+"/"+Date.now()+"-reel."+ext;
+   fetch(U+"/storage/v1/object/media/"+path,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":blob.type,"x-upsert":"false"},body:blob}).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(/exceeded|too large|payload/i.test(t)?"O vídeo é demasiado grande.":"Não foi possível enviar o vídeo.")})})
+   .then(function(){var item={url:U+"/storage/v1/object/public/media/"+path,name:"reel."+ext,size:(blob.size/1048576).toFixed(1).replace(".",",")+" MB",kind:"video"};if(musicLabel)item.music=musicLabel;
+    return fetch(U+"/rest/v1/posts",{method:"POST",headers:hd({Prefer:"return=minimal"}),body:JSON.stringify({user_id:uid,type:"media",body:cap.value,media:[item],allow_download:true,visibility:"public"})}).then(function(r){if(!r.ok)return r.text().then(function(t){if(/TAXA_PUBLICACAO/.test(t)){setTimeout(function(){window.bengu_fee_open&&window.bengu_fee_open()},50);throw new Error("Pague a taxa de publicação para publicar.")}throw new Error("Não foi possível publicar.")})})})
+   .then(function(){say("Reel publicado!",true);setTimeout(function(){stopAll();o.remove();location.reload()},1200)})
+   .catch(function(e){pub.disabled=false;pub.textContent="📤 Publicar nos Reels";say(e.message)})}}
+
+ startCam().then(function(){draw()}).catch(function(){say("Sem acesso à câmara. Permita a câmara nas definições do navegador.")});
+};
 })();
 </script>
 </body>

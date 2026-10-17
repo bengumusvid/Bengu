@@ -9866,15 +9866,17 @@ window.bengu_open_record=window.bengu_open_live=function(){
  var SM="border:0;border-radius:999px;padding:7px 12px;font-weight:700;font-size:13px;cursor:pointer;background:rgba(0,0,0,.45);color:#fff;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);";
  var o=el("div","position:fixed;inset:0;z-index:100003;background:#000;color:#fff;font-family:inherit;overflow:hidden"),
   stage=el("div","position:absolute;inset:0"),
-  cv=el("canvas","width:100%;height:100%;object-fit:cover;background:#000;display:block"),
+  cv=el("canvas","width:100%;height:100%;object-fit:contain;background:#000;display:block"),
   vid=document.createElement("video"),pv=el("video","display:none;width:100%;height:100%;object-fit:contain;background:#000"),
   top=el("div","position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:"+SAFE_T+" 10px 0;z-index:3;pointer-events:none"),
   close=el("button",SM+"pointer-events:auto;width:38px;height:38px;padding:0;font-size:17px","✕"),
   badge=el("div","background:rgba(0,0,0,.55);border-radius:14px;padding:4px 12px;font-weight:800;font-size:13px;visibility:hidden","0:00"),
-  hq=el("div","font-size:11px;font-weight:800;background:rgba(0,0,0,.45);border-radius:10px;padding:4px 8px","HD"),
+  hq=el("div","font-size:11px;font-weight:800;background:rgba(0,0,0,.45);border-radius:10px;padding:4px 8px;pointer-events:auto","HD"),
+  fitB=el("button",SM+"pointer-events:auto;width:38px;height:38px;padding:0;font-size:17px","⤢"),
   panel=el("div","position:absolute;left:0;right:0;bottom:0;padding:24px 10px "+SAFE_B+";z-index:3;background:linear-gradient(to top,rgba(0,0,0,.65),rgba(0,0,0,0))");
  cv.width=W;cv.height=H;vid.muted=true;vid.playsInline=true;vid.setAttribute("playsinline","");pv.controls=true;pv.playsInline=true;
- stage.append(cv,pv);top.append(close,badge,hq);o.append(stage,top,panel);document.body.append(o);
+ stage.append(cv,pv);var hr_=el("div","display:flex;gap:6px;align-items:center");hr_.append(hq,fitB);top.append(close,badge,hr_);
+ var fill=false;fitB.setAttribute("aria-label","Ajustar ecrã");fitB.onclick=function(){fill=!fill;cv.style.objectFit=fill?"cover":"contain";fitB.textContent=fill?"⤡":"⤢"};o.append(stage,top,panel);document.body.append(o);
  var ctx=cv.getContext("2d");
  function say(t,ok){var m=el("div","margin:0 0 8px;padding:8px 10px;border-radius:10px;font-size:13px;background:"+(ok?"#1f5a3a":"#6b2330"),t);panel.prepend(m);setTimeout(function(){m.remove()},5000)}
  function paint(alpha,f){ctx.save();ctx.globalAlpha=alpha;try{ctx.filter=f||"none"}catch(e){}
@@ -9890,10 +9892,12 @@ window.bengu_open_record=window.bengu_open_live=function(){
  function startCam(){if(cam){cam.getTracks().forEach(function(t){t.stop()});cam=null}
   var vc={facingMode:{ideal:facing},width:{ideal:1080},height:{ideal:1920},frameRate:{ideal:30,max:60}};
   return navigator.mediaDevices.getUserMedia({video:vc,audio:false}).catch(function(){return navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:facing}},audio:false})}).then(function(s){cam=s;vid.srcObject=s;
-   try{var tr=s.getVideoTracks()[0],st=tr.getSettings(),sh=Math.min(st.width||720,st.height||1280);W=Math.max(480,Math.min(1080,sh));W-=W%2;H=Math.round(W*16/9);H-=H%2;cv.width=W;cv.height=H;
-    hq.textContent=(sh>=1080?"FHD":sh>=720?"HD":"SD")+" "+Math.round(st.frameRate||30)+"fps";
-    try{tr.applyConstraints({advanced:[{focusMode:"continuous"},{exposureMode:"continuous"},{whiteBalanceMode:"continuous"}]}).catch(function(){})}catch(e){}}catch(e){}
-   return vid.play()})}
+   var tr=s.getVideoTracks()[0],st={};try{st=tr.getSettings()}catch(e){}
+   try{tr.applyConstraints({advanced:[{zoom:1},{focusMode:"continuous"},{exposureMode:"continuous"},{whiteBalanceMode:"continuous"}]}).catch(function(){})}catch(e){}
+   return vid.play().then(function(){return new Promise(function(r){if(vid.videoWidth)r();else vid.onloadedmetadata=function(){r()}})}).then(function(){
+    var vw=vid.videoWidth||st.width||720,vh=vid.videoHeight||st.height||1280,sh=Math.min(vw,vh),S=Math.min(1080,sh),k=S/sh;
+    W=Math.round(vw*k);H=Math.round(vh*k);W-=W%2;H-=H%2;cv.width=W;cv.height=H;
+    hq.textContent=(sh>=1080?"FHD":sh>=720?"HD":"SD")+" "+Math.round(st.frameRate||30)+"fps"})})}
  function stopAll(){closed=true;cancelAnimationFrame(raf);clearInterval(timer);try{if(rec&&rec.state!=="inactive")rec.stop()}catch(e){}
   [cam,micStream].forEach(function(s){if(s)s.getTracks().forEach(function(t){t.stop()})});if(musicEl){musicEl.pause();musicEl.src=""}if(actx)try{actx.close()}catch(e){}
   if(blob&&pv.src)try{URL.revokeObjectURL(pv.src)}catch(e){}}

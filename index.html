@@ -9837,7 +9837,7 @@ window.bengu_open_record=window.bengu_open_live=function(){
   durB=el("button",SM+"pointer-events:auto;height:38px;padding:0 10px;font-size:13px","⏱ 1:00"),
   panel=el("div","position:absolute;left:0;right:0;bottom:0;padding:24px 10px "+SAFE_B+";z-index:3;background:linear-gradient(to top,rgba(0,0,0,.65),rgba(0,0,0,0))");
  cv.width=W;cv.height=H;vid.muted=true;vid.playsInline=true;vid.setAttribute("playsinline","");pv.controls=true;pv.playsInline=true;
- stage.append(cv,pv);var hr_=el("div","display:flex;gap:6px;align-items:center");hr_.append(hq,durB,fitB);MAXS=60;durB.onclick=function(){if(recording)return;MAXS=MAXS===60?300:60;durB.textContent="⏱ "+mm(MAXS);say(MAXS>60?"Até 5:00 com a qualidade máxima (cerca de 380 MB no máximo).":"Até 1:00 com a qualidade máxima.",true);if(typeof draw==="function")draw()};top.append(close,badge,hr_);
+ stage.append(cv,pv);var hr_=el("div","display:flex;gap:6px;align-items:center");hr_.append(hq,durB,fitB);MAXS=60;durB.onclick=function(){if(recording)return;MAXS=MAXS===60?300:60;durB.textContent="⏱ "+mm(MAXS);say(MAXS>60?"Até 5:00 com a qualidade máxima (cerca de 380 MB no máximo).":"Até 1:00 com a qualidade máxima.",true);edDraw()};top.append(close,badge,hr_);
  var fill=false;fitB.setAttribute("aria-label","Ajustar ecrã");fitB.onclick=function(){fill=!fill;cv.style.objectFit=fill?"cover":"contain";fitB.textContent=fill?"⤡":"⤢"};o.append(stage,top,panel);document.body.append(o);
  var ctx=cv.getContext("2d");
  function say(t,ok){var m=el("div","margin:0 0 8px;padding:8px 10px;border-radius:10px;font-size:13px;background:"+(ok?"#1f5a3a":"#6b2330"),t);panel.prepend(m);setTimeout(function(){m.remove()},5000)}
@@ -9938,8 +9938,8 @@ window.bengu_open_record=window.bengu_open_live=function(){
  function btnState(){bUndo.style.opacity=hist.length?"1":".4";bRedo.style.opacity=redoS.length?"1":".4"}
  function push(){hist.push(snapS());if(hist.length>60)hist.shift();redoS=[];btnState()}
  function restoreS(j){var o=JSON.parse(j);clips=o.c;markers=o.m;sel=Math.max(0,Math.min(o.s,clips.length-1));pos=o.p}
- bUndo.onclick=function(){if(!hist.length){say("Nada para desfazer.");return}redoS.push(snapS());restoreS(hist.pop());draw();renderSub();btnState()};
- bRedo.onclick=function(){if(!redoS.length){say("Nada para refazer.");return}hist.push(snapS());restoreS(redoS.pop());draw();renderSub();btnState()};
+ bUndo.onclick=function(){if(!hist.length){say("Nada para desfazer.");return}redoS.push(snapS());restoreS(hist.pop());edDraw();renderSub();btnState()};
+ bRedo.onclick=function(){if(!redoS.length){say("Nada para refazer.");return}hist.push(snapS());restoreS(redoS.pop());edDraw();renderSub();btnState()};
  hdr.append(bUndo,bRedo);
  function makePeaks(){var d=buf.getChannelData(0),n=Math.ceil(buf.duration*100),step=Math.max(1,Math.floor(buf.sampleRate/100)),mx=0.001;peaks=new Float32Array(n);
   for(var i=0;i<n;i++){var m=0,e=Math.min(d.length,(i+1)*step);for(var j=i*step;j<e;j+=4){var v=Math.abs(d[j]);if(v>m)m=v}peaks[i]=m;if(m>mx)mx=m}
@@ -9963,21 +9963,21 @@ window.bengu_open_record=window.bengu_open_live=function(){
   var xa=c.a*PPST,xb=c.b*PPST;g.fillStyle="#f5b400";g.fillRect(xa,6,xb-xa,52);bars(g,xa,xb-xa,c.a,c.b,"rgba(20,22,58,.85)");
   info.textContent="Arraste as setas laranja na onda: ▸ início e ◂ fim";hint.textContent=""}
  function placeH(){if(tool==="aparar"&&clips[sel]){var c=clips[sel];hS.style.display=hE.style.display="flex";hS.style.left=(c.a*PPST)+"px";hE.style.left=(PAD+c.b*PPST)+"px"}else hS.style.display=hE.style.display="none"}
- function draw(){if(!buf||!clips.length)return;if(tool==="aparar")drawSrc();else drawNormal();placeH();updTrim()}
+ function edDraw(){if(!buf||!clips.length)return;if(tool==="aparar")drawSrc();else drawNormal();placeH();updTrim()}
  function updTrim(){if(trimInfo&&clips[sel]){var c=clips[sel];trimInfo.textContent="▸ Início "+t2(c.a)+"   ◂ Fim "+t2(c.b)+"   (dura "+t2(cdur(c))+")"}}
  inner.append(wf,hS,hE);tl.append(inner);
  wf.onclick=function(){};
- tl.addEventListener("click",function(e){if(tool==="aparar"||e.target===hS||e.target===hE)return;var r=wf.getBoundingClientRect();pos=Math.max(0,Math.min(total()-.01,(e.clientX-r.left)/PPS));sel=clipAt(pos);draw();renderSub()});
+ tl.addEventListener("click",function(e){if(tool==="aparar"||e.target===hS||e.target===hE)return;var r=wf.getBoundingClientRect();pos=Math.max(0,Math.min(total()-.01,(e.clientX-r.left)/PPS));sel=clipAt(pos);edDraw();renderSub()});
  function bindH(h,isS){var grab=0,s0=null,on=false;
   h.addEventListener("pointerdown",function(e){e.preventDefault();e.stopPropagation();try{h.setPointerCapture(e.pointerId)}catch(_){}var c=clips[sel],r=inner.getBoundingClientRect();grab=(e.clientX-r.left-PAD)/PPST-(isS?c.a:c.b);s0=snapS();on=true});
   h.addEventListener("pointermove",function(e){if(!on)return;var c=clips[sel],r=inner.getBoundingClientRect(),t=Math.round(((e.clientX-r.left-PAD)/PPST-grab)*20)/20;
    if(isS)c.a=Math.max(0,Math.min(t,c.b-.3));else c.b=Math.min(buf.duration,Math.max(t,c.a+.3));
-   var tr=tl.getBoundingClientRect();if(e.clientX<tr.left+30)tl.scrollLeft-=10;else if(e.clientX>tr.right-30)tl.scrollLeft+=10;draw()});
-  function end(){if(!on)return;on=false;if(s0&&s0!==snapS()){hist.push(s0);if(hist.length>60)hist.shift();redoS=[];btnState()}draw()}
+   var tr=tl.getBoundingClientRect();if(e.clientX<tr.left+30)tl.scrollLeft-=10;else if(e.clientX>tr.right-30)tl.scrollLeft+=10;edDraw()});
+  function end(){if(!on)return;on=false;if(s0&&s0!==snapS()){hist.push(s0);if(hist.length>60)hist.shift();redoS=[];btnState()}edDraw()}
   h.addEventListener("pointerup",end);h.addEventListener("pointercancel",end)}
  bindH(hS,true);bindH(hE,false);
  function sl(label,min,max,step,val,fmt,on){var w=el("div","display:flex;align-items:center;gap:8px;margin:6px 0;font-size:13px"),l=el("span","width:76px;flex:none",label),r=el("input","flex:1;accent-color:#f5b400"),v=el("span","width:50px;text-align:right;opacity:.85",fmt(val));
-  r.type="range";r.min=min;r.max=max;r.step=step;r.value=val;r.addEventListener("pointerdown",push);r.oninput=function(){var x=Number(r.value),y=on(x);if(typeof y==="number"){x=y;r.value=y}v.textContent=fmt(x);draw()};w.append(l,r,v);return w}
+  r.type="range";r.min=min;r.max=max;r.step=step;r.value=val;r.addEventListener("pointerdown",push);r.oninput=function(){var x=Number(r.value),y=on(x);if(typeof y==="number"){x=y;r.value=y}v.textContent=fmt(x);edDraw()};w.append(l,r,v);return w}
  function chipB(txt,on,act){var b=el("button",(act?Y:G)+"padding:7px 11px;font-size:13px;flex:none;white-space:nowrap",txt);b.onclick=on;return b}
  var VF=[["normal","Normal"],["eco","Eco"],["robo","Robô"],["radio","Rádio"],["grave","Mais graves"]];
  function renderSub(){sub.replaceChildren();trimInfo=null;var c=clips[sel];if(!c||!buf)return;
@@ -9985,23 +9985,23 @@ window.bengu_open_record=window.bengu_open_live=function(){
   else if(tool==="volume"){sub.append(sl("Volume",0,2,.05,c.vol,pct,function(x){c.vol=x;return x}))}
   else if(tool==="fade"){sub.append(sl("Fade in",0,5,.1,c.fi,t2,function(x){c.fi=Math.min(x,cdur(c)/2);return c.fi}),sl("Fade out",0,5,.1,c.fo,t2,function(x){c.fo=Math.min(x,cdur(c)/2);return c.fo}))}
   else if(tool==="voz"){var row=el("div","display:flex;gap:6px;overflow-x:auto;padding:4px 0");VF.forEach(function(v){row.append(chipB(v[1],function(){voiceFx=v[0];renderSub()},voiceFx===v[0]))});sub.append(row,el("div","font-size:11px;opacity:.6","Muda a sua voz na gravação (ligue o 🎙️). Use auscultadores."))}
-  else if(tool==="marcador"){var row2=el("div","display:flex;gap:6px;overflow-x:auto;padding:4px 0");markers.slice().sort(function(a,b){return a-b}).forEach(function(m){row2.append(chipB("🚩 "+t2(m),function(){pos=m;sel=clipAt(pos);draw();renderSub()},false))});
-   if(markers.length)row2.append(chipB("Limpar",function(){push();markers=[];draw();renderSub()},false));sub.append(row2,el("div","font-size:11px;opacity:.6",markers.length?"Toque num marcador para saltar até ele.":"Toque em 🚩 para marcar a posição atual."))}}
+  else if(tool==="marcador"){var row2=el("div","display:flex;gap:6px;overflow-x:auto;padding:4px 0");markers.slice().sort(function(a,b){return a-b}).forEach(function(m){row2.append(chipB("🚩 "+t2(m),function(){pos=m;sel=clipAt(pos);edDraw();renderSub()},false))});
+   if(markers.length)row2.append(chipB("Limpar",function(){push();markers=[];edDraw();renderSub()},false));sub.append(row2,el("div","font-size:11px;opacity:.6",markers.length?"Toque num marcador para saltar até ele.":"Toque em 🚩 para marcar a posição atual."))}}
  function setTool(k){tool=tool===k?"":k;[].forEach.call(tb.children,function(b){b.style.background=b.dataset.k===tool?"#f5b400":"#2a2f66";b.style.color=b.dataset.k===tool?"#14163a":"#fff"});
-  renderSub();draw();if(tool==="aparar"&&clips[sel])tl.scrollLeft=Math.max(0,clips[sel].a*PPST-70);else if(!tool)tl.scrollLeft=Math.max(0,cstart(sel)*PPS-40)}
+  renderSub();edDraw();if(tool==="aparar"&&clips[sel])tl.scrollLeft=Math.max(0,clips[sel].a*PPST-70);else if(!tool)tl.scrollLeft=Math.max(0,cstart(sel)*PPS-40)}
  function splitClip(t){var i=clipAt(t),s0=cstart(i),d=t-s0;if(d<.3||cdur(clips[i])-d<.3){say("Posicione dentro de uma parte, a mais de 0,3 s das pontas.");return false}
   push();var src=clips[i].a+d,A=Object.assign({},clips[i],{b:src,fo:0}),B=Object.assign({},clips[i],{a:src,fi:0});clips.splice(i,1,A,B);sel=i+1;pos=t;return true}
  function joinAtX(x){var best=-1,bd=1e9;for(var i=1;i<clips.length;i++){var d=Math.abs(cstart(i)*PPS-x);if(d<bd){bd=d;best=i}}
   if(best<0||bd>80){say("Junte os dois dedos sobre o corte entre duas partes.");return}
   var c1=clips[best-1],c2=clips[best];if(Math.abs(c1.b-c2.a)>.05){say("Estas partes vêm de pontos diferentes da música e já tocam seguidas.");return}
-  push();clips.splice(best-1,2,{a:c1.a,b:c2.b,vol:c1.vol,fi:c1.fi,fo:c2.fo});sel=best-1;pos=cstart(sel);draw();renderSub();say("Partes unidas. Toque em Desfazer para voltar.",true)}
+  push();clips.splice(best-1,2,{a:c1.a,b:c2.b,vol:c1.vol,fi:c1.fi,fo:c2.fo});sel=best-1;pos=cstart(sel);edDraw();renderSub();say("Partes unidas. Toque em Desfazer para voltar.",true)}
  function act(k){var c=clips[sel];if(!buf||!c)return;
   if(k==="dividir"){if(!splitClip(pos))return}
   else if(k==="excluir"){if(clips.length<2){say("Só há uma parte. Para retirar a música escolha “Sem música”.");return}push();var s1=cstart(sel);clips.splice(sel,1);sel=Math.min(sel,clips.length-1);pos=Math.min(s1,total()-.01)}
   else if(k==="copia"){push();clips.splice(sel+1,0,Object.assign({},c));sel++;pos=cstart(sel)}
-  else if(k==="marcador"){push();var near=-1;markers.forEach(function(m,j){if(Math.abs(m-pos)<.4)near=j});if(near>=0)markers.splice(near,1);else markers.push(pos);if(tool!=="marcador")setTool("marcador");else{draw();renderSub()}return}
+  else if(k==="marcador"){push();var near=-1;markers.forEach(function(m,j){if(Math.abs(m-pos)<.4)near=j});if(near>=0)markers.splice(near,1);else markers.push(pos);if(tool!=="marcador")setTool("marcador");else{edDraw();renderSub()}return}
   else if(k==="subst"){mfile.click();return}
-  draw();renderSub()}
+  edDraw();renderSub()}
  [["aparar","✂️","Aparar"],["volume","🔊","Volume"],["fade","📉","Fade"],["voz","🎛️","Voz"],["dividir","⚡","Dividir"],["excluir","🗑️","Excluir"],["copia","📄","Cópia"],["marcador","🚩","Marcador"],["subst","🔄","Substituir"]].forEach(function(t){
   var b=el("button","flex:none;min-width:62px;border:0;border-radius:12px;padding:6px 6px;background:#2a2f66;color:#fff;font-size:11px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px");
   b.dataset.k=t[0];b.append(el("span","font-size:19px",t[1]),el("span","",t[2]));
@@ -10011,7 +10011,7 @@ window.bengu_open_record=window.bengu_open_live=function(){
  tl.addEventListener("touchstart",function(e){if(tool==="aparar"){g0=null;return}if(e.touches.length===2){var a=e.touches[0],b=e.touches[1];g0={d:Math.abs(a.clientX-b.clientX),mx:(a.clientX+b.clientX)/2,d1:null}}else g0=null},{passive:true});
  tl.addEventListener("touchmove",function(e){if(g0&&e.touches.length===2)g0.d1=Math.abs(e.touches[0].clientX-e.touches[1].clientX)},{passive:true});
  tl.addEventListener("touchend",function(){if(!g0||g0.d1===null||!buf)return;var g=g0;g0=null;var ratio=g.d1/Math.max(8,g.d),r=wf.getBoundingClientRect(),x=g.mx-r.left;
-  if(ratio>1.4){var t=Math.max(0,Math.min(total()-.01,x/PPS));if(splitClip(t)){draw();renderSub();say("Música dividida. Toque em Desfazer para voltar.",true)}}
+  if(ratio>1.4){var t=Math.max(0,Math.min(total()-.01,x/PPS));if(splitClip(t)){edDraw();renderSub();say("Música dividida. Toque em Desfazer para voltar.",true)}}
   else if(ratio<.7)joinAtX(x)},{passive:true});
  ed.append(hdr,tl,info,hint,tb,sub,pvB);btnState();
  function schedule(ac,out,t0,maxLen,list){list=list||clips;var srcs=[],t=t0,T=0;
@@ -10036,7 +10036,7 @@ window.bengu_open_record=window.bengu_open_live=function(){
   if(!url){mic.checked=true;paintMic();return}
   mic.checked=false;paintMic();ensureAudio();mnote.textContent="A carregar a música…";
   fetch(url).then(function(r){if(!r.ok)throw 0;return r.arrayBuffer()}).then(function(ab){return new Promise(function(ok,no){var pr=actx.decodeAudioData(ab,ok,no);if(pr&&pr.catch)pr.catch(no)})}).then(function(b){if(url!==music)return;
-   buf=b;makePeaks();clips=[{a:0,b:b.duration,vol:1,fi:0,fo:0}];hist=[];redoS=[];btnState();mnote.textContent="Música pronta. Edite abaixo; o resultado é gravado no reel.";ed.style.display="block";tool="";[].forEach.call(tb.children,function(x){x.style.background="#2a2f66";x.style.color="#fff"});renderSub();draw()})
+   buf=b;makePeaks();clips=[{a:0,b:b.duration,vol:1,fi:0,fo:0}];hist=[];redoS=[];btnState();mnote.textContent="Música pronta. Edite abaixo; o resultado é gravado no reel.";ed.style.display="block";tool="";[].forEach.call(tb.children,function(x){x.style.background="#2a2f66";x.style.color="#fff"});renderSub();edDraw()})
   .catch(function(){if(url!==music)return;music=null;musicLabel="";mnote.textContent="Não foi possível abrir esta música para editar. Tente outra.";say("Não foi possível abrir esta música.")})}
  msel.onchange=function(){if(msel.value==="")setMusic(null,"");else{var t=tracks[Number(msel.value)];setMusic(t.audio_url,t.title||"")}};
  mfile.onchange=function(){var f=mfile.files[0];if(!f)return;setMusic(URL.createObjectURL(f),f.name.replace(/\.[a-z0-9]{1,5}$/i,""));msel.value="";mnote.textContent="Música escolhida: "+musicLabel};

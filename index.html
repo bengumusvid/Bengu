@@ -9834,9 +9834,10 @@ window.bengu_open_record=window.bengu_open_live=function(){
   badge=el("div","background:rgba(0,0,0,.55);border-radius:14px;padding:4px 12px;font-weight:800;font-size:13px;visibility:hidden","0:00"),
   hq=el("div","font-size:11px;font-weight:800;background:rgba(0,0,0,.45);border-radius:10px;padding:4px 8px;pointer-events:auto","HD"),
   fitB=el("button",SM+"pointer-events:auto;width:38px;height:38px;padding:0;font-size:17px","⤢"),
+  durB=el("button",SM+"pointer-events:auto;height:38px;padding:0 10px;font-size:13px","⏱ 1:00"),
   panel=el("div","position:absolute;left:0;right:0;bottom:0;padding:24px 10px "+SAFE_B+";z-index:3;background:linear-gradient(to top,rgba(0,0,0,.65),rgba(0,0,0,0))");
  cv.width=W;cv.height=H;vid.muted=true;vid.playsInline=true;vid.setAttribute("playsinline","");pv.controls=true;pv.playsInline=true;
- stage.append(cv,pv);var hr_=el("div","display:flex;gap:6px;align-items:center");hr_.append(hq,fitB);top.append(close,badge,hr_);
+ stage.append(cv,pv);var hr_=el("div","display:flex;gap:6px;align-items:center");hr_.append(hq,durB,fitB);MAXS=60;durB.onclick=function(){if(recording)return;MAXS=MAXS===60?300:60;durB.textContent="⏱ "+mm(MAXS);say(MAXS>60?"Até 5:00 com a qualidade máxima (cerca de 380 MB no máximo).":"Até 1:00 com a qualidade máxima.",true);if(typeof draw==="function")draw()};top.append(close,badge,hr_);
  var fill=false;fitB.setAttribute("aria-label","Ajustar ecrã");fitB.onclick=function(){fill=!fill;cv.style.objectFit=fill?"cover":"contain";fitB.textContent=fill?"⤡":"⤢"};o.append(stage,top,panel);document.body.append(o);
  var ctx=cv.getContext("2d");
  function say(t,ok){var m=el("div","margin:0 0 8px;padding:8px 10px;border-radius:10px;font-size:13px;background:"+(ok?"#1f5a3a":"#6b2330"),t);panel.prepend(m);setTimeout(function(){m.remove()},5000)}

@@ -932,19 +932,21 @@ function Cg({ file: e, maxSeconds: t, maxBytes: r, onDone: n, onCancel: s }) {
   }, []);
   return u.jsx("div", { ref, className: "fixed inset-0", style: { zIndex: 70, background: "#F7F7F7" } });
 }
-const jg = B.createContext({ autoplay: !0, autoNext: !0, theme: "light" }),
+const jg = B.createContext({ autoplay: !1, autoNext: !0, theme: "light" }),
   Tg = () => B.useContext(jg);
 function $_() {
   try {
-    return {
-      autoplay: !0,
-      autoNext: !0,
-      theme: "light",
-      muteChat: !1,
-      ...JSON.parse(localStorage.getItem("bengu_prefs") || "{}"),
-    };
+    const p = JSON.parse(localStorage.getItem("bengu_prefs") || "{}");
+    if (!p.ap1) {
+      p.autoplay = !1;
+      p.ap1 = 1;
+      try {
+        localStorage.setItem("bengu_prefs", JSON.stringify(p));
+      } catch {}
+    }
+    return { autoplay: !1, autoNext: !0, theme: "light", muteChat: !1, ...p };
   } catch {
-    return { autoplay: !0, autoNext: !0, theme: "light", muteChat: !1 };
+    return { autoplay: !1, autoNext: !0, theme: "light", muteChat: !1 };
   }
 }
 const bl =
@@ -4126,7 +4128,7 @@ function ex({ r: e, cardProps: t }) {
     n = B.useRef(null),
     { autoplay: s, autoNext: i } = Tg(),
     [a, o] = B.useState(!0),
-    [l, c] = B.useState(!1),
+    [l, c] = B.useState(!s),
     [hz, setHz] = B.useState(!1),
     d = t(e.post);
   B.useEffect(() => {
@@ -9566,7 +9568,7 @@ function mm(s){s=Math.floor(s);return Math.floor(s/60)+":"+String(s%60).padStart
 window.bengu_open_record=window.bengu_open_live=function(){
  if(!tok()){alert("Inicie sessão para gravar um reel.");return}
  if(!navigator.mediaDevices||!window.MediaRecorder){alert("Este navegador não permite gravar vídeo.");return}
- var W=1080,H=1920,facing="user",filter="none",beauty={skin:40,light:25,tone:15},beautyOn=true,cam=null,micStream=null,raf=0,rec=null,chunks=[],blob=null,mime=pickMime(),t0=0,timer=null,
+ var W=720,H=1280,facing="user",filter="none",beauty={skin:40,light:25,tone:15},beautyOn=true,cam=null,micStream=null,raf=0,rec=null,chunks=[],blob=null,mime=pickMime(),t0=0,timer=null,
   actx=null,dest=null,music=null,musicEl=null,musicSrc=null,musicLabel="",recording=false,closed=false,openTab="";
  var SAFE_T="calc(8px + env(safe-area-inset-top,0px))",SAFE_B="calc(10px + env(safe-area-inset-bottom,0px))";
  var SM="border:0;border-radius:999px;padding:7px 12px;font-weight:700;font-size:13px;cursor:pointer;background:rgba(0,0,0,.45);color:#fff;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);";

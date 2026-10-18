@@ -9946,7 +9946,11 @@ window.bengu_open_record=window.bengu_open_live=function(){
    edBox=el("div","display:none;margin-bottom:6px;padding:6px 4px;border-radius:12px;background:rgba(255,255,255,.06)"),edOpen=false,bar2=el("div","display:flex;align-items:center;justify-content:space-between;gap:8px");
   save.setAttribute("aria-label","Guardar");pub.setAttribute("aria-label","Publicar");again.setAttribute("aria-label","Gravar de novo");edit.setAttribute("aria-label","Editar");
   cap.value=capVal;cap.oninput=function(){capVal=cap.value};panel.style.maxHeight="48vh";panel.style.overflowY="auto";
-  edit.onclick=function(){edOpen=!edOpen;edBox.style.display=edOpen?"block":"none";edit.style.background=edOpen?"#f5b400":"#2a2f66";edit.style.color=edOpen?"#14163a":"#fff";if(edOpen&&!edBox.firstChild)videoEditor(edBox)};
+  edit.onclick=function(){if(!window.bgVideoEditor){say("Editor indisponível.");return}try{pv.pause()}catch(e){}
+   var host=el("div","position:fixed;inset:0;z-index:100010;background:#F7F7F7"),ed=null;document.body.append(host);
+   function shut(){try{ed&&ed.destroy()}catch(e){}host.remove()}
+   ed=window.bgVideoEditor(host,{file:new File([blob],"reel."+ext,{type:blob.type}),get:function(){return{maxSeconds:MAXS}},cancel:shut,
+    done:function(f,dur){shut();try{URL.revokeObjectURL(url)}catch(e){}blob=f;recDur=dur>0?dur:recDur;fxReset();review();say("Edição aplicada ao reel.",true)}})};
   bar2.append(edit,save,again,pub);panel.append(edBox,size,cap,bar2);
   save.onclick=function(){var a=document.createElement("a");a.href=url;a.download="bengu-reel-"+Date.now()+"."+ext;document.body.appendChild(a);a.click();a.remove();say("Guardado no telemóvel.",true)};
   again.onclick=function(){try{URL.revokeObjectURL(url)}catch(e){}pv.pause();pv.removeAttribute("src");pv.style.display="none";cv.style.display="block";blob=null;origBlob=null;capVal="";fxReset();panel.style.maxHeight="";panel.style.overflowY="";recording=false;recB.style.borderRadius="50%";recB.style.transform="";mic.disabled=false;flip.disabled=false;bMusic.disabled=false;flip.style.opacity=bMusic.style.opacity="";hq.style.display="";panel.style.background="linear-gradient(to top,rgba(0,0,0,.65),rgba(0,0,0,0))";panel.style.borderRadius="";panel.replaceChildren(sheet,bar)};
@@ -10354,7 +10358,7 @@ window.bgVideoEditor = function (root, P) {
   function endExport() { exporting = false; expOv.style.display = "none"; try { master.connect(ac.destination); } catch (e) { } }
   function finishExport() {
     var m = mr; if (!m) { endExport(); return; } m.onstop = function () {
-      endExport(); if (dead) return; var type = (m.mimeType || expMime || "video/webm").split(";")[0], name = (P.file.name || "video").replace(/\.[^.]+$/, ""), f = new File(mrChunks, name + "-editado" + (type.indexOf("mp4") >= 0 ? ".mp4" : ".webm"), { type: type }); mr = null; P.done(f);
+      endExport(); if (dead) return; var type = (m.mimeType || expMime || "video/webm").split(";")[0], name = (P.file.name || "video").replace(/\.[^.]+$/, ""), f = new File(mrChunks, name + "-editado" + (type.indexOf("mp4") >= 0 ? ".mp4" : ".webm"), { type: type }); mr = null; P.done(f, D);
     }; try { if (m.state !== "inactive") m.stop(); } catch (e) { endExport(); }
   }
   function cancelExport() { var m = mr; mr = null; exporting = false; pause(); if (m) { m.onstop = null; try { m.stop(); } catch (e) { } } endExport(); T = 0; setT(0); }

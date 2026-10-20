@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.21.0_18.10.2026" />
+    <meta name="bengu-build" content="4.22.0_20.10.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -1302,11 +1302,11 @@ function BgAd() {
   const E = B.createElement;
   return E(
     "div",
-    { style: { background: k.card, marginBottom: 8, padding: "8px 0", overflow: "hidden", minHeight: 100 } },
+    { style: { position: "relative", display: "block", clear: "both", zIndex: 0, isolation: "isolate", contain: "layout paint", background: k.card, marginBottom: 8, padding: "8px 0", overflow: "hidden", minHeight: 100 } },
     E("div", { style: { fontSize: 10, color: k.mute, letterSpacing: 0.6, padding: "0 16px 4px" } }, "PUBLICIDADE"),
     E("ins", {
       className: "adsbygoogle",
-      style: { display: "block" },
+      style: { display: "block", position: "static", width: "100%" },
       "data-ad-client": c.client,
       "data-ad-slot": c.slot,
       "data-ad-format": "auto",
@@ -5280,6 +5280,12 @@ function Pw_({ email: e }) {
         className: inp,
         style: st,
       }),
+      u.jsx("p", {
+        className: "text-xs font-bold leading-snug rounded-lg px-3 py-2 mb-2",
+        style: { background: "rgba(255,176,32,.16)", color: k.ink, border: "1px solid #FFB020" },
+        role: "note",
+        children: "⚠️ Atenção: memorize bem a sua palavra-passe ou copie-a para um local seguro. Se a esquecer, não será possível recuperar a conta.",
+      }),
       w &&
         u.jsx("p", {
           className: "text-xs mb-2",
@@ -8358,6 +8364,7 @@ u.jsxs("div", {
                 }),
               ],
             }),
+            z && !isPh && u.jsx("p", { className: "mt-3 text-xs font-bold leading-snug rounded-lg px-3 py-2", style: { background: "rgba(255,176,32,.16)", color: k.ink, border: "1px solid #FFB020" }, role: "note", children: "⚠️ Atenção: memorize bem a sua palavra-passe ou copie-a para um local seguro. Se a esquecer, não será possível recuperar a conta." }),
             isPh && d === "code" && u.jsx("input", { value: cod, onChange: (X) => scod(X.target.value.replace(/\D/g, "")), placeholder: x("codeLabel"), inputMode: "numeric", autoComplete: "one-time-code", className: te, style: { ...be, marginTop: 12 } }),
             pe &&
               u.jsx("p", {
@@ -8473,7 +8480,7 @@ window.bengu_legal=function(){var P=function(a,b){return[h("b",{},a),h("p",{styl
  P("1. Uso","O Bengu é para partilhar conteúdo. Não publique conteúdo ilegal, violento, sexual envolvendo menores, assédio, burlas ou conteúdo de que não tenha direitos. Contas que violem estas regras podem ser removidas."),
  P("2. Idade","É necessário ter pelo menos 13 anos. Menores de 18 anos têm mensagens e lives limitadas."),
  P("3. Dados","Guardamos o seu nome, utilizador, email ou telefone, país e o conteúdo que publica, para a app funcionar. Não vendemos os seus dados. Pode apagar a sua conta em Definições."),
- P("4. Concursos e pagamentos","Os votos pagos só contam depois de o pagamento ser confirmado. Taxas de inscrição não são reembolsáveis."),
+ P("4. Concursos e pagamentos","Os votos pagos só contam depois de o pagamento ser confirmado. Taxas de inscrição não são reembolsáveis. Cada utilizador paga as suas próprias taxas de transferência."),
  P("5. Denúncias","Pode denunciar publicações. Os administradores podem apagar conteúdo e bloquear contas."),
  P("6. Contacto","Para dúvidas ou pedidos sobre os seus dados, contacte a administração do Bengu.")))};
 window.bengu_recover=function(){var em=(prompt("Escreva o email da sua conta para receber o link de recuperação:")||"").trim().toLowerCase();if(!em)return;
@@ -8680,7 +8687,7 @@ function create(){stop();
  vis();
  box.replaceChildren(h("h3",{style:"color:"+LITE},"Criar "+C.label.toLowerCase()),
   h("div",{style:"padding:10px;border-radius:8px;background:#0f1437;border:1px dashed #3a4175;margin:6px 0;font-size:13px"},
-   "🔒 Divisão do total arrecadado (privada, só você vê): 1º 35% · 2º 25% · 3º 15% · 4º 5% · organizador 10%. Os valores são enviados automaticamente no fim da competição e a Bengu paga os custos de transferência."),
+   "🔒 Divisão do total arrecadado (privada, só você vê): 1º 35% · 2º 25% · 3º 15% · 4º 5% · organizador 10%. Os valores são enviados automaticamente no fim da competição. Cada utilizador paga as suas próprias taxas de transferência (descontadas do valor que recebe)."),
   t,d,lv,rg,co,pr,di,quote,pc,lab("Início da competição",st),lab("Fim da competição",en),
   h("div",{style:DIM},"Onde recebe a sua parte:"),om,oa,
   btn("Criar e pagar taxa",function(){
@@ -8742,7 +8749,7 @@ function dash(c){
    h("div",{style:CARD},[h("b",{},"🔒 Divisão (privada)"),
     row("🥇 1º lugar ("+d.pct.first+"%)",fmt(d.prize_first,cu)),row("🥈 2º lugar ("+d.pct.second+"%)",fmt(d.prize_second,cu)),row("🥉 3º lugar ("+d.pct.third+"%)",fmt(d.prize_third,cu)),row("4º lugar ("+d.pct.fourth+"%)",fmt(d.prize_fourth,cu)),
     row("A sua parte ("+d.pct.organizer+"%)",fmt(d.organizer_share,cu)),row("Conta Bengu (resto)",fmt(bengu,cu)),
-    h("div",{style:DIM},"Enviado automaticamente no fim. A Bengu paga os custos de transferência.")]),
+    h("div",{style:DIM},"Enviado automaticamente no fim. Cada utilizador paga as suas próprias taxas de transferência (descontadas do valor que recebe).")]),
    h("h4",{},"Concorrentes"),
    h("div",{},d.singers.map(function(s){return h("div",{style:CARD},[row(s.position+"º "+s.stage_name,s.votes+" votos"),h("div",{style:DIM},"Arrecadado: "+fmt(s.raised,cu))])})),
    d.payouts.length?h("h4",{},"Pagamentos"):"",
@@ -8962,6 +8969,10 @@ function api(p,m,b){var hd={apikey:K,Authorization:"Bearer "+(tok()||K),"Content
  return fetch(U+"/rest/v1/"+p,{method:m||"GET",headers:hd,body:b?JSON.stringify(b):undefined}).then(function(r){return r.json().catch(function(){return[]}).then(function(j){if(!r.ok){var t=(j&&j.message)||"Erro. Execute o SQL 4.4.";if(/schema cache|does not exist|Could not find/i.test(t))t="Falta actualizar a base de dados (cache de esquema de public.chat_requests): execute o SQL 4.4 no Supabase (SQL Editor).";throw new Error(t)}return j})})}
 function h(t,a,c){var e=document.createElement(t);for(var q in a||{})if(q!="on")e.setAttribute(q,a[q]);if(a&&a.on)for(var ev in a.on)e.addEventListener(ev,a.on[ev]);[].concat(c==null?[]:c).forEach(function(x){e.append(x)});return e}
 function toast(t){var d=h("div",{style:"position:fixed;left:12px;right:12px;bottom:90px;z-index:100001;padding:10px 14px;border-radius:10px;background:#12183A;color:#fff;font:14px system-ui;box-shadow:0 4px 16px rgba(0,0,0,.4)"},t);document.body.append(d);setTimeout(function(){d.remove()},3500)}
+/* BENGU 4.22: visualizações de notícias e jornais publicados na Bengu (contam como as das publicações) */
+var __bgSeenV={};
+function bgCountView(kind,n){try{if(!n||n.id==null||!tok())return;var k=kind+":"+n.id;if(__bgSeenV[k])return;var me=uid();if(me&&n.author_id==me)return;__bgSeenV[k]=1;fetch(U+"/rest/v1/rpc/bengu_bump_content_view",{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/json"},body:JSON.stringify({p_kind:kind,p_id:String(n.id)}),keepalive:true}).catch(function(){})}catch(e){}}
+function bgNV(kind,n,el){try{if(!("IntersectionObserver" in window)){bgCountView(kind,n);return}var io=new IntersectionObserver(function(es){if(es[0]&&es[0].isIntersecting){io.disconnect();bgCountView(kind,n)}},{threshold:.5});io.observe(el)}catch(e){}}
 function nm(id){return api("profiles?select=name&id=eq."+id).then(function(r){return r[0]?r[0].name:"Utilizador"}).catch(function(){return"Utilizador"})}
 /* pedir e esperar autorização antes de abrir uma conversa */
 window.bgGate=function(id,go){var me=uid();if(!me){toast("Inicie sessão.");return}
@@ -9113,7 +9124,7 @@ function openArticle(it){var b=sheet("📰 Notícia"),ti=String(it.title||""),m=
  var bar=h("div",{style:"display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"}),bt=function(t,fn,col){var x=h("button",{style:"padding:10px 16px;border:0;border-radius:10px;font-weight:800;background:"+(col||"#eef0f6")+";color:"+(col?"#fff":"#12183A")},t);x.addEventListener("click",fn);return x};
  bar.append(bt("🌐 Ler artigo completo",function(){window.open(it.link,"_blank","noopener")},"#1E88E5"),bt("📤 Partilhar",function(){shareNews(head,"",it.link)}));b.append(bar)}
 function loadPdfJs(){if(window.pdfjsLib)return Promise.resolve(window.pdfjsLib);return new Promise(function(ok,no){var s2=document.createElement("script");s2.src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";s2.onload=function(){try{window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";ok(window.pdfjsLib)}catch(e){no(e)}};s2.onerror=no;document.head.append(s2)})}
-function openPdf(n){var b=sheet("📰 "+n.title);b.parentNode.style.background="#e9e6dc";
+function openPdf(n){bgCountView("journal",n);var b=sheet("📰 "+n.title);b.parentNode.style.background="#e9e6dc";
  var info=h("p",{style:"font-size:13px;opacity:.7;margin:8px 0"},"A abrir o jornal…"),box=h("div",{style:"display:flex;flex-direction:column;gap:10px"});
  var dl=h("a",{href:n.pdf_url,target:"_blank",rel:"noopener",style:"display:inline-block;margin:4px 0 10px;font-weight:700;color:#1E88E5"},"⬇ Abrir / descarregar o PDF");
  b.append(info,dl,box);
@@ -9155,7 +9166,7 @@ window.bengu_news_open=function(){var b=sheet("📰 Notícias"),o=b.parentNode,a
   if(admin&&rep)bar.append(sb("Ver denúncias",function(){api("bengu_news_reports?select=reason,created_at&news_id=eq."+n.id+"&order=created_at").then(function(r){alert(r.map(function(x){return"• "+x.reason}).join("\n")||"Sem detalhes.")}).catch(function(e){alert(nmsg(e))})}));
   if(admin||(mine&&!rep))bar.append(sb("🗑 Apagar",function(){if(!confirm("Apagar esta notícia? Não pode ser desfeito."))return;api("bengu_news?id=eq."+n.id,"DELETE").then(function(){delete NC[f.k];show(cur)}).catch(function(e){alert(nmsg(e))})},"#B71C1C"));
   else if(mine&&rep)bar.append(h("span",{style:"font-size:12px;opacity:.7;align-self:center"},"Denunciada: só o administrador pode apagar."));
-  c.append(bar);return c}
+  c.append(bar);bgNV("news",n,c);return c}
  function normC(c){return String(c||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toUpperCase()}
  function isMZ(c){var n=normC(c);return n=="MZ"||n=="MOCAMBIQUE"||n=="MOZAMBIQUE"}
  function gmsg(e){var t=(e&&e.message)||"Erro.";if(/schema cache|does not exist|Could not find/i.test(t))t="Falta executar o SQL 4.9.5 no Supabase (SQL Editor).";return t}
@@ -9505,7 +9516,7 @@ window.bengu_earnings_panel=function(){
   function ph(){var v=sel.value;acc.placeholder=v==="paypal"?"E-mail do PayPal":(v==="visa"||v==="mastercard")?"Número da conta/cartão":"Número "+(v==="mpesa"?"M-Pesa":v==="emola"?"e-Mola":"mKesh")+" (258XXXXXXXXX)";acc.inputMode=v==="paypal"?"email":"tel"}
   sel.onchange=ph;ph();amt.placeholder="Valor em US$";amt.type="number";amt.min=s.min_withdraw;amt.step="0.01";
   go.onclick=function(){go.disabled=true;rpc("bengu_request_withdrawal",{p_method:sel.value,p_account:acc.value,p_amount:Number(amt.value)}).then(function(){msg(w,"Pedido enviado. O administrador vai tratar dele.",true);setTimeout(function(){m.close();window.bengu_earnings_panel()},1200)}).catch(function(e){go.disabled=false;msg(w,e.message,false)})};
-  w.append(sel,acc,amt,go,el("div","font-size:11px;opacity:.65;margin-top:6px","O pedido fica registado. O pagamento é feito pelo administrador até os fornecedores estarem ligados."));box.append(w);
+  w.append(sel,acc,amt,go,el("div","font-size:11px;opacity:.65;margin-top:6px","O pedido fica registado. O pagamento é feito pelo administrador até os fornecedores estarem ligados. As taxas de transferência são pagas por si e descontadas do valor levantado."));box.append(w);
   rest("bengu_withdrawals?select=id,method,amount_usd,status,note,created_at&user_id=eq."+me()+"&order=created_at.desc&limit=20").then(function(r){if(!r||!r.length)return;var h=el("div",CARD);h.append(el("b","","Os meus pedidos"));r.forEach(function(x){h.append(el("div","font-size:13px;padding:5px 0;border-bottom:1px solid #2a2f66",usd(x.amount_usd)+" · "+x.method+" · "+(STAT[x.status]||x.status)+" · "+new Date(x.created_at).toLocaleDateString("pt-PT")+(x.note?" · "+x.note:"")))});box.append(h)}).catch(function(){});
  }).catch(function(e){box.replaceChildren(el("p","","Não foi possível carregar os ganhos. "+e.message+" (confirme que o SQL 4.17 foi executado.)"))})};
 

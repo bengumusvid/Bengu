@@ -8669,13 +8669,13 @@ function geo(co,pr,di,onC){
 function register(){stop();
  var C=CATS[cat];
  var nm=inp(C.name),bio=inp("Apresentação"),isMus=cat=="cantores",
-  kd=h("select",{style:S},[h("option",{value:"link"},"🔗 Colar link "+(isMus?"da música":"do vídeo")),h("option",{value:"upload"},"⬆ Carregar "+(isMus?"a música (áudio, até 10 MB)":"o vídeo (até 25 MB)"))]),
+  kd=h("select",{style:S},[h("option",{value:"link"},"🔗 Colar link "+(isMus?"da música":"do vídeo")),h("option",{value:"upload"},"⬆ Carregar "+(isMus?"a música (áudio, até 20 MB)":"o vídeo (até 25 MB)"))]),
   lk=inp(C.link),fi=h("input",{type:"file",accept:isMus?"audio/*":"video/*",style:S}),rg=h("input",{type:"checkbox"}),
   rl=h("label",{style:DIM+";display:flex;gap:8px;align-items:flex-start;margin:6px 0"},[rg,"Declaro que sou o autor ou que tenho autorização do autor para publicar este conteúdo."]),pm=inp("Meio para receber (ex.: M-Pesa, e-Mola)"),pa=inp("Número/conta para receber");
  function vis(){var up=kd.value=="upload";lk.style.display=up?"none":"";fi.style.display=up?"":"none";rl.style.display=up?"flex":"none"}kd.addEventListener("change",vis);vis();
  function songUrl(){
   if(kd.value=="upload"){
-   var f=fi.files&&fi.files[0],max=isMus?10:25,u=uid();
+   var f=fi.files&&fi.files[0],max=isMus?20:25,u=uid();
    if(!f)return Promise.reject(new Error("Escolha o ficheiro."));
    if(f.size>max*1048576)return Promise.reject(new Error("O ficheiro tem mais de "+max+" MB. Use um link (YouTube, TikTok, Facebook…)."));
    if(!rg.checked)return Promise.reject(new Error("Tem de declarar que é o autor ou que tem autorização."));

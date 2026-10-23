@@ -8456,6 +8456,24 @@ var LV={distrital:"Distrital",provincial:"Provincial",nacional:"Nacional",region
 var MEDAL=["🥇","🥈","🥉"];
 var PSTAT={queued:"em fila",sent:"enviado",failed:"falhou (será repetido)",internal:"interno"};
 
+/* ───── 4.23: música, vídeo ou link de cada concorrente na votação ───── */
+function cEmbed(u){var m;u=String(u||"").trim();
+ if((m=/^https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:[^#]*&)?v=|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/.exec(u)))return{src:"https://www.youtube-nocookie.com/embed/"+m[1],h:210};
+ if((m=/^https?:\/\/open\.spotify\.com\/(?:intl-[a-z]+\/)?(track|album|playlist|episode)\/([A-Za-z0-9]{10,30})/.exec(u)))return{src:"https://open.spotify.com/embed/"+m[1]+"/"+m[2],h:m[1]=="track"?152:352};
+ if(/^https?:\/\/(?:www\.|m\.)?soundcloud\.com\/[^\s]+$/.test(u))return{src:"https://w.soundcloud.com/player/?url="+encodeURIComponent(u),h:166};
+ return null}
+function playBox(u){u=String(u||"").trim();if(!/^https?:\/\//i.test(u))return "";
+ var fm=/\/storage\/v1\/object\/public\/(?:music|media)\/[^?#]+\.([a-z0-9]{2,5})(?:$|[?#])/i.exec(u),ex=fm?fm[1].toLowerCase():"",em=cEmbed(u),isA=/^(mp3|m4a|aac|wav|ogg|oga|opus|weba)$/.test(ex),isV=/^(mp4|webm|mov|m4v|ogv|3gp)$/.test(ex);
+ if(!isA&&!isV&&!em)return h("a",{href:u,target:"_blank",rel:"noopener noreferrer",style:BS+";display:inline-block;text-decoration:none;margin:4px 0"},"🔗 Abrir o link");
+ var wrap=h("div",{style:"margin:6px 0"}),b=h("button",{style:BS+";background:#3a4175;color:#fff"},cat=="cantores"?"▶ Ouvir a música":"▶ Ver o vídeo");
+ b.addEventListener("click",function(){var p;
+  if(isA)p=h("audio",{controls:"",autoplay:"",preload:"none",src:u,style:"width:100%"});
+  else if(isV)p=h("video",{controls:"",autoplay:"",playsinline:"",preload:"none",src:u,style:"width:100%;max-height:360px;border-radius:10px;background:#000"});
+  else p=h("iframe",{src:em.src,height:String(em.h),allow:"autoplay; encrypted-media; clipboard-write; fullscreen",allowfullscreen:"",referrerpolicy:"strict-origin-when-cross-origin",style:"width:100%;border:0;border-radius:10px"});
+  wrap.replaceChildren(p)});
+ wrap.append(b);return wrap}
+
+
 /* moedas brilhantes no cabeçalho (rosa, castanho, laranja) */
 document.head.append(h("style",{},
 "@keyframes bgSpin{0%{transform:rotateY(0)}40%,100%{transform:rotateY(360deg)}}"+
@@ -8603,6 +8621,7 @@ function detail(c,focus){stop();
    var card=h("div",{style:CARD+(top?";border:1px solid "+PINK:"")+(mine?";box-shadow:0 0 0 2px #ffd166":"")},[
     h("div",{style:"display:flex;justify-content:space-between;gap:8px"},[h("b",{},(x.position<=3?MEDAL[x.position-1]+" ":x.position+"º ")+x.stage_name+(mine?" (você)":"")),h("b",{},x.votes+" votos ("+x.percent+"%)")]),
     h("div",{style:DIM},[x.district,x.province,x.country].filter(Boolean).join(", ")),
+    playBox(x.song_url),
     h("div",{style:"height:6px;border-radius:3px;background:#3a4175;margin:6px 0"},h("div",{style:"height:6px;border-radius:3px;background:"+PINK+";width:"+Math.min(100,x.percent)+"%"})),
     btn(mine?"📤 Partilhar o meu link e conquistar votos":"📤 Partilhar "+x.stage_name,function(){shareComp(c,x)},mine),
     voting()?btn("Votar",function(){openId=openId==x.entry_id?null:x.entry_id;formEl=openId?voteForm(c,x):null;render(r)},1):h("div",{style:DIM},"Votação fechada neste momento"),
@@ -8649,14 +8668,32 @@ function geo(co,pr,di,onC){
  pr.addEventListener("change",function(){di.replaceChildren(h("option",{value:""},"Distrito"));if(!pr.value)return;get("districts","province_id=eq."+pr.value+"&order=name").then(function(r){r.forEach(function(x){di.append(h("option",{value:x.id},x.name))})}).catch(fail)})}
 function register(){stop();
  var C=CATS[cat];
- var nm=inp(C.name),bio=inp("Apresentação"),song=inp(C.link),pm=inp("Meio para receber (ex.: M-Pesa, e-Mola)"),pa=inp("Número/conta para receber");
+ var nm=inp(C.name),bio=inp("Apresentação"),isMus=cat=="cantores",
+  kd=h("select",{style:S},[h("option",{value:"link"},"🔗 Colar link "+(isMus?"da música":"do vídeo")),h("option",{value:"upload"},"⬆ Carregar "+(isMus?"a música (áudio, até 10 MB)":"o vídeo (até 25 MB)"))]),
+  lk=inp(C.link),fi=h("input",{type:"file",accept:isMus?"audio/*":"video/*",style:S}),rg=h("input",{type:"checkbox"}),
+  rl=h("label",{style:DIM+";display:flex;gap:8px;align-items:flex-start;margin:6px 0"},[rg,"Declaro que sou o autor ou que tenho autorização do autor para publicar este conteúdo."]),pm=inp("Meio para receber (ex.: M-Pesa, e-Mola)"),pa=inp("Número/conta para receber");
+ function vis(){var up=kd.value=="upload";lk.style.display=up?"none":"";fi.style.display=up?"":"none";rl.style.display=up?"flex":"none"}kd.addEventListener("change",vis);vis();
+ function songUrl(){
+  if(kd.value=="upload"){
+   var f=fi.files&&fi.files[0],max=isMus?10:25,u=uid();
+   if(!f)return Promise.reject(new Error("Escolha o ficheiro."));
+   if(f.size>max*1048576)return Promise.reject(new Error("O ficheiro tem mais de "+max+" MB. Use um link (YouTube, TikTok, Facebook…)."));
+   if(!rg.checked)return Promise.reject(new Error("Tem de declarar que é o autor ou que tem autorização."));
+   if(!u)return Promise.reject(new Error("Inicie sessão no Bengu primeiro."));
+   var dx=isMus?"mp3":"mp4",ext=((f.name.split(".").pop()||dx).toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,5))||dx,bk=isMus?"music":"media",pth=u+"/"+Date.now()+"-"+Math.random().toString(36).slice(2,8)+"-comp."+ext;
+   msg("A enviar o ficheiro… aguarde.",1);
+   return fetch(U+"/storage/v1/object/"+bk+"/"+pth,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":f.type||(isMus?"audio/mpeg":"video/mp4"),"x-upsert":"false"},body:f}).then(function(r){if(!r.ok)throw new Error("Não foi possível enviar o ficheiro. Tente um ficheiro mais pequeno ou use um link.");return U+"/storage/v1/object/public/"+bk+"/"+pth})}
+  var l=lk.value.trim();
+  if(!l)return Promise.reject(new Error("Cole o link ou carregue um ficheiro."));
+  if(!/^https?:\/\//i.test(l))return Promise.reject(new Error("O link deve começar por https://"));
+  return Promise.resolve(l.slice(0,300))}
  var co=sel("País",[]),pr=sel("Província",[]),di=sel("Distrito",[]),where=h("div",{style:DIM},"Continente e região aparecem ao escolher o país");
  geo(co,pr,di);
  co.addEventListener("change",function(){var x=co["_"+co.value];where.textContent=x?"Continente: "+x.continent+(x.region?" · Região de África: "+x.region:""):""});
- box.replaceChildren(h("h3",{style:"color:"+LITE},C.reg),nm,bio,song,co,where,pr,di,
+ box.replaceChildren(h("h3",{style:"color:"+LITE},C.reg),nm,bio,kd,lk,fi,rl,co,where,pr,di,
   h("div",{style:DIM},"Os seus ganhos são enviados automaticamente para esta conta no fim da competição."),pm,pa,btn("Registar",function(){
   if(!need())return;
-  rpc("register_singer",{p_stage_name:nm.value,p_bio:bio.value,p_song_url:song.value,p_country:co.value,p_province:pr.value,p_district:di.value,p_payout_method:pm.value,p_payout_account:pa.value,p_category:cat}).then(function(){msg("Registado! Agora entre num concurso da sua zona.",1)}).catch(fail)},1))}
+  songUrl().then(function(su){return rpc("register_singer",{p_stage_name:nm.value,p_bio:bio.value,p_song_url:su,p_country:co.value,p_province:pr.value,p_district:di.value,p_payout_method:pm.value,p_payout_account:pa.value,p_category:cat})}).then(function(){msg("Registado! Agora entre num concurso da sua zona.",1)}).catch(fail)},1))}
 
 /* ───── criar concurso ───── */
 function create(){stop();

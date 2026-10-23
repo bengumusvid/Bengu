@@ -4961,14 +4961,29 @@ function sx({ ids: e, users: t, addUsers: r, onUnblock: n, onBack: s }) {
     })
   );
 }
-function Tg_(t) {
+const BG_U = String.raw`https?:\/\/[^\s<>"']+|www\.[^\s<>"']+|(?<![@\w.\-\/])[a-z0-9][a-z0-9\-]*(?:\.[a-z0-9\-]+)*\.(?:com|net|org|info|biz|edu|gov|io|app|me|tv|co|ao|mz|pt|br|za|cv|st|gw|tl|ws|xyz|site|online|link|news)(?::\d+)?(?:\/[^\s<>"']*)?(?![\w@])`;
+const BG_RE_LINK = new RegExp("(" + BG_U + ")", "gi");
+const BG_RE_RICH = new RegExp("(" + BG_U + "|#[\\p{L}\\d_]+|@[a-z0-9_.]{3,20})", "giu");
+function bgLinkNode(q, i, rich) {
+  const tail = (q.match(/[.,;:!?)\]]+$/) || [""])[0];
+  const core = tail ? q.slice(0, q.length - tail.length) : q;
+  const href = /^https?:\/\//i.test(core) ? core : "https://" + core;
+  return u.jsxs(B.Fragment, { children: [
+    u.jsx("a", { href, target: "_blank", rel: "noopener noreferrer", onClick: (ev) => ev.stopPropagation(), style: { color: rich ? "#1E88E5" : "inherit", textDecoration: "underline", fontWeight: 600, wordBreak: "break-all" }, children: core }),
+    tail,
+  ] }, i);
+}
+function bgLinkify(t, rich) {
   if (!t) return t;
-  return t.split(/(#[\p{L}\d_]+|@[a-z0-9_.]{3,20})/gu).map((q, i) =>
-    q[0] === "#" && q.length > 1
-      ? u.jsx("span", { style: { color: "#1E88E5", fontWeight: 600 }, children: q }, i)
-      : q[0] === "@" && q.length > 3
-        ? u.jsx("span", { onClick: () => window.bengu_mention && window.bengu_mention(q.slice(1)), style: { color: "#1E88E5", fontWeight: 600, cursor: "pointer" }, children: q }, i)
-        : q);
+  return String(t).split(rich ? BG_RE_RICH : BG_RE_LINK).map((q, i) => {
+    if (i % 2 === 0) return q;
+    if (rich && q[0] === "#" && q.length > 1) return u.jsx("span", { style: { color: "#1E88E5", fontWeight: 600 }, children: q }, i);
+    if (rich && q[0] === "@" && q.length > 3) return u.jsx("span", { onClick: () => window.bengu_mention && window.bengu_mention(q.slice(1)), style: { color: "#1E88E5", fontWeight: 600, cursor: "pointer" }, children: q }, i);
+    return bgLinkNode(q, i, rich);
+  });
+}
+function Tg_(t) {
+  return bgLinkify(t, true);
 }
 function St_({ size: e = 22 }) {
   return u.jsxs("svg", { width: e, height: e, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, children: [u.jsx("circle", { cx: 12, cy: 12, r: 9, strokeDasharray: "4 3" }), u.jsx("circle", { cx: 12, cy: 12, r: 4 })] });
@@ -4981,26 +4996,64 @@ function Mr_({ value: e, onChange: t, style: r, className: n }) {
     u.jsx("option", { value: "outros", children: "Outros" }),
   ] });
 }
-function ix({ text: e }) {
+async function bgShrinkImg(f) {
+  try {
+    if (!/^image\/(jpeg|png|webp)$/.test(f.type) || f.size < 350 * 1024) return f;
+    const bm = await createImageBitmap(f);
+    const sc = Math.min(1, 1600 / Math.max(bm.width, bm.height));
+    const c = document.createElement("canvas"); c.width = Math.round(bm.width * sc); c.height = Math.round(bm.height * sc);
+    c.getContext("2d").drawImage(bm, 0, 0, c.width, c.height);
+    const bl = await new Promise((r) => c.toBlob(r, "image/jpeg", 0.82));
+    return bl && bl.size < f.size ? new File([bl], (f.name || "foto").replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" }) : f;
+  } catch (e) { return f; }
+}
+(function () { const st = document.createElement("style"); st.textContent = "@keyframes bgpulse{0%,100%{opacity:1}50%{opacity:.25}}"; document.head.appendChild(st); })();
+function bgKindOf(name) {
+  const n = (name || "").toLowerCase();
+  if (/\.(jpe?g|png|gif|webp|bmp|heic|avif)$/.test(n)) return "foto";
+  if (/\.(mp4|webm|mov|m4v|3gp|mkv|avi)$/.test(n)) return "video";
+  if (/\.(mp3|m4a|aac|wav|ogg|oga|opus|flac|amr)$/.test(n)) return "audio";
+  return "doc";
+}
+function BgChatFile({ kind, name, url, onDel }) {
+  const [msg, setMsg] = B.useState("");
+  const flash = (t) => { setMsg(t); setTimeout(() => setMsg(""), 1800); };
+  const share = async () => {
+    try {
+      if (navigator.share) { await navigator.share({ title: name, text: name + " — Bengu", url }); return; }
+      await navigator.clipboard.writeText(url); flash("Ligação copiada");
+    } catch (e) {}
+  };
+  const bs = { fontSize: 11, padding: "3px 9px", borderRadius: 999, background: "rgba(128,128,128,.28)", color: "inherit", fontWeight: 600 };
+  const media =
+    kind === "foto" ? u.jsx("img", { src: url, alt: name, loading: "lazy", onClick: () => (window.bengu_full ? window.bengu_full(url) : window.open(url, "_blank")), style: { maxWidth: "100%", maxHeight: 260, borderRadius: 12, display: "block", cursor: "zoom-in" } })
+    : kind === "video" ? u.jsx("video", { src: url, controls: !0, playsInline: !0, preload: "metadata", style: { maxWidth: "100%", maxHeight: 300, borderRadius: 12, background: "#000", display: "block" } })
+    : kind === "audio" || kind === "voz" ? u.jsxs("div", { children: [kind === "audio" && u.jsx("div", { className: "text-xs font-semibold break-all mb-1", children: "🎵 " + name }), u.jsx("audio", { src: url, controls: !0, preload: "none", style: { maxWidth: "100%", height: 36 } })] })
+    : u.jsx("a", { href: url, target: "_blank", rel: "noopener noreferrer", className: "flex items-center gap-2 font-semibold break-all", children: ["📄 ", name] });
+  return u.jsxs("div", { style: { minWidth: kind === "doc" ? 0 : 180 }, children: [
+    media,
+    u.jsxs("div", { className: "flex flex-wrap items-center gap-1.5 mt-1.5", children: [
+      u.jsx("button", { onClick: () => window.open(url, "_blank", "noopener"), style: bs, children: "↗ Abrir" }),
+      u.jsx("button", { onClick: share, style: bs, children: "⤴ Partilhar" }),
+      onDel && u.jsx("button", { onClick: onDel, style: bs, children: "🗑 Apagar" }),
+      msg && u.jsx("span", { className: "text-[11px]", children: msg }),
+    ] }),
+  ] });
+}
+function bgChatPreview(b) {
+  const t = String(b || "");
+  if (/^\[\[voz:/.test(t)) return "🎤 Mensagem de voz";
+  const m = t.match(/^\[\[(foto|video|audio|ficheiro):(.+?)\|/);
+  if (!m) return t;
+  const k = m[1] === "ficheiro" ? bgKindOf(m[2]) : m[1];
+  return (k === "foto" ? "📷 Foto" : k === "video" ? "🎬 Vídeo" : k === "audio" ? "🎵 " : "📄 ") + (k === "foto" || k === "video" ? "" : m[2]);
+}
+function ix({ text: e, onDelete: od }) {
   const mv = e.match(/^\[\[voz:(https?:\/\/\S+?)\]\]$/);
-  if (mv) return u.jsx("audio", { src: mv[1], controls: !0, preload: "metadata", style: { maxWidth: "100%", height: 36 } });
-  const mf = e.match(/^\[\[ficheiro:(.+?)\|(https?:\/\/\S+?)\]\]$/);
-  if (mf) return u.jsxs("a", { href: mf[2], target: "_blank", rel: "noopener noreferrer", download: mf[1], className: "underline font-semibold break-all", children: ["\ud83d\udcce ", mf[1]] });
-  return e.split(/(https?:\/\/\S+)/g).map((t, r) =>
-    /^https?:\/\//.test(t)
-      ? u.jsx(
-          "a",
-          {
-            href: t,
-            target: "_blank",
-            rel: "noopener noreferrer",
-            className: "underline font-semibold break-all",
-            children: t,
-          },
-          r,
-        )
-      : u.jsx("span", { children: t }, r),
-  );
+  if (mv) return u.jsx(BgChatFile, { kind: "voz", name: "Mensagem de voz", url: mv[1], onDel: od });
+  const mf = e.match(/^\[\[(foto|video|audio|ficheiro):(.+?)\|(https?:\/\/\S+?)\]\]$/);
+  if (mf) return u.jsx(BgChatFile, { kind: mf[1] === "ficheiro" ? bgKindOf(mf[2]) : mf[1], name: mf[2], url: mf[3], onDel: od });
+  return bgLinkify(e, false);
 }
 function bo_(id) {
   const [, a] = B.useState(0);
@@ -5718,7 +5771,7 @@ function ax({
                                   color: b.unread ? k.ink : k.mute,
                                   fontWeight: b.unread ? 700 : 400,
                                 },
-                                children: b.last.body,
+                                children: bgChatPreview(b.last.body),
                               }),
                             ],
                           }),
@@ -5847,24 +5900,43 @@ function ox({ me: e, other: t, otherId: r, addUsers: n, onBack: s, say: i }) {
       (g = (v = d.current) == null ? void 0 : v.scrollIntoView) == null ||
         g.call(v, { block: "end" });
     }, [a.length, vp.h]));
-  const [rcOn, srcOn] = B.useState(0), rcR = B.useRef(null), fiR = B.useRef(null);
-  const sendMedia = async (blob, name, voice) => {
+  const [rcOn, srcOn] = B.useState(0), rcR = B.useRef(null), rcCancel = B.useRef(!1);
+  const [up, sup] = B.useState(null), [attOpen, sattOpen] = B.useState(!1), [recLv, srecLv] = B.useState([]), [recT, srecT] = B.useState(0);
+  const inPhoto = B.useRef(null), inVideo = B.useRef(null), inAudio = B.useRef(null), inDoc = B.useRef(null);
+  const sendMedia = async (blob, name, voice, kind) => {
     try {
-      if (blob.size > 50 * 1048576) return i(x("tooBig"));
-      const url = await u_(blob, `${e.id}/${Date.now()}-${Math.random().toString(36).slice(2, 6)}-${name.replace(/[^a-zA-Z0-9._-]/g, "_")}`, null);
-      await w(voice ? `[[voz:${url}]]` : `[[ficheiro:${name.replace(/[|\]]/g, "_")}|${url}]]`);
+      const lim = (kind === "video" ? bn : 50) * 1048576;
+      if (blob.size > lim) return i(kind === "video" ? "O vídeo é demasiado grande." : x("tooBig"));
+      sup({ name: voice ? "Mensagem de voz" : name, pct: 0 });
+      if (kind === "foto") blob = await bgShrinkImg(blob);
+      const safe = name.replace(/[|\]]/g, "_");
+      const url = await u_(blob, `${e.id}/${Date.now()}-${Math.random().toString(36).slice(2, 6)}-${safe.replace(/[^a-zA-Z0-9._-]/g, "_")}`, (f) => sup({ name: voice ? "Mensagem de voz" : name, pct: f }));
+      await w(voice ? `[[voz:${url}]]` : `[[${kind || "ficheiro"}:${safe}|${url}]]`);
     } catch (err) { i(Ze(err)); }
+    finally { sup(null); }
+  };
+  const pickFiles = (kind) => async (ev) => {
+    const fl = [...(ev.target.files || [])]; ev.target.value = ""; sattOpen(!1);
+    for (const f0 of fl) await sendMedia(f0, f0.name, !1, kind);
   };
   const toggleRec = async () => {
     if (rcOn) { rcR.current && rcR.current.stop(); return; }
     try {
       const st = await navigator.mediaDevices.getUserMedia({ audio: !0 });
       const mr = new MediaRecorder(st), ch = [];
+      let ac = null, iv = null; const t0 = Date.now(); rcCancel.current = !1; srecLv([]); srecT(0);
+      try {
+        ac = new (window.AudioContext || window.webkitAudioContext)();
+        const an = ac.createAnalyser(); an.fftSize = 256; ac.createMediaStreamSource(st).connect(an);
+        const data = new Uint8Array(an.fftSize);
+        iv = setInterval(() => { an.getByteTimeDomainData(data); let m = 0; for (let q = 0; q < data.length; q++) m = Math.max(m, Math.abs(data[q] - 128)); srecLv((l) => [...l.slice(-59), Math.min(1, m / 70)]); srecT(Math.floor((Date.now() - t0) / 1000)); }, 90);
+      } catch {}
       mr.ondataavailable = (ev) => ev.data.size && ch.push(ev.data);
-      mr.onstop = () => { st.getTracks().forEach((t) => t.stop()); srcOn(0); const tp = mr.mimeType || "audio/webm"; sendMedia(new Blob(ch, { type: tp }), "voz" + (/mp4|aac/.test(tp) ? ".m4a" : ".webm"), !0); };
+      mr.onstop = () => { iv && clearInterval(iv); try { ac && ac.close(); } catch {} st.getTracks().forEach((t) => t.stop()); srcOn(0); srecLv([]); const tp = mr.mimeType || "audio/webm"; if (!rcCancel.current && ch.length) sendMedia(new Blob(ch, { type: tp }), "voz" + (/mp4|aac/.test(tp) ? ".m4a" : ".webm"), !0, "voz"); };
       rcR.current = mr; mr.start(); srcOn(1);
     } catch { i("Não foi possível usar o microfone. Permita o acesso nas definições."); }
   };
+  const cancelRec = () => { rcCancel.current = !0; rcR.current && rcR.current.stop(); };
   const w = async (v) => {
       const g = (v ?? l).trim();
       if (!g) return;
@@ -6002,7 +6074,7 @@ function ox({ me: e, other: t, otherId: r, addUsers: n, onBack: s, say: i }) {
                       WebkitTouchCallout: "none",
                       userSelect: "none",
                     },
-                    children: u.jsx(ix, { text: v.body }),
+                    children: u.jsx(ix, { text: v.body, onDelete: () => ssheet(v) }),
                   }),
                   g &&
                     u.jsx("span", {
@@ -6037,6 +6109,20 @@ function ox({ me: e, other: t, otherId: r, addUsers: n, onBack: s, say: i }) {
         ] }),
         u.jsx(Em_, { onPick: (g) => c((v) => v + g) }),
       ] }),
+      up && u.jsxs("div", { className: "flex items-center gap-3 px-4 py-2 shrink-0", style: { background: k.card, borderTop: `1px solid ${k.line}` }, children: [
+        u.jsxs("svg", { width: 38, height: 38, viewBox: "0 0 38 38", className: "shrink-0", children: [
+          u.jsx("circle", { cx: 19, cy: 19, r: 15, fill: "none", stroke: k.line, strokeWidth: 4 }),
+          u.jsx("circle", { cx: 19, cy: 19, r: 15, fill: "none", stroke: k.saffron, strokeWidth: 4, strokeLinecap: "round", strokeDasharray: 94.25, strokeDashoffset: 94.25 * (1 - up.pct), transform: "rotate(-90 19 19)" }),
+          u.jsx("text", { x: 19, y: 22.5, textAnchor: "middle", fontSize: 10, fontWeight: 700, fill: k.ink, children: Math.round(up.pct * 100) + "%" }),
+        ] }),
+        u.jsxs("div", { className: "flex-1 min-w-0", children: [
+          u.jsx("div", { className: "text-xs font-semibold truncate", style: { color: k.ink }, children: "A enviar: " + up.name }),
+          u.jsx("div", { style: { height: 5, borderRadius: 3, background: k.line, marginTop: 4, overflow: "hidden" }, children: u.jsx("div", { style: { height: 5, width: Math.round(up.pct * 100) + "%", background: k.saffron, transition: "width .15s" } }) }),
+        ] }),
+      ] }),
+      attOpen && u.jsx("div", { className: "flex items-center justify-around px-3 py-3 shrink-0", style: { background: k.card, borderTop: `1px solid ${k.line}` }, children: [
+        ["📷", "Foto", inPhoto], ["🎬", "Vídeo", inVideo], ["🎵", "Música", inAudio], ["📄", "Documento", inDoc],
+      ].map(([ic, lb, rf]) => u.jsxs("button", { onClick: () => rf.current && rf.current.click(), className: "flex flex-col items-center gap-1 text-xs font-semibold", style: { color: k.ink }, children: [u.jsx("span", { className: "flex items-center justify-center rounded-full", style: { width: 46, height: 46, background: k.paper, fontSize: 22 }, children: ic }), lb] }, lb)) }),
       u.jsxs("div", {
         className: "flex items-center gap-2 px-3 pt-2 shrink-0",
         style: {
@@ -6052,10 +6138,16 @@ function ox({ me: e, other: t, otherId: r, addUsers: n, onBack: s, say: i }) {
             style: { width: 38, height: 38, background: k.paper, fontSize: 20 },
             children: "😊",
           }),
-          u.jsx("button", { onClick: () => fiR.current && fiR.current.click(), "aria-label": "Enviar ficheiro", className: "flex items-center justify-center rounded-full shrink-0", style: { width: 38, height: 38, background: k.paper, fontSize: 18 }, children: "📎" }),
-          u.jsx("input", { ref: fiR, type: "file", hidden: !0, onChange: (ev) => { const f0 = ev.target.files && ev.target.files[0]; ev.target.value = ""; f0 && sendMedia(f0, f0.name, !1); } }),
-          u.jsx("button", { onClick: toggleRec, "aria-label": "Mensagem de voz", className: "flex items-center justify-center rounded-full shrink-0", style: { width: 38, height: 38, background: rcOn ? "#E5484D" : k.paper, color: rcOn ? "#fff" : k.ink, fontSize: 18 }, children: rcOn ? "■" : "🎤" }),
-          u.jsx("input", {
+          u.jsx("input", { ref: inPhoto, type: "file", accept: "image/*", multiple: !0, hidden: !0, onChange: pickFiles("foto") }),
+          u.jsx("input", { ref: inVideo, type: "file", accept: "video/*", multiple: !0, hidden: !0, onChange: pickFiles("video") }),
+          u.jsx("input", { ref: inAudio, type: "file", accept: "audio/*,.mp3,.m4a,.wav,.ogg,.opus,.aac", multiple: !0, hidden: !0, onChange: pickFiles("audio") }),
+          u.jsx("input", { ref: inDoc, type: "file", accept: ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar", multiple: !0, hidden: !0, onChange: pickFiles("ficheiro") }),
+          rcOn ? u.jsxs("div", { className: "flex-1 min-w-0 flex items-center gap-2 px-3 rounded-full", style: { background: k.paper, height: 38 }, children: [
+            u.jsx("span", { style: { width: 9, height: 9, borderRadius: "50%", background: "#E5484D", flexShrink: 0, animation: "bgpulse 1s infinite" } }),
+            u.jsx("span", { className: "text-xs font-semibold shrink-0", style: { color: k.ink, minWidth: 34 }, children: String(Math.floor(recT / 60)).padStart(2, "0") + ":" + String(recT % 60).padStart(2, "0") }),
+            u.jsx("div", { className: "flex-1 min-w-0 flex items-center justify-end gap-[2px] overflow-hidden", style: { height: 32 }, children: recLv.map((lv, q) => u.jsx("span", { style: { width: 3, height: 3 + Math.round(lv * 26), borderRadius: 2, background: "#E5484D", flexShrink: 0, opacity: 0.55 + lv * 0.45 } }, q)) }),
+            u.jsx("button", { onClick: cancelRec, "aria-label": "Cancelar gravação", className: "shrink-0 text-base", children: "🗑" }),
+          ] }) : u.jsx("input", {
             value: l,
             onChange: (v) => { c(v.target.value); window.bgTyping && window.bgTyping(r); },
             onKeyDown: (v) => v.key === "Enter" && w(),
@@ -6066,6 +6158,8 @@ function ox({ me: e, other: t, otherId: r, addUsers: n, onBack: s, say: i }) {
               "flex-1 min-w-0 px-4 py-2 rounded-full text-sm outline-none",
             style: { background: k.paper, color: k.ink },
           }),
+          u.jsx("button", { onClick: toggleRec, "aria-label": "Mensagem de voz", className: "flex items-center justify-center rounded-full shrink-0", style: { width: 36, height: 38, background: rcOn ? "#E5484D" : k.paper, color: rcOn ? "#fff" : k.ink, fontSize: 18 }, children: rcOn ? "■" : "🎤" }),
+          u.jsx("button", { onClick: () => sattOpen(!attOpen), "aria-label": "Anexar", className: "flex items-center justify-center rounded-full shrink-0", style: { width: 36, height: 38, background: attOpen ? k.saffron : k.paper, fontSize: 18 }, children: "📎" }),
           u.jsx("button", {
             onClick: () => w(),
             "aria-label": x("send"),

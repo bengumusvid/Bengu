@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.25.1_24.10.2026" />
+    <meta name="bengu-build" content="4.26.0_25.10.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -3399,6 +3399,7 @@ function J_() {
                     ),
                   }),
                   Y === "following" && O.length > 0 && u.jsx(BgFolder, { ids: O.filter((id) => E[id]), users: E, onOpen: td }),
+                  Y === "all" && u.jsx("div", { id: "bg-pg-feed" }),
                   Y === "users"
                     ? u.jsx(BenguUsers, {
                         me: h,
@@ -9809,7 +9810,7 @@ function postCard(x,name,photo,canDel,table,again,reel){var c=card(),h=el("div",
   else if(m.kind==="audio"){var w=el("div","background:"+C.card2+";border-radius:10px;padding:8px;margin-bottom:8px");w.append(el("div","font-size:13px;margin-bottom:4px","🎵 "+(m.name||"Música")));var a=el("audio","width:100%");a.src=m.url;a.controls=true;a.preload="none";w.append(a);c.append(w)}
   else{var l=el("a","display:flex;align-items:center;gap:10px;background:"+C.card2+";border-radius:10px;padding:10px;margin-bottom:8px;color:#fff;text-decoration:none");l.href=m.url;l.target="_blank";l.rel="noopener";
    var tt=el("div","flex:1;min-width:0");tt.append(el("div","font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap",m.name||"Documento"),el("div","font-size:12px;color:"+C.mute,m.size||"Abrir / descarregar"));l.append(el("span","font-size:26px","📄"),tt,el("span","color:"+C.acc+";font-weight:800","Abrir"));c.append(l)}});
- if(x.body)c.append(el("div","white-space:pre-wrap;line-height:1.4",x.body));return c}
+ if(x.body)c.append(el("div","white-space:pre-wrap;line-height:1.4",x.body));pgActions(c,x,table==="bengu_page_posts"?"page":"group",name,canDel);return c}
 /* só nas páginas: criar reel */
 function reelForm(id,again){var c=card(),vf=null,pv=el("video","width:100%;max-height:50vh;border-radius:10px;background:#000;display:none;margin:6px 0"),cap=area("Legenda do reel (opcional)","",2),
  inpf=el("input","display:none");inpf.type="file";inpf.accept="video/*";
@@ -9817,7 +9818,7 @@ function reelForm(id,again){var c=card(),vf=null,pv=el("video","width:100%;max-h
   uploadAny(vf,"video").then(function(m){return api("bengu_page_posts","POST",{page_id:id,author_id:uid(),body:cap.value.trim().slice(0,300)||null,media:[m],is_reel:true})}).then(again).catch(function(e){pb.disabled=false;pb.textContent="Publicar reel";fail(e)})});
  inpf.onchange=function(){var f=inpf.files&&inpf.files[0];if(!f)return;if(f.size>MAXMB*1048576)return toast("O vídeo passa de "+MAXMB+" MB.");
   var u=URL.createObjectURL(f),t=document.createElement("video");t.preload="metadata";t.onloadedmetadata=function(){if(t.duration>180){toast("O reel pode ter no máximo 3 minutos.");URL.revokeObjectURL(u);return}vf=f;pv.src=u;pv.controls=true;pv.playsInline=true;pv.style.display="block"};t.onerror=function(){vf=f;pv.src=u;pv.controls=true;pv.style.display="block"};t.src=u};
- c.append(el("b","","🎞 Criar reel da página"),el("div","font-size:13px;color:"+C.mute+";margin:4px 0","Vídeo curto (até 3 minutos). Os reels só existem nas páginas."),pickb,inpf,pv,cap,pb);return c}
+ var recb=btn("🎥 Gravar reel (câmara, música, filtros, editor)",function(){if(!window.bengu_open_record)return toast("Gravador indisponível.");window.__bgReelTarget={page:id,done:function(){PT[id]="reels";again()}};window.bengu_open_record()});c.append(el("b","","🎞 Criar reel da página"),el("div","font-size:13px;color:"+C.mute+";margin:4px 0","Vídeo curto (até 3 minutos). Os reels só existem nas páginas."),recb,pickb,inpf,pv,cap,pb);return c}
 var PT={};
 /* janela e navegação */
 var ov=null,body=null,ttl=null,stack=[],S={tab:"pages",mine:false,q:""};
@@ -9883,6 +9884,7 @@ function pageView(id){setTitle("Página");loading();var me=uid();
    if(p.description)hd.append(el("p","white-space:pre-wrap;margin:10px 0 4px",p.description));
    var bar=el("div","margin-top:8px");
    if(!own)bar.append(btn(follow?"✓ A seguir":"➕ Seguir",function(){(follow?api("bengu_page_follows?page_id=eq."+id+"&user_id=eq."+me,"DELETE"):api("bengu_page_follows","POST",{page_id:id,user_id:me})).then(refresh).catch(fail)},follow?"soft":""));
+   if(own||isAdm())bar.append(btn("📊 Painel do criador",function(){go(function(){pageDash(p)})}));
    if(own)bar.append(btn("🎞 Criar reel",function(){PT[id]="reels";refresh()}));
    bar.append(btn("📤 Partilhar",function(){shareLink("pagina",id,p.name)},"soft"));
    if(own)bar.append(btn("✏️ Editar",function(){go(function(){pageForm(p)})},"soft"));
@@ -9941,6 +9943,77 @@ function groupView(id){setTitle("Grupo");loading();var me=uid();
    if(isMem||isAdm())body.append(composer("bengu_group_posts","group_id",id,"Escreva uma publicação para o grupo…",refresh));
    if(!posts.length)body.append(el("p","opacity:.7;text-align:center","Ainda não há publicações."));
    posts.forEach(function(x){body.append(postCard(x,nm[x.author_id],null,admin||x.author_id===me,"bengu_group_posts",refresh,false))})})})}).catch(function(e){body.replaceChildren(el("p","color:#ff8a8a",e.message))})}
+/* BENGU 4.26: painel do criador, feed da Home, gosto/não gosto, comentários, partilha, descarga e visualizações. Requer bengu-paginas-grupos-2.sql e -3.sql */
+var SV={},QS={};
+function rpc(n,a){return api("rpc/"+n,"POST",a||{})}
+function num(v){return Number(v||0).toLocaleString("pt-PT")}
+function stats(kind,id){return new Promise(function(ok){var q=QS[kind]||(QS[kind]={ids:[],cb:{}});q.ids.push(id);(q.cb[id]=q.cb[id]||[]).push(ok);clearTimeout(q.t);
+ q.t=setTimeout(function(){delete QS[kind];var me=uid();
+  function done(m){Object.keys(q.cb).forEach(function(i){q.cb[i].forEach(function(f){f(m[i]||null)})})}
+  Promise.all([rpc("bengu_pg_stats",{p_kind:kind,p_ids:q.ids}),me?api("bengu_post_reactions?select=post_id,value&post_kind=eq."+kind+"&user_id=eq."+me+"&post_id=in.("+q.ids.join(",")+")"):[]]).then(function(z){
+   var m={};(z[0]||[]).forEach(function(r){m[r.post_id]={likes:r.likes,dislikes:r.dislikes,comments:r.comments,mine:0}});(z[1]||[]).forEach(function(r){if(m[r.post_id])m[r.post_id].mine=r.value==="like"?1:-1});done(m)}).catch(function(){done({})})},30)})}
+function setReact(kind,id,old,nv){var me=uid(),f="?post_kind=eq."+kind+"&post_id=eq."+id+"&user_id=eq."+me;
+ if(nv===0)return api("bengu_post_reactions"+f,"DELETE");
+ if(old===0)return api("bengu_post_reactions","POST",{post_kind:kind,post_id:id,user_id:me,value:nv===1?"like":"dislike"});
+ return api("bengu_post_reactions"+f,"PATCH",{value:nv===1?"like":"dislike"})}
+function saveBlob(b,n){var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=n;document.body.append(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1500)}
+function downloadPost(x){var m=mediaOf(x).filter(function(i){return i&&i.url});
+ if(!m.length){saveBlob(new Blob([x.body||""],{type:"text/plain;charset=utf-8"}),"publicacao.txt");return}
+ toast("A descarregar…");
+ m.forEach(function(i,n){fetch(i.url).then(function(r){if(!r.ok)throw 0;return r.blob()}).then(function(b){var ex=(/\.([a-z0-9]{2,5})(?:\?|$)/i.exec(i.url)||[])[1]||"bin",nm=String(i.name||"bengu-"+(n+1)).replace(/[\\\/:*?"<>|]/g,"_").replace(/\.[a-z0-9]{2,5}$/i,"");saveBlob(b,nm+"."+ex)}).catch(function(){toast("Não foi possível descarregar.")})})}
+function commentsSheet(kind,x,canMod,upd){var me=uid(),o=el("div","position:fixed;inset:0;z-index:100005;background:rgba(0,0,0,.75);display:flex;align-items:flex-end;justify-content:center"),
+ b=el("div","background:"+C.bar+";color:#fff;border-radius:16px 16px 0 0;padding:14px;width:100%;max-width:560px;max-height:80vh;overflow:auto;box-sizing:border-box"),
+ list=el("div"),i=inp("Escreva um comentário…"),go2=btn("Enviar",send),hd=el("div","display:flex;justify-content:space-between;align-items:center");
+ i.maxLength=1000;hd.append(el("b","","💬 Comentários"),btn("Fechar",function(){o.remove()},"soft"));b.append(hd,list,i,go2);o.append(b);o.onclick=function(e){if(e.target===o)o.remove()};document.body.append(o);
+ function draw(){api("bengu_post_comments?select=id,user_id,body,created_at&post_kind=eq."+kind+"&post_id=eq."+x.id+"&order=created_at.asc&limit=100").then(function(r){if(upd)upd(r.length);
+  return names(r.map(function(c){return c.user_id})).then(function(nm){list.replaceChildren();if(!r.length)list.append(el("p","opacity:.7","Ainda não há comentários."));
+   r.forEach(function(c){var d=el("div","padding:8px 0;border-bottom:1px solid "+C.line);d.append(el("div","font-size:12px;color:"+C.mute,(nm[c.user_id]||"Utilizador")+" · "+when(c.created_at)),el("div","white-space:pre-wrap;word-break:break-word",c.body));
+    if(c.user_id===me||canMod){var del=el("button","border:0;background:none;color:#ff8a8a;font-size:12px;padding:2px 0","🗑 Apagar");del.onclick=function(){api("bengu_post_comments?id=eq."+c.id,"DELETE").then(draw).catch(fail)};d.append(del)}list.append(d)})})}).catch(function(e){list.replaceChildren(el("p","color:#ff8a8a",e.message))})}
+ function send(){var t=i.value.trim();if(!t)return;if(!me)return toast("Inicie sessão.");go2.disabled=true;api("bengu_post_comments","POST",{post_kind:kind,post_id:x.id,user_id:me,body:t.slice(0,1000)}).then(function(){i.value="";go2.disabled=false;draw()}).catch(function(e){go2.disabled=false;fail(e)})}
+ draw()}
+/* barra: gosto, não gosto, comentar, partilhar, descarregar + visualizações; conta a visualização ao ver a publicação */
+function pgActions(c,x,kind,name,canMod){var st={likes:0,dislikes:0,comments:0,mine:0},bar=el("div","display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid "+C.line);
+ function B(lab){var b=el("button","border:0;border-radius:999px;padding:6px 11px;color:#fff;font-weight:800;font-size:14px");b.setAttribute("aria-label",lab);b.title=lab;return b}
+ var lk=B("Gosto"),dl=B("Não gosto"),cm=B("Comentar"),sh=B("Partilhar"),dw=B("Descarregar"),vw=el("span","margin-left:auto;font-size:12px;color:"+C.mute);dw.textContent="⏬";dw.style.background=C.card2;sh.textContent="📤";sh.style.background=C.card2;
+ function paint(){lk.textContent="👍 "+st.likes;dl.textContent="👎 "+st.dislikes;cm.textContent="💬 "+st.comments;lk.style.background=st.mine===1?C.ok:C.card2;dl.style.background=st.mine===-1?C.red:C.card2;cm.style.background=C.card2;vw.textContent="👀 "+num(x.views)}
+ paint();stats(kind,x.id).then(function(r){if(r){st=r;paint()}});
+ function react(v){if(!uid())return toast("Inicie sessão.");var old=st.mine,nv=old===v?0:v;
+  st.likes+=(nv===1?1:0)-(old===1?1:0);st.dislikes+=(nv===-1?1:0)-(old===-1?1:0);st.mine=nv;paint();
+  setReact(kind,x.id,old,nv).catch(function(e){st.likes+=(old===1?1:0)-(nv===1?1:0);st.dislikes+=(old===-1?1:0)-(nv===-1?1:0);st.mine=old;paint();fail(e)})}
+ lk.onclick=function(){react(1)};dl.onclick=function(){react(-1)};
+ cm.onclick=function(){commentsSheet(kind,x,canMod,function(n){st.comments=n;paint()})};
+ sh.onclick=function(){var pid=x.parent_id||x.page_id||x.group_id,u=location.origin+location.pathname+"#"+(kind==="page"?"pagina":"grupo")+"="+pid,t=((x.body||"Publicação")+" · "+(name||"Bengu")).slice(0,140);
+  (navigator.share?navigator.share({title:"Bengu",text:t,url:u}):navigator.clipboard?navigator.clipboard.writeText(t+" "+u).then(function(){toast("Ligação copiada.")}):Promise.reject()).then(function(){rpc("bengu_pg_event",{p_kind:kind,p_id:x.id,p_event:"share"}).catch(function(){})}).catch(function(){})};
+ dw.onclick=function(){downloadPost(x);rpc("bengu_pg_event",{p_kind:kind,p_id:x.id,p_event:"download"}).catch(function(){})};
+ bar.append(lk,dl,cm,sh,dw,vw);c.append(bar);
+ var me=uid();if(me&&x.author_id!==me&&"IntersectionObserver" in window){var io=new IntersectionObserver(function(es){if(es[0]&&es[0].isIntersecting){io.disconnect();var k=kind+x.id;if(SV[k])return;SV[k]=1;rpc("bengu_pg_view",{p_kind:kind,p_id:x.id}).then(function(){x.views=(x.views||0)+1;paint()}).catch(function(){})}},{threshold:.5});io.observe(c)}}
+/* painel do criador da página */
+function chartCard(t,arr,col,val,lab){var c=card(),vs=(arr||[]).map(val),mx=Math.max.apply(null,vs.concat([1])),row=el("div","display:flex;align-items:flex-end;gap:2px;height:84px;margin-top:8px");
+ c.append(el("b","",t));vs.forEach(function(v,i){var b=el("div","flex:1;background:"+col+";border-radius:3px 3px 0 0;min-height:"+(v?3:1)+"px;height:"+Math.round(v/mx*100)+"%;opacity:"+(v?1:.25));b.title=lab(arr[i])+": "+num(v);row.append(b)});
+ c.append(row);if(arr&&arr.length){var f=el("div","display:flex;justify-content:space-between;font-size:10px;color:"+C.mute+";margin-top:3px");f.append(el("span","",lab(arr[0])),el("span","",lab(arr[arr.length-1])));c.append(f)}return c}
+function pageDash(p){setTitle("📊 Painel do criador");loading();
+ rpc("bengu_page_panel",{p_page:p.id}).then(function(s){body.replaceChildren();var T=s.totals||{},hd=card(),g=el("div","display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px");hd.append(el("b","font-size:17px","📊 "+p.name));
+  [["Seguidores",s.followers],["Novos 7 dias",s.followers_week],["Novos 30 dias",s.followers_month],["Publicações",T.posts],["Reels",T.reels],["Visualizações",T.views],["Gostos",T.likes],["Não gostos",T.dislikes],["Comentários",T.comments],["Partilhas",T.shares],["Descargas",T.downloads]].forEach(function(q){var d=el("div","background:"+C.card2+";border-radius:10px;padding:10px 4px;text-align:center");d.append(el("div","font-size:18px;font-weight:800",num(q[1])),el("div","font-size:11px;color:"+C.mute,q[0]));g.append(d)});
+  hd.append(g,el("div","font-size:12px;color:"+C.mute+";margin-top:8px","As visualizações do dono da página não são contadas."));body.append(hd);
+  var bt=card(),L={video:"🎬 Vídeos e reels",photo:"🖼 Fotos",music:"🎵 Músicas",text:"📝 Texto"},tb=el("div","display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:6px 4px;font-size:12px;margin-top:8px;align-items:center");
+  bt.append(el("b","","Visualizações por tipo"));["","Total","7 dias","30 dias","12 meses"].forEach(function(h){tb.append(el("div","color:"+C.mute+";text-align:right",h))});
+  Object.keys(L).forEach(function(k){var v=(s.by_type||{})[k]||{};tb.append(el("div","",L[k]));["total","week","month","year"].forEach(function(f){tb.append(el("div","text-align:right",num(v[f])))})});bt.append(tb);body.append(bt);
+  var dl=function(x){return String(x.t).slice(8,10)+"/"+String(x.t).slice(5,7)},ml=function(x){return String(x.t).slice(5,7)+"/"+String(x.t).slice(2,4)};
+  body.append(chartCard("Visualizações por dia (30 dias)",s.days,C.acc,function(x){return x.views},dl),chartCard("Visualizações por mês",s.months,"#4cc9f0",function(x){return x.views},ml),chartCard("Novos seguidores por mês",s.followers_months,C.ok,function(x){return x.n},ml));
+  var pc=card();pc.append(el("b","","Publicações recentes"));if(!(s.posts||[]).length)pc.append(el("div","opacity:.7;margin-top:6px","Ainda sem publicações."));
+  (s.posts||[]).slice(0,30).forEach(function(z){var d=el("div","padding:8px 0;border-top:1px solid "+C.line);d.append(el("div","font-size:14px;word-break:break-word",({video:"🎬",photo:"🖼",music:"🎵",text:"📝"}[z.kind]||"")+(z.is_reel?" Reel · ":" ")+(z.body||"(sem texto)")),
+   el("div","font-size:12px;color:"+C.mute+";margin-top:3px","👀 "+num(z.views)+" · 👍 "+num(z.likes)+" · 👎 "+num(z.dislikes)+" · 💬 "+num(z.comments)+" · 📤 "+num(z.shares)+" · ⏬ "+num(z.downloads)+" · "+when(z.created_at)));pc.append(d)});body.append(pc)
+ }).catch(function(e){body.replaceChildren(el("p","color:#ff8a8a",e.message+" (confirme que executou bengu-paginas-grupos-2.sql)"))})}
+/* feed da Home */
+function openTo(kind,id){open();stack=[];go(home);go(kind==="page"?function(){pageView(id)}:function(){groupView(id)})}
+var feedT;
+function feed(){var h=document.getElementById("bg-pg-feed");if(!h||h.dataset.bg||!tok())return;h.dataset.bg="1";
+ rpc("bengu_pg_feed",{p_limit:20}).then(function(rows){if(!rows||!rows.length||!h.isConnected)return;
+  var w=el("div","background:"+C.bg+";color:#fff;border-radius:14px;margin:8px 10px;padding:6px 12px 10px");w.append(el("div","font-weight:800;padding:8px 0 0","📄 Páginas e grupos"));
+  rows.forEach(function(r){var kind=r.kind,nm=kind==="group"?r.parent_name+" · "+(r.author_name||"membro"):r.parent_name,
+   c=postCard(r,nm,r.parent_photo,false,kind==="page"?"bengu_page_posts":"bengu_group_posts",function(){h.dataset.bg="";h.replaceChildren();feed()},!!r.is_reel),hd=c.firstChild;
+   hd.style.cursor="pointer";hd.onclick=function(){openTo(kind,r.parent_id)};w.append(c)});h.append(w)}).catch(function(){})}
+new MutationObserver(function(){clearTimeout(feedT);feedT=setTimeout(feed,250)}).observe(document.body,{childList:true,subtree:true});
 window.bengu_pg_open=open;
 /* ligações partilhadas: #pagina=ID ou #grupo=ID */
 function deep(){var m=String(location.hash||"").match(/^#(pagina|grupo)=([0-9a-f-]{36})$/i);if(!m||!tok())return;var k=m[1].toLowerCase(),id=m[2];try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}
@@ -9950,7 +10023,7 @@ setTimeout(deep,2500);
 </script>
   <script>/* BENGU 4.3: actualização automática (cache / service worker) */
 (function(){
-var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.25.1_24.10.2026",KEY="bg_build",TRY="bg_build_try";
+var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.26.0_25.10.2026",KEY="bg_build",TRY="bg_build_try";
 function wipe(){var p=[];try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(n){return caches.delete(n)}))}))}catch(e){}
  try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}))}catch(e){}
  return Promise.all(p).catch(function(){})}
@@ -10235,6 +10308,7 @@ window.bengu_prep_audio=function(file){return new Promise(function(ok){var done=
     fin(new Blob([out.buffer],{type:"audio/wav"}))}catch(e){fin(null)}},function(){fin(null)});if(pr&&pr.catch)pr.catch(function(){fin(null)})}).catch(function(){fin(null)})}catch(e){fin(null)}})};
 window.bengu_use_audio=function(url,label,prep,isVideo){if(!tok()){alert("Inicie sessão para criar um reel.");return}window.__bgReelAudio={url:prep||url,label:label||"Som de vídeo",prep:!!prep,lite:!prep&&!!isVideo};window.bengu_open_record()};
 window.bengu_open_record=window.bengu_open_live=function(){
+ var PGT=window.__bgReelTarget||null;window.__bgReelTarget=null;
  if(!tok()){alert("Inicie sessão para gravar um reel.");return}
  if(!navigator.mediaDevices||!window.MediaRecorder){alert("Este navegador não permite gravar vídeo.");return}
  var W=720,H=1280,facing="user",filter="none",beauty={skin:40,light:25,tone:15},beautyOn=true,cam=null,micStream=null,raf=0,rec=null,chunks=[],blob=null,mime=pickMime(),t0=0,timer=null,
@@ -10669,8 +10743,8 @@ window.bengu_open_record=window.bengu_open_live=function(){
    fetch(U+"/storage/v1/object/media/"+path,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":blob.type,"x-upsert":"false","cache-control":"max-age=31536000"},body:blob}).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(/exceeded|too large|payload/i.test(t)?"O vídeo é demasiado grande.":"Não foi possível enviar o vídeo.")})})
    .then(function(){return window.bengu_prep_audio?window.bengu_prep_audio(blob):null}).then(function(wb){if(!wb)return null;var p2=uid+"/"+Date.now()+"-reel-som.wav";return fetch(U+"/storage/v1/object/media/"+p2,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"audio/wav","x-upsert":"false","cache-control":"max-age=31536000"},body:wb}).then(function(r){return r.ok?U+"/storage/v1/object/public/media/"+p2:null}).catch(function(){return null})})
     .then(function(aurl){var item={url:U+"/storage/v1/object/public/media/"+path,name:"reel."+ext,size:(blob.size/1048576).toFixed(1).replace(".",",")+" MB",kind:"video"};if(aurl)item.audio=aurl;if(musicLabel)item.music=musicLabel;
-    return fetch(U+"/rest/v1/posts",{method:"POST",headers:hd({Prefer:"return=minimal"}),body:JSON.stringify({user_id:uid,type:"media",body:cap.value,media:[item],allow_download:true,visibility:"public"})}).then(function(r){if(!r.ok)return r.text().then(function(t){if(/TAXA_PUBLICACAO/.test(t)){setTimeout(function(){window.bengu_fee_open&&window.bengu_fee_open()},50);throw new Error("Pague a taxa de publicação para publicar.")}throw new Error("Não foi possível publicar.")})})})
-   .then(function(){say("Reel publicado!",true);setTimeout(function(){stopAll();o.remove();location.reload()},1200)})
+    return fetch(U+"/rest/v1/"+(PGT?"bengu_page_posts":"posts"),{method:"POST",headers:hd({Prefer:"return=minimal"}),body:JSON.stringify(PGT?{page_id:PGT.page,author_id:uid,body:cap.value||null,media:[item],is_reel:true}:{user_id:uid,type:"media",body:cap.value,media:[item],allow_download:true,visibility:"public"})}).then(function(r){if(!r.ok)return r.text().then(function(t){if(/TAXA_PUBLICACAO/.test(t)){setTimeout(function(){window.bengu_fee_open&&window.bengu_fee_open()},50);throw new Error("Pague a taxa de publicação para publicar.")}throw new Error("Não foi possível publicar.")})})})
+   .then(function(){say("Reel publicado!",true);setTimeout(function(){stopAll();o.remove();if(PGT){PGT.done&&PGT.done()}else location.reload()},1200)})
    .catch(function(e){pub.disabled=false;pub.textContent="📤";say(e.message)})}}
 
  startCam().then(function(){draw()}).catch(function(){say("Sem acesso à câmara. Permita a câmara nas definições do navegador.")});

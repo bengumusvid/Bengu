@@ -2857,6 +2857,7 @@ function J_() {
                     cover: ld,
                   });
                 } else {
+                  const prepP = Mi === "video" && window.bengu_prep_audio ? window.bengu_prep_audio(ot.file) : null;
                   const itm = {
                     url: await Ir(ot.file, ot.file.name),
                     name: ot.file.name,
@@ -2866,7 +2867,7 @@ function J_() {
                   if (Mi === "video" && window.bengu_prep_audio) {
                     try {
                       Dt((V) => V && { ...V, label: "A preparar o áudio…" });
-                      const wb = await window.bengu_prep_audio(ot.file);
+                      const wb = await prepP;
                       if (wb) itm.audio = await Mo(new File([wb], "som.wav", { type: "audio/wav" }), `som-${ot.file.name}.wav`, () => {});
                     } catch {}
                     Dt((V) => V && { ...V, label: Kt });
@@ -3173,7 +3174,7 @@ function J_() {
     Fo = ln.filter((I) => I.userId === At).sort(In),
     id = U.map((I) => A.find((V) => V.id === I)).filter(Boolean),
     Bi = Ag([...ln].sort(In), E),
-    Yg = X === "chat" ? "messages" : X,
+    Yg = (window.__bgTab = X, window.__bgPosts = A, window.__bgGoHome = () => we("feed"), X === "chat" ? "messages" : X),
     Qg = [
       ["feed", x("home"), C_],
       ["news", "Notícias", BgNewsIcon],
@@ -4443,8 +4444,8 @@ function ex({ r: e, cardProps: t }) {
         ],
       }),
       u.jsxs("div", {
-        className: "absolute flex flex-col items-center gap-5",
-        style: { right: 12, bottom: 24 },
+        className: "absolute flex flex-col items-center gap-2",
+        style: { right: 10, bottom: "calc(84px + env(safe-area-inset-bottom, 0px))" },
         children: [
           u.jsxs("button", {
             onClick: () => d.onLike(e.post.id),
@@ -9349,7 +9350,7 @@ function h(t,a,c){var e=document.createElement(t);for(var q in a||{})if(q!="on")
 function toast(t){var d=h("div",{style:"position:fixed;left:12px;right:12px;bottom:90px;z-index:100001;padding:10px 14px;border-radius:10px;background:#12183A;color:#fff;font:14px system-ui;box-shadow:0 4px 16px rgba(0,0,0,.4)"},t);document.body.append(d);setTimeout(function(){d.remove()},3500)}
 /* BENGU 4.22: visualizações de notícias e jornais publicados na Bengu (contam como as das publicações) */
 var __bgSeenV={};
-function bgCountView(kind,n){try{if(!n||n.id==null||!tok())return;var k=kind+":"+n.id;if(__bgSeenV[k])return;var me=uid();if(me&&n.author_id==me)return;__bgSeenV[k]=1;fetch(U+"/rest/v1/rpc/bengu_bump_content_view",{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/json"},body:JSON.stringify({p_kind:kind,p_id:String(n.id)}),keepalive:true}).catch(function(){})}catch(e){}}
+function bgCountView(kind,n){try{if(!n||n.id==null)return;var k=kind+":"+n.id;if(__bgSeenV[k])return;var me=uid();if(me&&n.author_id==me)return;__bgSeenV[k]=1;fetch(U+"/rest/v1/rpc/bengu_bump_content_view",{method:"POST",headers:{apikey:K,Authorization:"Bearer "+(tok()||K),"Content-Type":"application/json"},body:JSON.stringify({p_kind:kind,p_id:String(n.id)}),keepalive:true}).catch(function(){})}catch(e){}}
 function bgNV(kind,n,el){try{if(!("IntersectionObserver" in window)){bgCountView(kind,n);return}var io=new IntersectionObserver(function(es){if(es[0]&&es[0].isIntersecting){io.disconnect();bgCountView(kind,n)}},{threshold:.5});io.observe(el)}catch(e){}}
 function nm(id){return api("profiles?select=name&id=eq."+id).then(function(r){return r[0]?r[0].name:"Utilizador"}).catch(function(){return"Utilizador"})}
 /* pedir e esperar autorização antes de abrir uma conversa */
@@ -9624,10 +9625,11 @@ window.bengu_news_open=function(){var b=sheet("📰 Notícias"),o=b.parentNode,a
    au=h("div",{style:"font-size:12px;opacity:.65;margin-top:2px"},"Por membro · "+when(n.created_at)),bar=h("div",{style:"display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"}),
    sb=function(t,fn,col){var x=h("button",{style:"padding:8px 14px;border:0;border-radius:8px;font-weight:700;background:"+(col||"#eef0f6")+";color:"+(col?"#fff":"#12183A")},t);x.addEventListener("click",fn);return x};
    cd.append(h("div",{style:"font-weight:800;line-height:1.3"},"📰 "+n.title),au);
-   api("profiles?select=name&id=eq."+n.author_id).then(function(r){if(r&&r[0]&&r[0].name)au.textContent="Por "+r[0].name+" · "+when(n.created_at)}).catch(function(){});
+   var vws=n.views!=null?" · 👀 "+n.views:"";au.textContent="Por membro · "+when(n.created_at)+vws;
+   api("profiles?select=name&id=eq."+n.author_id).then(function(r){if(r&&r[0]&&r[0].name)au.textContent="Por "+r[0].name+" · "+when(n.created_at)+vws}).catch(function(){});
    bar.append(sb("📖 Ler agora",function(){openPdf(n)},"#1E88E5"),sb("📤 Partilhar",function(){shareNews(n.title,"",location.origin+location.pathname)}));
    if(admin||mine)bar.append(sb("🗑 Apagar",function(){if(!confirm("Apagar este jornal? Não pode ser desfeito."))return;api("bengu_journals?id=eq."+n.id,"DELETE").then(function(){var m=String(n.pdf_url||"").split("/object/public/journals/")[1];if(m)fetch(U+"/storage/v1/object/journals/"+m,{method:"DELETE",headers:{apikey:K,Authorization:"Bearer "+tok()}}).catch(function(){});delete NC[f.k];show(cur)}).catch(function(e){alert((e&&e.message)||"Erro.")})},"#B71C1C"));
-   cd.append(bar);out.push(cd)});
+   cd.append(bar);bgNV("journal",n,cd);out.push(cd)});
   if(!(c.com||[]).length)out.push(h("p",{style:"opacity:.7"},"Ainda não há jornais. Toque em “Adicionar jornal” para publicar o primeiro."));
   list.replaceChildren.apply(list,out)}
  function show(i){cur=i;drawTabs();var f=FEEDS[i];if(f.k=="desporto"&&sub>0){games();return}list.replaceChildren(h("p",{},"A carregar…"));
@@ -10871,6 +10873,34 @@ window.bgVideoEditor = function (root, P) {
 
   return { destroy: function () { dead = true; cancelAnimationFrame(raf); try { pause(); } catch (e) { } if (mr) { mr.onstop = null; try { mr.stop(); } catch (e) { } } if (recorder) { try { recorder.stop(); } catch (e) { } } for (var k in A) { try { A[k].el && A[k].el.pause && A[k].el.pause(); URL.revokeObjectURL(A[k].url); } catch (e) { } } try { ac && ac.close(); } catch (e) { } window.removeEventListener("resize", scheduleTL); root.replaceChildren(); } };
 };
+})();
+</script>
+<script>/* BENGU 4.23: botão Voltar (fecha janelas, depois vai para Home, depois sai) e áudio preparado para os vídeos já publicados */
+(function(){
+var armed=false;function arm(){try{history.pushState({bg:1},"")}catch(e){}}
+function topOverlay(){var best=null,bz=0;[].forEach.call(document.body.children,function(el){if(!el.style||el.id==="root"||el.id==="bg-splash"||el.style.position!=="fixed")return;var z=parseInt(el.style.zIndex,10)||0;if(z>=99998&&z>=bz&&el.offsetHeight>window.innerHeight*0.5){best=el;bz=z}});return best}
+function closeOverlay(o){var b=[].find.call(o.querySelectorAll("button"),function(x){var t=(x.textContent||"").trim();return t==="\u2715"||t==="\u2190"||t==="\u00d7"||/^(cancelar|fechar|voltar)$/i.test(t)||/fechar|close|voltar/i.test(x.getAttribute("aria-label")||"")});if(b)b.click();else o.remove()}
+document.addEventListener("pointerdown",function(){if(armed)return;armed=true;arm()},{once:true,passive:true});
+window.addEventListener("popstate",function(){if(!armed)return;var o=topOverlay();if(o){closeOverlay(o);arm();return}
+ if(window.__bgTab&&window.__bgTab!=="feed"&&window.__bgGoHome){window.__bgGoHome();window.scrollTo(0,0);arm();return}
+ armed=false;try{history.back()}catch(e){}});
+/* preparar o áudio dos meus vídeos antigos, em segundo plano (máx. 3 por sessão, não usa dados móveis quando o navegador o indica) */
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",KEY="bg_bf_tried",busy=false,done=0;
+function tk(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
+function me(){try{return JSON.parse(atob(tk().split(".")[1].replace(/-/g,"+").replace(/_/g,"/"))).sub}catch(e){return null}}
+function tried(){try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return{}}}
+function mark(id){var t=tried();t[id]=Date.now();try{localStorage.setItem(KEY,JSON.stringify(t))}catch(e){}}
+function run(){if(busy||done>=3||document.visibilityState!=="visible"||!window.bengu_prep_audio)return;
+ var c=navigator.connection;if(c&&(c.saveData||c.type==="cellular"))return;
+ var u=me(),ps=window.__bgPosts;if(!u||!ps||!ps.length)return;var t=tried(),p=null,ix=-1;
+ for(var i=0;i<ps.length&&!p;i++){var q=ps[i];if(q.userId!==u||t[q.id])continue;var j=(q.items||[]).findIndex(function(it){return it&&it.kind==="video"&&it.url&&!it.audio});if(j>=0){p=q;ix=j}}
+ if(!p)return;busy=true;mark(p.id);var it=p.items[ix];
+ fetch(it.url).then(function(r){if(!r.ok)throw 0;if((Number(r.headers.get("content-length"))||0)>40*1048576)throw 0;return r.blob()})
+ .then(function(b){return window.bengu_prep_audio(b)})
+ .then(function(wb){if(!wb)throw 0;var path=u+"/"+Date.now()+"-som.wav";return fetch(U+"/storage/v1/object/media/"+path,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tk(),"Content-Type":"audio/wav","x-upsert":"false","cache-control":"max-age=31536000"},body:wb}).then(function(r){if(!r.ok)throw 0;return U+"/storage/v1/object/public/media/"+path})})
+ .then(function(url){var items=p.items.map(function(x,k){return k===ix?Object.assign({},x,{audio:url}):x});return fetch(U+"/rest/v1/posts?id=eq."+p.id,{method:"PATCH",headers:{apikey:K,Authorization:"Bearer "+tk(),"Content-Type":"application/json",Prefer:"return=minimal"},body:JSON.stringify({media:items})}).then(function(r){if(!r.ok)throw 0;p.items=items;done++})})
+ .catch(function(){}).then(function(){busy=false;setTimeout(run,5000)})}
+setTimeout(run,20000);setInterval(run,60000);
 })();
 </script>
 </body>

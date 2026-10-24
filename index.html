@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.26.0_25.10.2026" />
+    <meta name="bengu-build" content="4.27.0_25.10.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -9865,22 +9865,22 @@ function home(){setTitle("Páginas e grupos");body.replaceChildren();
  load()}
 /* ===== páginas ===== */
 function pageForm(p){var edit=!!p;setTitle(edit?"Editar página":"Criar página");body.replaceChildren();
- var n=inp("Nome da página",p&&p.name),c=inp("Categoria (ex.: Música, Notícias, Negócio)",p&&p.category),d=area("Descrição (opcional)",p&&p.description,4),ph=picker(edit?"Mudar a foto":"Foto ou logótipo"),
+ var so=el("input","width:20px;height:20px");so.type="checkbox";so.checked=!p||p.show_owner!==false;var n=inp("Nome da página",p&&p.name),c=inp("Categoria (ex.: Música, Notícias, Negócio)",p&&p.category),d=area("Descrição (opcional)",p&&p.description,4),ph=picker(edit?"Mudar a foto":"Foto ou logótipo"),
   go2=btn(edit?"Guardar":"Criar página",function(){var nm=n.value.trim();if(nm.length<2)return toast("Escreva o nome da página (mínimo 2 letras).");
    go2.disabled=true;go2.textContent="A guardar…";
-   (ph.get()?upload(ph.get(),"pagina"):Promise.resolve(null)).then(function(u){var o={name:nm.slice(0,80),category:c.value.trim().slice(0,40)||null,description:d.value.trim().slice(0,500)||null};if(u)o.photo_url=u;
+   (ph.get()?upload(ph.get(),"pagina"):Promise.resolve(null)).then(function(u){var o={name:nm.slice(0,80),category:c.value.trim().slice(0,40)||null,description:d.value.trim().slice(0,500)||null,show_owner:so.checked};if(u)o.photo_url=u;
     return edit?api("bengu_pages?id=eq."+p.id,"PATCH",o):api("bengu_pages","POST",Object.assign({owner_id:uid()},o))}).then(function(r){
      if(edit){stack.pop();refresh()}else{stack.pop();go(function(){pageView(r[0].id)})}}).catch(function(e){go2.disabled=false;go2.textContent=edit?"Guardar":"Criar página";fail(e)})});
- body.append(n,c,d,ph.el,go2)}
+ var sl=el("label","display:flex;gap:10px;align-items:center;margin:8px 0;font-size:14px");sl.append(so,el("span","","Mostrar ao público o nome de quem gere a página"));body.append(n,c,d,ph.el,sl,go2)}
 function pageView(id){setTitle("Página");loading();var me=uid();
  Promise.all([api("bengu_pages?select=*,bengu_page_follows(count)&id=eq."+id),api("bengu_page_follows?select=page_id&page_id=eq."+id+"&user_id=eq."+me),api("bengu_page_posts?select=*&page_id=eq."+id+"&order=created_at.desc&limit=80")]).then(function(r){
   var p=r[0][0];if(!p){body.replaceChildren(el("p","","Esta página já não existe."));return}
-  var follow=!!r[1].length,all=r[2],own=p.owner_id===me,canDel=own||isAdm(),tab=PT[id]||"posts";setTitle(p.name);
+  var follow=!!r[1].length,all=r[2],own=p.owner_id===me,canDel=own,tab=PT[id]||"posts";setTitle(p.name);
   var posts=all.filter(function(x){return!x.is_reel}),reels=all.filter(function(x){return x.is_reel});
   return names([p.owner_id]).then(function(nm){
    body.replaceChildren();var hd=card(),top=el("div","display:flex;gap:12px;align-items:center");top.append(av(p.photo_url,p.name,72));
    var tx=el("div","flex:1;min-width:0");tx.append(el("div","font-size:19px;font-weight:800",p.name));if(p.category)tx.append(el("div","font-size:13px;color:"+C.acc,p.category));
-   var n=cnt(p,"bengu_page_follows");tx.append(el("div","font-size:13px;color:"+C.mute,n+" seguidor"+(n===1?"":"es")+" · Gerida por "+(nm[p.owner_id]||"utilizador")));top.append(tx);hd.append(top);
+   var n=cnt(p,"bengu_page_follows");tx.append(el("div","font-size:13px;color:"+C.mute,n+" seguidor"+(n===1?"":"es")+((p.show_owner!==false||own)?" · Gerida por "+(nm[p.owner_id]||"utilizador"):"")));top.append(tx);hd.append(top);
    if(p.description)hd.append(el("p","white-space:pre-wrap;margin:10px 0 4px",p.description));
    var bar=el("div","margin-top:8px");
    if(!own)bar.append(btn(follow?"✓ A seguir":"➕ Seguir",function(){(follow?api("bengu_page_follows?page_id=eq."+id+"&user_id=eq."+me,"DELETE"):api("bengu_page_follows","POST",{page_id:id,user_id:me})).then(refresh).catch(fail)},follow?"soft":""));
@@ -9889,7 +9889,7 @@ function pageView(id){setTitle("Página");loading();var me=uid();
    bar.append(btn("📤 Partilhar",function(){shareLink("pagina",id,p.name)},"soft"));
    if(own)bar.append(btn("✏️ Editar",function(){go(function(){pageForm(p)})},"soft"));
    if(canDel)bar.append(btn("🗑 Apagar página",function(){if(!confirm("Apagar esta página e todas as publicações? Não pode ser desfeito."))return;api("bengu_pages?id=eq."+id,"DELETE").then(function(){toast("Página apagada.");back()}).catch(fail)},"red"));
-   hd.append(bar);body.append(hd);
+   hd.append(bar);body.append(hd);if(!own)asPage(p,bar);var fc=el("div");body.append(fc);if(own)followingCard(p,fc);
    var tabs=el("div","display:flex;gap:8px;margin:6px 0");
    [["posts","Publicações ("+posts.length+")"],["reels","🎞 Reels ("+reels.length+")"]].forEach(function(t){var on=tab===t[0],b=el("button","flex:1;border:0;border-radius:12px;padding:10px;font-weight:800;font-size:14px;background:"+(on?C.acc:C.card)+";color:"+(on?"#14163a":"#fff"),t[1]);b.onclick=function(){PT[id]=t[0];refresh()};tabs.append(b)});body.append(tabs);
    if(tab==="posts"){
@@ -9994,7 +9994,7 @@ function chartCard(t,arr,col,val,lab){var c=card(),vs=(arr||[]).map(val),mx=Math
 function pageDash(p){setTitle("📊 Painel do criador");loading();
  rpc("bengu_page_panel",{p_page:p.id}).then(function(s){body.replaceChildren();var T=s.totals||{},hd=card(),g=el("div","display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px");hd.append(el("b","font-size:17px","📊 "+p.name));
   [["Seguidores",s.followers],["Novos 7 dias",s.followers_week],["Novos 30 dias",s.followers_month],["Publicações",T.posts],["Reels",T.reels],["Visualizações",T.views],["Gostos",T.likes],["Não gostos",T.dislikes],["Comentários",T.comments],["Partilhas",T.shares],["Descargas",T.downloads]].forEach(function(q){var d=el("div","background:"+C.card2+";border-radius:10px;padding:10px 4px;text-align:center");d.append(el("div","font-size:18px;font-weight:800",num(q[1])),el("div","font-size:11px;color:"+C.mute,q[0]));g.append(d)});
-  hd.append(g,el("div","font-size:12px;color:"+C.mute+";margin-top:8px","As visualizações do dono da página não são contadas."));body.append(hd);
+  hd.append(g,el("div","font-size:12px;color:"+C.mute+";margin-top:8px","As visualizações do dono da página não são contadas."));body.append(hd);earnCard(s,body);
   var bt=card(),L={video:"🎬 Vídeos e reels",photo:"🖼 Fotos",music:"🎵 Músicas",text:"📝 Texto"},tb=el("div","display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:6px 4px;font-size:12px;margin-top:8px;align-items:center");
   bt.append(el("b","","Visualizações por tipo"));["","Total","7 dias","30 dias","12 meses"].forEach(function(h){tb.append(el("div","color:"+C.mute+";text-align:right",h))});
   Object.keys(L).forEach(function(k){var v=(s.by_type||{})[k]||{};tb.append(el("div","",L[k]));["total","week","month","year"].forEach(function(f){tb.append(el("div","text-align:right",num(v[f])))})});bt.append(tb);body.append(bt);
@@ -10004,16 +10004,38 @@ function pageDash(p){setTitle("📊 Painel do criador");loading();
   (s.posts||[]).slice(0,30).forEach(function(z){var d=el("div","padding:8px 0;border-top:1px solid "+C.line);d.append(el("div","font-size:14px;word-break:break-word",({video:"🎬",photo:"🖼",music:"🎵",text:"📝"}[z.kind]||"")+(z.is_reel?" Reel · ":" ")+(z.body||"(sem texto)")),
    el("div","font-size:12px;color:"+C.mute+";margin-top:3px","👀 "+num(z.views)+" · 👍 "+num(z.likes)+" · 👎 "+num(z.dislikes)+" · 💬 "+num(z.comments)+" · 📤 "+num(z.shares)+" · ⏬ "+num(z.downloads)+" · "+when(z.created_at)));pc.append(d)});body.append(pc)
  }).catch(function(e){body.replaceChildren(el("p","color:#ff8a8a",e.message+" (confirme que executou bengu-paginas-grupos-2.sql)"))})}
+/* BENGU 4.27: ganhos da página, páginas que seguem páginas, pré-visualização da 1.ª página dos PDF */
+function earnCard(s,body){var c=card();c.append(el("b","","💰 Ganhos estimados da página"));body.append(c);
+ rpc("bengu_creator_stats").then(function(z){var k=z.rpm*z.creator_pct/100/1000,usd=function(v){return Number(v||0).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})+" US$"},
+  sum=function(a,n){return(a||[]).slice(-n).reduce(function(t,x){return t+(x.views||0)},0)},g=el("div","display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px");
+  [["Total",(s.totals||{}).views],["7 dias",sum(s.days,7)],["30 dias",sum(s.days,30)],["12 meses",sum(s.months,12)]].forEach(function(q){var d=el("div","background:"+C.card2+";border-radius:10px;padding:10px;text-align:center");d.append(el("div","font-size:17px;font-weight:800",usd(q[1]*k)),el("div","font-size:11px;color:"+C.mute,q[0]));g.append(d)});
+  c.append(g,el("div","font-size:11px;color:"+C.mute+";margin-top:6px","Estimativa: visualizações × "+usd(z.rpm)+" por 1000 × "+z.creator_pct+"% para o criador. O valor real depende dos anúncios."))}).catch(function(){c.append(el("div","font-size:12px;color:"+C.mute+";margin-top:6px","Ganhos indisponíveis de momento."))})}
+function asPage(p,bar){var me=uid();if(!me)return;
+ Promise.all([api("bengu_pages?select=id,name&owner_id=eq."+me+"&id=neq."+p.id),api("bengu_page_following?select=page_id&target_page_id=eq."+p.id)]).then(function(z){var mine=z[0],f={};if(!mine.length)return;z[1].forEach(function(r){f[r.page_id]=1});
+  bar.append(btn("📄 Seguir como página",function(){var o=el("div","position:fixed;inset:0;z-index:100005;background:rgba(0,0,0,.75);display:flex;align-items:flex-end;justify-content:center"),b=el("div","background:"+C.bar+";color:#fff;border-radius:16px 16px 0 0;padding:14px;width:100%;max-width:560px;box-sizing:border-box");
+   b.append(el("b","","Seguir «"+p.name+"» como…"));o.onclick=function(e){if(e.target===o)o.remove()};
+   mine.forEach(function(m){var bt=btn((f[m.id]?"✓ ":"➕ ")+m.name,function(){(f[m.id]?api("bengu_page_following?page_id=eq."+m.id+"&target_page_id=eq."+p.id,"DELETE"):api("bengu_page_following","POST",{page_id:m.id,target_page_id:p.id})).then(function(){f[m.id]=!f[m.id];bt.textContent=(f[m.id]?"✓ ":"➕ ")+m.name}).catch(fail)},"soft");bt.style.cssText+=";display:block;width:100%";b.append(bt)});
+   b.append(btn("Fechar",function(){o.remove()}));o.append(b);document.body.append(o)},"soft"))}).catch(function(){})}
+function followingCard(p,box){api("bengu_page_following?select=target_page_id,bengu_pages!bengu_page_following_target_page_id_fkey(id,name,photo_url)&page_id=eq."+p.id).then(function(r){if(!r.length)return;var c=card();c.append(el("b","","A seguir ("+r.length+")"));
+  r.forEach(function(x){var g=x.bengu_pages;if(!g)return;var rw=el("div","display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer");rw.append(av(g.photo_url,g.name,28),el("span","",g.name));rw.onclick=function(){go(function(){pageView(g.id)})};c.append(rw)});box.append(c)}).catch(function(){})}
+/* PDF: mostra a 1.ª página antes de abrir (publicações, páginas, grupos e conversas) */
+var PJ;function pdfjs(){return PJ||(PJ=new Promise(function(ok,no){if(window.pdfjsLib)return ok(window.pdfjsLib);var s=document.createElement("script"),W="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";s.src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+ s.onload=function(){fetch(W).then(function(r){return r.blob()}).then(function(b){window.pdfjsLib.GlobalWorkerOptions.workerSrc=URL.createObjectURL(b)}).catch(function(){window.pdfjsLib.GlobalWorkerOptions.workerSrc=W}).then(function(){ok(window.pdfjsLib)})};s.onerror=no;document.head.append(s)}))}
+function pdfPrev(a){if(a.dataset.bgpdf)return;var h=a.href||"",t=(a.textContent||"").trim();if(!(/\.pdf([?#]|$)/i.test(h)||/\.pdf$/i.test(t))||/Abrir \/ descarregar/.test(t))return;a.dataset.bgpdf="1";
+ var w=document.createElement("div"),cv=document.createElement("canvas"),cs=getComputedStyle(a);w.style.cssText="margin:6px "+cs.marginRight+" 0 "+cs.marginLeft+";border-radius:10px;overflow:hidden;background:#fff;max-height:380px;cursor:pointer;position:relative";cv.style.cssText="width:100%;display:block";w.append(cv);w.onclick=function(){window.open(h,"_blank","noopener")};
+ pdfjs().then(function(L){return L.getDocument({url:h}).promise}).then(function(pdf){return pdf.getPage(1).then(function(pg){var v0=pg.getViewport({scale:1}),v=pg.getViewport({scale:Math.min(2,640/v0.width)});cv.width=v.width;cv.height=v.height;
+  return pg.render({canvasContext:cv.getContext("2d"),viewport:v}).promise.then(function(){var b=document.createElement("div");b.textContent="📄 Página 1 de "+pdf.numPages+" · toque para abrir";b.style.cssText="position:absolute;left:0;right:0;bottom:0;padding:6px 10px;background:rgba(0,0,0,.6);color:#fff;font:12px system-ui";w.append(b);if(a.parentNode)a.parentNode.insertBefore(w,a)})})}).catch(function(){})}
+function scanPdf(){[].slice.call(document.querySelectorAll("a[href]:not([data-bgpdf])")).slice(0,60).forEach(pdfPrev)}
 /* feed da Home */
 function openTo(kind,id){open();stack=[];go(home);go(kind==="page"?function(){pageView(id)}:function(){groupView(id)})}
 var feedT;
 function feed(){var h=document.getElementById("bg-pg-feed");if(!h||h.dataset.bg||!tok())return;h.dataset.bg="1";
  rpc("bengu_pg_feed",{p_limit:20}).then(function(rows){if(!rows||!rows.length||!h.isConnected)return;
-  var w=el("div","background:"+C.bg+";color:#fff;border-radius:14px;margin:8px 10px;padding:6px 12px 10px");w.append(el("div","font-weight:800;padding:8px 0 0","📄 Páginas e grupos"));
-  rows.forEach(function(r){var kind=r.kind,nm=kind==="group"?r.parent_name+" · "+(r.author_name||"membro"):r.parent_name,
+  var w=el("div","margin:0 10px");
+  rows.forEach(function(r){var kind=r.kind,nm=r.parent_name,
    c=postCard(r,nm,r.parent_photo,false,kind==="page"?"bengu_page_posts":"bengu_group_posts",function(){h.dataset.bg="";h.replaceChildren();feed()},!!r.is_reel),hd=c.firstChild;
    hd.style.cursor="pointer";hd.onclick=function(){openTo(kind,r.parent_id)};w.append(c)});h.append(w)}).catch(function(){})}
-new MutationObserver(function(){clearTimeout(feedT);feedT=setTimeout(feed,250)}).observe(document.body,{childList:true,subtree:true});
+new MutationObserver(function(){clearTimeout(feedT);feedT=setTimeout(function(){feed();scanPdf()},250)}).observe(document.body,{childList:true,subtree:true});
 window.bengu_pg_open=open;
 /* ligações partilhadas: #pagina=ID ou #grupo=ID */
 function deep(){var m=String(location.hash||"").match(/^#(pagina|grupo)=([0-9a-f-]{36})$/i);if(!m||!tok())return;var k=m[1].toLowerCase(),id=m[2];try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}
@@ -10023,7 +10045,7 @@ setTimeout(deep,2500);
 </script>
   <script>/* BENGU 4.3: actualização automática (cache / service worker) */
 (function(){
-var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.26.0_25.10.2026",KEY="bg_build",TRY="bg_build_try";
+var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.27.0_25.10.2026",KEY="bg_build",TRY="bg_build_try";
 function wipe(){var p=[];try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(n){return caches.delete(n)}))}))}catch(e){}
  try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}))}catch(e){}
  return Promise.all(p).catch(function(){})}

@@ -2124,6 +2124,7 @@ function es({
               fill: s ? k.ink : "none",
             }),
           }),
+          (() => { const vi_ = (e.items || []).find((y_) => y_.kind === "video"); return vi_ ? u.jsx("button", { onClick: () => window.bengu_use_audio && window.bengu_use_audio(vi_.url, "Som de " + ((t && t.name) || "vídeo")), "aria-label": "Usar áudio", className: "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold", style: { background: k.paper, color: k.ink }, children: "🎵 Usar áudio" }) : null; })(),
           u.jsx("div", { className: "flex-1" }),
           m &&
             u.jsxs("button", {
@@ -4461,6 +4462,12 @@ function ex({ r: e, cardProps: t }) {
             className: f,
             "aria-label": x("bookmark"),
             children: u.jsx(Oo, { size: 28, fill: d.saved ? "#fff" : "none" }),
+          }),
+          u.jsxs("button", {
+            onClick: () => window.bengu_use_audio && window.bengu_use_audio(e.item.url, "Som de " + ((d.user && d.user.name) || "vídeo")),
+            className: f,
+            "aria-label": "Usar áudio",
+            children: [u.jsx("span", { style: { fontSize: 24, lineHeight: "28px" }, children: "🎵" }), u.jsx("span", { style: { fontSize: 10, fontWeight: 700 }, children: "Usar áudio" })],
           }),
           v &&
             u.jsx("button", {
@@ -9922,6 +9929,7 @@ function pickMime(){var c=["video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4",
  for(var i=0;i<c.length;i++){try{if(window.MediaRecorder&&MediaRecorder.isTypeSupported(c[i]))return c[i]}catch(e){}}return""}
 function mm(s){s=Math.floor(s);return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
 
+window.bengu_use_audio=function(url,label){if(!tok()){alert("Inicie sessão para criar um reel.");return}window.__bgReelAudio={url:url,label:label||"Som de vídeo"};window.bengu_open_record()};
 window.bengu_open_record=window.bengu_open_live=function(){
  if(!tok()){alert("Inicie sessão para gravar um reel.");return}
  if(!navigator.mediaDevices||!window.MediaRecorder){alert("Este navegador não permite gravar vídeo.");return}
@@ -10144,11 +10152,11 @@ window.bengu_open_record=window.bengu_open_live=function(){
    buf=b;makePeaks();clips=[{a:0,b:b.duration,vol:1,fi:0,fo:0}];hist=[];redoS=[];btnState();mnote.textContent="Música pronta. Edite abaixo; o resultado é gravado no reel.";ed.style.display="block";tool="";[].forEach.call(tb.children,function(x){x.style.background="#2a2f66";x.style.color="#fff"});renderSub();edDraw()})
   .catch(function(){if(url!==music)return;music=null;musicLabel="";mnote.textContent="Não foi possível abrir esta música para editar. Tente outra.";say("Não foi possível abrir esta música.")})}
  msel.onchange=function(){vsel.value="";if(msel.value==="")setMusic(null,"");else{var t=tracks[Number(msel.value)];setMusic(t.audio_url,t.title||"")}};
- var vsel=el("select","width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid #3a4175;background:#0f1233;color:#fff;font-size:14px;margin-top:6px"),vo0=el("option","","🎬 Usar o som de um vídeo publicado…"),vids=[];vo0.value="";vsel.append(vo0);mus.insertBefore(vsel,mpick);
- fetch(U+"/rest/v1/posts?select=id,media_url,body,profiles!posts_user_id_fkey(name)&type=eq.video&media_url=not.is.null&order=created_at.desc&limit=40",{headers:hd()}).then(function(r){return r.ok?r.json():[]}).then(function(r){vids=r||[];vids.forEach(function(v,i){var op=el("option","",((v.profiles&&v.profiles.name)||"Utilizador")+(v.body?" · "+String(v.body).slice(0,28):""));op.value=String(i);vsel.append(op)})}).catch(function(){});
+ var vsel=el("select","width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid #3a4175;background:#0f1233;color:#fff;font-size:14px;margin-top:6px"),vo0=el("option","","🎬 Usar o som de um vídeo publicado…"),vids=[];vo0.value="";vsel.append(vo0);
  vsel.onchange=function(){if(vsel.value==="")return;var v=vids[Number(vsel.value)];if(!v)return;msel.value="";setMusic(v.media_url,"Som de "+((v.profiles&&v.profiles.name)||"vídeo"));mnote.textContent="A extrair o som do vídeo…"};
  var vfile=el("input","display:none"),vpick=el("button",G+"margin-top:6px;width:100%","🎞️ Usar o som de um vídeo do telemóvel");vfile.type="file";vfile.accept="video/*";vpick.onclick=function(){vfile.click()};mus.insertBefore(vpick,mpick);mus.append(vfile);
  vfile.onchange=function(){var f=vfile.files[0];vfile.value="";if(!f)return;if(f.size>150*1048576){say("Este vídeo é demasiado grande para extrair o som (máx. 150 MB).");return}msel.value="";vsel.value="";setMusic(URL.createObjectURL(f),"Som de "+f.name.replace(/\.[a-z0-9]{1,5}$/i,""));mnote.textContent="A extrair o som do vídeo…"};
+ if(window.__bgReelAudio){var ra=window.__bgReelAudio;window.__bgReelAudio=null;setTimeout(function(){if(closed)return;msel.value="";vsel.value="";setMusic(ra.url,ra.label);mnote.textContent="A extrair o som do vídeo…";if(openTab!=="music")showTab("music")},400)}
  mfile.onchange=function(){var f=mfile.files[0];if(!f)return;setMusic(URL.createObjectURL(f),f.name.replace(/\.[a-z0-9]{1,5}$/i,""));msel.value="";mnote.textContent="Música escolhida: "+musicLabel};
 
  /* troca de fundo ao gravar (recorte da pessoa em tempo real) */

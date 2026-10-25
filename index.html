@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.28.0_25.10.2026" />
+    <meta name="bengu-build" content="4.29.0_25.10.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -3789,7 +3789,41 @@ function J_() {
             setPref: i,
             onClose: () => se(!1),
             items: [
-              [dg, x("dashboard"), () => at("dashboard")],
+              [
+                hf,
+                u.jsxs("span", {
+                  children: [
+                    x("profile"),
+                    u.jsx("span", {
+                      className: "block text-xs font-normal",
+                      style: { color: k.mute },
+                      children: x("editProfile"),
+                    }),
+                  ],
+                }),
+                () => {
+                  (Ie("me"), at("profile"));
+                },
+              ],
+              [
+                Vc,
+                "Páginas",
+                () => {
+                  (se(!1), window.bengu_pg_open && window.bengu_pg_open("pages"));
+                },
+              ],
+              [
+                Vc,
+                "Grupos",
+                () => {
+                  (se(!1), window.bengu_pg_open && window.bengu_pg_open("groups"));
+                },
+              ],
+              [
+                Oo,
+                `${x("savedList")} (${x("videos")}, ${x("music")})`,
+                () => at("saved"),
+              ],
               [
                 Lo,
                 x("profileLink"),
@@ -3809,28 +3843,10 @@ function J_() {
                   );
                 },
               ],
-              [
-                hf,
-                x("editProfile"),
-                () => {
-                  (Ie("me"), at("profile"));
-                },
-              ],
-              [wg, x("settings"), () => at("settings")],
-              [
-                Oo,
-                `${x("savedList")} (${x("videos")}, ${x("music")})`,
-                () => at("saved"),
-              ],
-              [Ic, x("blocked"), () => at("blocked")],
+              [dg, x("dashboard"), () => at("dashboard")],
               ...(adm ? [[dg, x("admin"), () => at("admin")]] : []),
-              [
-                Vc,
-                x("pagesGroups"),
-                () => {
-                  (se(!1), window.bengu_pg_open && window.bengu_pg_open());
-                },
-              ],
+              [wg, x("settings"), () => at("settings")],
+              [Ic, x("blocked"), () => at("blocked")],
               [Bc, x("logout"), zi],
             ],
           }),
@@ -9829,7 +9845,8 @@ function go(fn){stack.push(fn);fn()}
 function back(){if(stack.length>1){stack.pop();stack[stack.length-1]()}else close()}
 function refresh(){if(stack.length)stack[stack.length-1]()}
 function loading(){body.replaceChildren(el("p","opacity:.7","A carregar…"))}
-function open(){if(!tok()){alert("Inicie sessão no Bengu para ver páginas e grupos.");return}
+function open(tab){if(!tok()){alert("Inicie sessão no Bengu para ver páginas e grupos.");return}
+ if(tab==="pages"||tab==="groups"){S.tab=tab;S.mine=false;S.q=""}
  if(ov)ov.remove();stack=[];
  ov=el("div","position:fixed;inset:0;z-index:100000;background:"+C.bg+";color:#fff;overflow:auto;font-family:system-ui,sans-serif;-webkit-overflow-scrolling:touch");
  var top=el("div","position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;padding:12px 14px;padding-top:calc(12px + env(safe-area-inset-top,0px));background:"+C.bar+";border-bottom:1px solid "+C.line),
@@ -10070,7 +10087,7 @@ setTimeout(deep,2500);
 </script>
   <script>/* BENGU 4.3: actualização automática (cache / service worker) */
 (function(){
-var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.28.0_25.10.2026",KEY="bg_build",TRY="bg_build_try";
+var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.29.0_25.10.2026",KEY="bg_build",TRY="bg_build_try";
 function wipe(){var p=[];try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(n){return caches.delete(n)}))}))}catch(e){}
  try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}))}catch(e){}
  return Promise.all(p).catch(function(){})}
@@ -11311,6 +11328,47 @@ setTimeout(run,20000);setInterval(run,60000);
 function fix(){SEL.forEach(function(p){[].forEach.call(document.querySelectorAll(p[0]),function(el){if(el.__bgA||!el.animate)return;var run=false;try{run=el.getAnimations&&el.getAnimations().some(function(a){return a.playState==="running"})}catch(e){}
  if(!run){el.style.animation="none";try{el.__bgA=el.animate([{transform:"translateX(0)"},{transform:"translateX(-100%)"}],{duration:p[1],iterations:Infinity,easing:"linear"})}catch(e){}}else el.__bgA=1})})}
 setInterval(fix,1200);setTimeout(fix,400)})();
+</script>
+<script>/* BENGU 4.29: corretor ortográfico com IA, só para o administrador. Requer a função "bengu-corrigir" (ver bengu-corretor-ortografico.ts) */
+(function(){
+var cur=null,btn=null,hideT=null,busy=false;
+function isAdm(){return window.__bgAdm===true}
+function okField(e){
+ if(!e||!e.tagName)return false;
+ if(e.tagName==="TEXTAREA")return true;
+ if(e.tagName==="INPUT")return (e.type||"text").toLowerCase()==="text";
+ return false}
+function setVal(e,v){
+ var proto=e.tagName==="TEXTAREA"?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,
+  d=Object.getOwnPropertyDescriptor(proto,"value");
+ if(d&&d.set)d.set.call(e,v);else e.value=v;
+ e.dispatchEvent(new Event("input",{bubbles:true}))}
+function toast(t){var d=document.createElement("div");d.textContent=t;
+ d.style.cssText="position:fixed;left:12px;right:12px;bottom:110px;z-index:2147483647;text-align:center;background:#222;color:#fff;border-radius:999px;padding:10px 16px;font:600 13px system-ui,sans-serif";
+ document.body.appendChild(d);setTimeout(function(){d.remove()},2600)}
+function ensure(){
+ if(btn)return btn;
+ btn=document.createElement("button");btn.type="button";btn.textContent="✨ Corrigir";
+ btn.style.cssText="position:fixed;right:12px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:2147483646;border:0;border-radius:999px;padding:9px 14px;font:700 13px system-ui,sans-serif;background:#f5b400;color:#14163a;box-shadow:0 4px 14px rgba(0,0,0,.35);display:none";
+ btn.addEventListener("mousedown",function(ev){ev.preventDefault()});
+ btn.addEventListener("click",run);
+ document.body.appendChild(btn);return btn}
+function show(){if(!isAdm())return;clearTimeout(hideT);ensure().style.display="block"}
+function hide(){clearTimeout(hideT);hideT=setTimeout(function(){if(btn&&!busy)btn.style.display="none"},2500)}
+document.addEventListener("focusin",function(ev){if(okField(ev.target)){cur=ev.target;show()}});
+document.addEventListener("focusout",function(ev){if(ev.target===cur)hide()});
+function run(){
+ var e=cur;if(!e||!e.isConnected||busy)return;
+ var t=e.value||"";if(t.trim().length<2){toast("Escreva o texto primeiro.");return}
+ if(!window.__sb||!window.__sb.functions){toast("Corretor indisponível.");return}
+ busy=true;btn.textContent="A corrigir…";
+ window.__sb.functions.invoke("bengu-corrigir",{body:{text:t}}).then(function(r){
+  if(r.error||!r.data||typeof r.data.text!=="string"){toast("Não foi possível corrigir. Confirme que a função bengu-corrigir está publicada.");return}
+  var n=r.data.text;
+  if(n===t){toast("Sem erros encontrados.");return}
+  setVal(e,n);toast("Texto corrigido.")
+ }).catch(function(){toast("Não foi possível corrigir agora.")}).then(function(){busy=false;if(btn)btn.textContent="✨ Corrigir"})}
+})();
 </script>
 </body>
 </html>

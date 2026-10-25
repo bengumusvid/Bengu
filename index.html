@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.30.0_25.10.2026" />
+    <meta name="bengu-build" content="4.31.0_25.10.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -10087,7 +10087,7 @@ setTimeout(deep,2500);
 </script>
   <script>/* BENGU 4.3: actualização automática (cache / service worker) */
 (function(){
-var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.30.0_25.10.2026",KEY="bg_build",TRY="bg_build_try";
+var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.31.0_25.10.2026",KEY="bg_build",TRY="bg_build_try";
 function wipe(){var p=[];try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(n){return caches.delete(n)}))}))}catch(e){}
  try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}))}catch(e){}
  return Promise.all(p).catch(function(){})}
@@ -10303,11 +10303,11 @@ window.bengu_earnings_panel=function(){
      var dt=el("div","background:#f5b400;color:#14163a;border-radius:8px;padding:8px 4px;text-align:center");dt.append(el("div","font-size:15px;font-weight:800",num(tot)),el("div","font-size:10px","Total"));g2.append(dt);cardV.append(g2);
      top.sort(function(a,b){return b.v-a.v}).slice(0,5).forEach(function(i){cardV.append(el("div","font-size:12px;margin-top:6px;opacity:.9",i.k+" · "+String(i.t||"").slice(0,40)+" · 👀 "+num(i.v)))})})})();
   var w=el("div",CARD);w.append(el("b","","Levantar"),el("div","font-size:13px;margin:4px 0","Disponível: "+usd(s.available)+" · mínimo "+usd(s.min_withdraw)));
-  var sel=el("select",FLD),acc=el("input",FLD),acc2=el("input",FLD),acc3=el("input",FLD),amt=el("input",FLD),go=el("button",Y+"width:100%;margin-top:6px","Pedir levantamento");
+  var sel=el("select",FLD),acc=el("input",FLD),acc2=el("input",FLD),acc3=el("input",FLD),amt=el("input",FLD),go=el("button",Y+"width:100%;margin-top:6px","Levantar");
   METHODS.forEach(function(x){var o=el("option","",x[1]);o.value=x[0];sel.append(o)});
   setupAcct(sel,acc,acc2,acc3);amt.placeholder="Valor em US$";amt.type="number";amt.min=s.min_withdraw;amt.step="0.01";
-  go.onclick=function(){var a;try{a=acctValue(sel,acc,acc2,acc3)}catch(e){msg(w,e.message,false);return}go.disabled=true;rpc("bengu_request_withdrawal",{p_method:sel.value,p_account:a,p_amount:Number(amt.value)}).then(function(){msg(w,"Pedido enviado. O administrador vai tratar dele.",true);setTimeout(function(){m.close();window.bengu_earnings_panel()},1200)}).catch(function(e){go.disabled=false;msg(w,e.message,false)})};
-  w.append(sel,acc,acc2,acc3,amt,go,el("div","font-size:11px;opacity:.65;margin-top:6px","O pedido fica registado. O pagamento é feito pelo administrador até os fornecedores estarem ligados. As taxas de transferência são pagas por si e descontadas do valor levantado."));box.append(w);
+  go.onclick=function(){var a;try{a=acctValue(sel,acc,acc2,acc3)}catch(e){msg(w,e.message,false);return}go.disabled=true;rpc("bengu_request_withdrawal",{p_method:sel.value,p_account:a,p_amount:Number(amt.value)}).then(function(){msg(w,"Levantamento autorizado. O pagamento é processado a seguir.",true);setTimeout(function(){m.close();window.bengu_earnings_panel()},1200)}).catch(function(e){go.disabled=false;msg(w,e.message,false)})};
+  w.append(sel,acc,acc2,acc3,amt,go,el("div","font-size:11px;opacity:.65;margin-top:6px","O levantamento é autorizado automaticamente quando há saldo disponível. O envio do dinheiro é processado a seguir. As taxas de transferência são pagas por si e descontadas do valor levantado."));box.append(w);
   rest("bengu_withdrawals?select=id,method,amount_usd,status,note,created_at&user_id=eq."+me()+"&order=created_at.desc&limit=20").then(function(r){if(!r||!r.length)return;var h=el("div",CARD);h.append(el("b","","Os meus pedidos"));r.forEach(function(x){h.append(el("div","font-size:13px;padding:5px 0;border-bottom:1px solid #2a2f66",usd(x.amount_usd)+" · "+x.method+" · "+(STAT[x.status]||x.status)+" · "+new Date(x.created_at).toLocaleDateString("pt-PT")+(x.note?" · "+x.note:"")))});box.append(h)}).catch(function(){});
  }).catch(function(e){box.replaceChildren(el("p","","Não foi possível carregar os ganhos. "+e.message+" (confirme que o SQL 4.17 foi executado.)"))})};
 

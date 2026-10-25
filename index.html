@@ -7017,16 +7017,13 @@ function BgFriends({ meId, onOpen }) {
     }));
 }
 function BgFolder({ ids, users, onOpen }) {
-  const h = B.createElement, [o, setO] = B.useState(false);
+  const h = B.createElement;
   return h("div", { style: { background: k.card, borderBottom: `1px solid ${k.line}` } },
-    h("button", { onClick: () => setO(!o), className: "w-full flex items-center gap-3 px-4 py-3 text-left", "aria-expanded": o },
-      h("span", { style: { fontSize: 22 } }, o ? "📂" : "📁"),
-      h("span", { className: "flex-1 text-sm font-bold", style: { color: k.ink } }, x("following") + " (" + ids.length + ")"),
-      h("span", { style: { color: k.mute, transform: o ? "rotate(90deg)" : "none", transition: ".2s" } }, "›")),
-    o && h("div", { className: "px-4 pb-3" }, ids.map((id) => { const l = users[id] || mt;
-      return h("button", { key: id, onClick: () => onOpen(id), className: "w-full flex items-center gap-3 py-2 text-left" },
-        h(Ct, { user: l, size: 32 }), h("span", { className: "text-sm font-semibold", style: { color: k.ink } }, l.name),
-        h("span", { className: "text-xs", style: { color: k.mute } }, "@" + l.handle)); })));
+    h("div", { className: "px-4 pt-3 pb-1 text-[11px] font-bold uppercase", style: { color: k.mute } }, x("following") + " (" + ids.length + ")"),
+    h("div", { className: "flex gap-3 overflow-x-auto px-4 pb-3 pt-1" }, ids.map((id) => { const l = users[id] || mt;
+      return h("button", { key: id, onClick: () => onOpen(id), className: "flex flex-col items-center gap-1 shrink-0", style: { width: 64 }, "aria-label": l.name },
+        h(Ct, { user: l, size: 48 }),
+        h("span", { className: "text-[11px] font-semibold truncate w-full text-center", style: { color: k.ink } }, (l.name || "").split(" ")[0])); })));
 }
 function ux({ post: e, users: t, meId: me_, onClose: r, onSend: n, onDelete: dl, onEdit: ed }) {
   const h = B.createElement, [s, i] = B.useState(""), [rp, setRp] = B.useState(null), [eid, setEid] = B.useState(null), [tr, setTr] = B.useState({}), [auto, setAuto] = B.useState(() => { try { return localStorage.getItem("bg_autotr") === "1"; } catch { return false; } });

@@ -3174,7 +3174,7 @@ function J_() {
     Fo = ln.filter((I) => I.userId === At).sort(In),
     id = U.map((I) => A.find((V) => V.id === I)).filter(Boolean),
     Bi = Ag([...ln].sort(In), E),
-    Yg = (window.__bgTab = X, window.__bgPosts = A, window.__bgGoHome = () => we("feed"), X === "chat" ? "messages" : X),
+    Yg = (window.__bgSess = () => me.auth.getSession().then((r) => r.data && r.data.session), window.__bgTab = X, window.__bgPosts = A, window.__bgGoHome = () => we("feed"), X === "chat" ? "messages" : X),
     Qg = [
       ["feed", x("home"), C_],
       ["news", "Notícias", BgNewsIcon],
@@ -10924,7 +10924,7 @@ window.addEventListener("popstate",function(){if(!armed)return;var o=topOverlay(
  if(window.__bgTab&&window.__bgTab!=="feed"&&window.__bgGoHome){window.__bgGoHome();window.scrollTo(0,0);arm();return}
  armed=false;try{history.back()}catch(e){}});
 /* preparar o áudio dos meus vídeos antigos, em segundo plano (máx. 3 por sessão, não usa dados móveis quando o navegador o indica) */
-var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",KEY="bg_bf_tried",busy=false,done=0;
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",KEY="bg_bf_tried",busy=false,done=0,cur=null;
 function tk(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
 function me(){try{return JSON.parse(atob(tk().split(".")[1].replace(/-/g,"+").replace(/_/g,"/"))).sub}catch(e){return null}}
 function tried(){try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return{}}}
@@ -10934,10 +10934,10 @@ function run(){if(busy||done>=3||document.visibilityState!=="visible"||!window.b
  var u=me(),ps=window.__bgPosts;if(!u||!ps||!ps.length)return;var t=tried(),p=null,ix=-1;
  for(var i=0;i<ps.length&&!p;i++){var q=ps[i];if(q.userId!==u||t[q.id])continue;var j=(q.items||[]).findIndex(function(it){return it&&it.kind==="video"&&it.url&&!it.audio});if(j>=0){p=q;ix=j}}
  if(!p)return;busy=true;mark(p.id);var it=p.items[ix];
- fetch(it.url).then(function(r){if(!r.ok)throw 0;if((Number(r.headers.get("content-length"))||0)>40*1048576)throw 0;return r.blob()})
+ (window.__bgSess?window.__bgSess().then(function(s){cur=s&&s.access_token}).catch(function(){}):Promise.resolve()).then(function(){return fetch(it.url)}).then(function(r){if(!r.ok)throw 0;if((Number(r.headers.get("content-length"))||0)>40*1048576)throw 0;return r.blob()})
  .then(function(b){return window.bengu_prep_audio(b)})
- .then(function(wb){if(!wb)throw 0;var path=u+"/"+Date.now()+"-som.wav";return fetch(U+"/storage/v1/object/media/"+path,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tk(),"Content-Type":"audio/wav","x-upsert":"false","cache-control":"max-age=31536000"},body:wb}).then(function(r){if(!r.ok)throw 0;return U+"/storage/v1/object/public/media/"+path})})
- .then(function(url){var items=p.items.map(function(x,k){return k===ix?Object.assign({},x,{audio:url}):x});return fetch(U+"/rest/v1/posts?id=eq."+p.id,{method:"PATCH",headers:{apikey:K,Authorization:"Bearer "+tk(),"Content-Type":"application/json",Prefer:"return=minimal"},body:JSON.stringify({media:items})}).then(function(r){if(!r.ok)throw 0;p.items=items;done++})})
+ .then(function(wb){if(!wb)throw 0;var path=u+"/"+Date.now()+"-som.wav";return fetch(U+"/storage/v1/object/media/"+path,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+(cur||tk()),"Content-Type":"audio/wav","x-upsert":"false","cache-control":"max-age=31536000"},body:wb}).then(function(r){if(!r.ok)throw 0;return U+"/storage/v1/object/public/media/"+path})})
+ .then(function(url){var items=p.items.map(function(x,k){return k===ix?Object.assign({},x,{audio:url}):x});return fetch(U+"/rest/v1/posts?id=eq."+p.id,{method:"PATCH",headers:{apikey:K,Authorization:"Bearer "+(cur||tk()),"Content-Type":"application/json",Prefer:"return=minimal"},body:JSON.stringify({media:items})}).then(function(r){if(!r.ok)throw 0;p.items=items;done++})})
  .catch(function(){}).then(function(){busy=false;setTimeout(run,5000)})}
 setTimeout(run,20000);setInterval(run,60000);
 })();
@@ -10953,8 +10953,9 @@ setInterval(fix,1200);setTimeout(fix,400)})();
 var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ";
 function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
 function me(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).user.id}catch(e){return null}}
-function api(p,m,b,x){var hd={apikey:K,Authorization:"Bearer "+(tok()||K),"Content-Type":"application/json"};if(x)for(var k in x)hd[k]=x[k];
- return fetch(U+"/rest/v1/"+p,{method:m||"GET",headers:hd,body:b==null?undefined:JSON.stringify(b)}).then(function(r){return r.text().then(function(t){var j=null;try{j=t?JSON.parse(t):null}catch(e){}if(!r.ok)throw new Error(j&&j.message||("Erro "+r.status));return j})})}
+function atok(){var f=window.__bgSess;return(f?f().then(function(s){return s&&s.access_token}).catch(function(){return null}):Promise.resolve(null)).then(function(t){return t||tok()})}
+function api(p,m,b,x){return atok().then(function(t){var hd={apikey:K,Authorization:"Bearer "+(t||K),"Content-Type":"application/json"};if(x)for(var k in x)hd[k]=x[k];
+ return fetch(U+"/rest/v1/"+p,{method:m||"GET",headers:hd,body:b==null?undefined:JSON.stringify(b)}).then(function(r){return r.text().then(function(t2){var j=null;try{j=t2?JSON.parse(t2):null}catch(e){}if(!r.ok)throw new Error((j&&(j.message||j.msg))||("Erro "+r.status));return j})})})}
 function el(t,css,txt,at){var e=document.createElement(t);if(css)e.style.cssText=css;if(txt!=null)e.textContent=txt;if(at)for(var k in at)e.setAttribute(k,at[k]);return e}
 var BT="border:0;border-radius:10px;padding:9px 14px;font-weight:700;font-size:14px;",Y=BT+"background:#f5b400;color:#14163a;",G=BT+"background:#2a2f66;color:#fff;",R=BT+"background:#8b1e2e;color:#fff;",
  CARD="background:#1b1f48;border-radius:12px;padding:12px;margin:8px 0",FLD="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid #3a4175;background:#0f1233;color:#fff;font:inherit;font-size:15px;margin:4px 0";
@@ -10963,7 +10964,7 @@ function when(t){try{return new Date(t).toLocaleString("pt-PT",{day:"2-digit",mo
 function fail(e){var t=(e&&e.message)||"Erro.";if(/schema cache|does not exist|Could not find|relation/i.test(t))t="Falta executar o SQL 4.25 no Supabase (SQL Editor).";alert(t)}
 function names(ids){ids=ids.filter(function(x,i){return x&&ids.indexOf(x)===i});if(!ids.length)return Promise.resolve({});return api("profiles?select=id,name&id=in.("+ids.join(",")+")").catch(function(){return[]}).then(function(r){var m={};(r||[]).forEach(function(p){m[p.id]=p.name});return m})}
 function upload(file,pre){var ext=(/\.([a-z0-9]{2,4})$/i.exec(file.name)||[])[1]||"jpg",path=me()+"/"+pre+"-"+Date.now()+"."+ext;
- return fetch(U+"/storage/v1/object/media/"+path,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":file.type||"image/jpeg","x-upsert":"false"},body:file}).then(function(r){if(!r.ok)throw new Error("Não foi possível enviar a foto.");return U+"/storage/v1/object/public/media/"+path})}
+ return atok().then(function(t){return fetch(U+"/storage/v1/object/media/"+path,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+(t||tok()),"Content-Type":file.type||"image/jpeg","x-upsert":"false"},body:file})}).then(function(r){if(!r.ok)throw new Error("Não foi possível enviar a foto.");return U+"/storage/v1/object/public/media/"+path})}
 function overlay(title,onBack){var o=el("div","position:fixed;inset:0;z-index:100000;background:#0f1233;color:#fff;overflow:auto;-webkit-overflow-scrolling:touch"),
  hd=el("div","position:sticky;top:0;z-index:2;background:#14163a;display:flex;align-items:center;gap:10px;padding:12px 14px;padding-top:calc(12px + env(safe-area-inset-top,0px));font-weight:800;font-size:18px"),
  bk=el("button","border:0;background:none;color:#fff;font-size:22px","←"),tt=el("span","flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap",title),
@@ -10989,7 +10990,7 @@ window.bengu_pg_open=function(){
    rows=rows.filter(function(r){var c=cm[r.id]||{};if(qq&&String(r.name).toLowerCase().indexOf(qq)<0)return false;if(mine&&!c.mine)return false;return true});
    if(!rows.length){list.replaceChildren(el("p","opacity:.7",mine?"Ainda não tem nenhum.":"Ainda não há nada aqui. Seja a primeira pessoa a criar."));return}
    list.replaceChildren.apply(list,rows.map(function(r){return card(r,cm[r.id]||{n:0,mine:null})}))})
-  .catch(function(e){list.replaceChildren(el("p","opacity:.8","Não foi possível carregar. Falta executar o SQL 4.25 no Supabase?"))})}
+  .catch(function(e){var m=(e&&e.message)||"";list.replaceChildren(el("p","opacity:.9","Não foi possível carregar."),el("p","font-size:13px;opacity:.7;word-break:break-word",/schema cache|does not exist|Could not find|relation/i.test(m)?"Falta executar o SQL 4.25 no Supabase (as tabelas ainda não existem).":/JWT|expired|401/i.test(m)?"A sessão expirou. Feche e abra o Bengu, ou termine a sessão e entre de novo.":/402|quota|restrict/i.test(m)?"O Supabase restringiu o projeto por excesso de uso.":m||"Erro desconhecido."))})}
  function card(r,c){var isP=tab==="pages",d=el("div",CARD),top=el("div","display:flex;gap:10px;align-items:center;cursor:pointer"),
   info=el("div","flex:1;min-width:0");info.append(el("div","font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap",r.name),
   el("div","font-size:12px;opacity:.7",isP?(c.n+" seguidor"+(c.n===1?"":"es")):((r.privacy==="private"?"🔒 Privado":"🌐 Público")+" · "+c.n+" membro"+(c.n===1?"":"s"))));

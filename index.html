@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.36.0_25.10.2026" />
+    <meta name="bengu-build" content="4.37.0_25.10.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -7324,11 +7324,12 @@ function dx({ post: e, me: t, users: us, onClose: r, say: n }) {
                   p.id,
                 ),
               ),
-            u.jsx("button", {
-              className: "text-xs mt-2 underline",
-              style: { color: k.mute },
-              onClick: () => window.bengu_pg_open && window.bengu_pg_open(),
-              children: x("pagesGroups"),
+            u.jsxs("div", {
+              className: "flex gap-4 mt-2",
+              children: [
+                u.jsx("button", { className: "text-xs underline", style: { color: k.mute }, onClick: () => window.bengu_pg_open && window.bengu_pg_open("pages"), children: "Páginas" }),
+                u.jsx("button", { className: "text-xs underline", style: { color: k.mute }, onClick: () => window.bengu_pg_open && window.bengu_pg_open("groups"), children: "Grupos" }),
+              ],
             }),
           ],
         }),
@@ -9853,39 +9854,39 @@ function back(){if(stack.length>1){stack.pop();stack[stack.length-1]()}else clos
 function refresh(){if(stack.length)stack[stack.length-1]()}
 function loading(){body.replaceChildren(el("p","opacity:.7","A carregar…"))}
 function open(tab){if(!tok()){alert("Inicie sessão no Bengu para ver páginas e grupos.");return}
- if(tab==="pages"||tab==="groups"){S.tab=tab;S.mine=false;S.q=""}
+ S.tab=(tab==="groups")?"groups":"pages";S.mine=false;S.q="";
  if(ov)ov.remove();stack=[];
  ov=el("div","position:fixed;inset:0;z-index:100000;background:"+C.bg+";color:#fff;overflow:auto;font-family:system-ui,sans-serif;-webkit-overflow-scrolling:touch");
  var top=el("div","position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;padding:12px 14px;padding-top:calc(12px + env(safe-area-inset-top,0px));background:"+C.bar+";border-bottom:1px solid "+C.line),
   bk=el("button","border:0;background:none;color:#fff;font-size:22px;padding:0 6px","←"),cl=el("button",BS+"background:"+C.acc+";color:#14163a;margin:0","Fechar");
- bk.onclick=back;cl.onclick=close;ttl=el("b","font-size:18px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap","Páginas e grupos");top.append(bk,ttl,cl);
+ bk.onclick=back;cl.onclick=close;ttl=el("b","font-size:18px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap",S.tab==="groups"?"Grupos":"Páginas");top.append(bk,ttl,cl);
  body=el("div","padding:12px 14px 70px;max-width:560px;margin:0 auto");ov.append(top,body);document.body.append(ov);go(home)}
 function shareLink(kind,id,name){var u=location.origin+location.pathname+"#"+kind+"="+id,t=(kind==="pagina"?"Página ":"Grupo ")+name+" · Bengu";
  if(navigator.share)navigator.share({title:"Bengu",text:t,url:u}).catch(function(){});
  else if(navigator.clipboard)navigator.clipboard.writeText(t+" "+u).then(function(){toast("Ligação copiada.")}).catch(function(){prompt("Copie:",t+" "+u)});else prompt("Copie:",t+" "+u)}
 /* ===== início: listas ===== */
-function home(){setTitle("Páginas e grupos");body.replaceChildren();
- var tabs=el("div","display:flex;gap:8px;margin-bottom:8px");
- [["pages","📄 Páginas"],["groups","👥 Grupos"]].concat(isAdm()?[["reports","🚩 Denúncias"]]:[]).forEach(function(t){var on=S.tab===t[0],b=el("button","flex:1;border:0;border-radius:12px;padding:11px;font-weight:800;font-size:15px;background:"+(on?C.acc:C.card)+";color:"+(on?"#14163a":"#fff"),t[1]);b.onclick=function(){S.tab=t[0];home()};tabs.append(b)});
- var q=inp("Pesquisar…",S.q),row=el("div","display:flex;gap:8px;flex-wrap:wrap;margin:4px 0"),list=el("div");
- row.append(btn(S.mine?"✓ Só as minhas":"Só as minhas",function(){S.mine=!S.mine;home()},"soft"),btn(S.tab==="pages"?"➕ Criar página":"➕ Criar grupo",function(){go(S.tab==="pages"?function(){pageForm()}:function(){groupForm()})}));
- var iv=el("div");body.append(tabs,iv,q,row,list);if(S.tab==="groups")invitesCard(iv);if(S.tab==="reports"){q.style.display="none";row.style.display="none"}var t;q.oninput=function(){S.q=q.value;clearTimeout(t);t=setTimeout(load,300)};
- function load(){list.replaceChildren(el("p","opacity:.7","A carregar…"));if(S.tab==="reports")return reportsList(list);var me=uid(),qq=S.q.trim().replace(/[,()*%&#]/g,""),nf=qq?"&name=ilike.*"+encodeURIComponent(qq)+"*":"";
-  if(S.tab==="pages"){
-   Promise.all([api("bengu_pages?select=*,bengu_page_follows(count)&order=created_at.desc&limit=60"+nf),S.mine?api("bengu_page_follows?select=page_id&user_id=eq."+me):Promise.resolve([])]).then(function(r){
+function home(){var G=S.tab==="groups";setTitle(G?"Grupos":"Páginas");body.replaceChildren();
+ var q=inp(G?"Pesquisar grupos…":"Pesquisar páginas…",S.q),row=el("div","display:flex;gap:8px;flex-wrap:wrap;margin:4px 0"),list=el("div"),iv=el("div");
+ row.append(btn(S.mine?"✓ Só as minhas":"Só as minhas",function(){S.mine=!S.mine;home()},"soft"),btn(G?"➕ Criar grupo":"➕ Criar página",function(){go(G?function(){groupForm()}:function(){pageForm()})}));
+ if(isAdm())row.append(btn("🚩 Denúncias",function(){go(reportsScreen)},"soft"));
+ body.append(iv,q,row,list);if(G)invitesCard(iv);var t;q.oninput=function(){S.q=q.value;clearTimeout(t);t=setTimeout(load,300)};
+ function load(){list.replaceChildren(el("p","opacity:.7","A carregar…"));var me=uid(),qq=S.q.trim().replace(/[,()*%&#]/g,""),nf=qq?"&name=ilike.*"+encodeURIComponent(qq)+"*":"";
+  if(!G){
+   Promise.all([api("bengu_pages?select=id,name,category,photo_url,owner_id,bengu_page_follows(count)&order=created_at.desc&limit=40"+nf),S.mine?api("bengu_page_follows?select=page_id&user_id=eq."+me):Promise.resolve([])]).then(function(r){
     var rows=r[0];if(S.mine){var ids={};r[1].forEach(function(x){ids[x.page_id]=1});rows=rows.filter(function(x){return x.owner_id===me||ids[x.id]})}
     list.replaceChildren();if(!rows.length)list.append(el("p","opacity:.7",S.mine?"Ainda não segue nem gere nenhuma página.":"Ainda não há páginas. Seja o primeiro a criar uma."));
     rows.forEach(function(x){var c=card(),rw=el("div","display:flex;align-items:center;gap:12px;cursor:pointer"),tx=el("div","flex:1;min-width:0");
      tx.append(el("div","font-weight:800",x.name),el("div","font-size:13px;color:"+C.mute,[x.category,cnt(x,"bengu_page_follows")+" seguidor"+(cnt(x,"bengu_page_follows")===1?"":"es")].filter(Boolean).join(" · ")));
      rw.append(av(x.photo_url,x.name,48),tx);rw.onclick=function(){go(function(){pageView(x.id)})};c.append(rw);list.append(c)})}).catch(function(e){list.replaceChildren(el("p","color:#ff8a8a",e.message))})
   }else{
-   Promise.all([api("bengu_groups?select=*,bengu_group_members(count)&bengu_group_members.status=eq.active&order=created_at.desc&limit=60"+nf),S.mine?api("bengu_group_members?select=group_id,status&user_id=eq."+me+"&status=eq.active"):Promise.resolve([])]).then(function(r){
+   Promise.all([api("bengu_groups?select=id,name,photo_url,privacy,owner_id,bengu_group_members(count)&bengu_group_members.status=eq.active&order=created_at.desc&limit=40"+nf),S.mine?api("bengu_group_members?select=group_id,status&user_id=eq."+me+"&status=eq.active"):Promise.resolve([])]).then(function(r){
     var rows=r[0];if(S.mine){var ids={};r[1].forEach(function(x){ids[x.group_id]=1});rows=rows.filter(function(x){return x.owner_id===me||ids[x.id]})}
     list.replaceChildren();if(!rows.length)list.append(el("p","opacity:.7",S.mine?"Ainda não pertence a nenhum grupo.":"Ainda não há grupos. Seja o primeiro a criar um."));
     rows.forEach(function(x){var c=card(),rw=el("div","display:flex;align-items:center;gap:12px;cursor:pointer"),tx=el("div","flex:1;min-width:0"),pub=x.privacy!=="private",n=cnt(x,"bengu_group_members");
      tx.append(el("div","font-weight:800",x.name),el("div","font-size:13px;color:"+C.mute,(pub?"🌍 Público":"🔒 Privado")+(pub?" · "+n+" membro"+(n===1?"":"s"):"")));
      rw.append(av(x.photo_url,x.name,48),tx);rw.onclick=function(){go(function(){groupView(x.id)})};c.append(rw);list.append(c)})}).catch(function(e){list.replaceChildren(el("p","color:#ff8a8a",e.message))})}}
  load()}
+function reportsScreen(){setTitle("Denúncias");body.replaceChildren();var l=el("div","");body.append(l);reportsList(l)}
 /* ===== páginas ===== */
 function pageForm(p){var edit=!!p;setTitle(edit?"Editar página":"Criar página");body.replaceChildren();
  var so=el("input","width:20px;height:20px");so.type="checkbox";so.checked=!p||p.show_owner!==false;var n=inp("Nome da página",p&&p.name),c=inp("Categoria (ex.: Música, Notícias, Negócio)",p&&p.category),d=area("Descrição (opcional)",p&&p.description,4),ph=picker(edit?"Mudar a foto":"Foto ou logótipo"),
@@ -10207,7 +10208,7 @@ var tries=0;(function wait(){if(!tok()){if(++tries<150){setTimeout(wait,1000)}re
 </script>
   <script>/* BENGU 4.3: actualização automática (cache / service worker) */
 (function(){
-var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.36.0_25.10.2026",KEY="bg_build",TRY="bg_build_try";
+var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.37.0_25.10.2026",KEY="bg_build",TRY="bg_build_try";
 function wipe(){var p=[];try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(n){return caches.delete(n)}))}))}catch(e){}
  try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}))}catch(e){}
  return Promise.all(p).catch(function(){})}

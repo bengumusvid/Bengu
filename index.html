@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.34.0_25.10.2026" />
+    <meta name="bengu-build" content="4.35.0_25.10.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -9869,7 +9869,7 @@ function home(){setTitle("Páginas e grupos");body.replaceChildren();
  [["pages","📄 Páginas"],["groups","👥 Grupos"]].concat(isAdm()?[["reports","🚩 Denúncias"]]:[]).forEach(function(t){var on=S.tab===t[0],b=el("button","flex:1;border:0;border-radius:12px;padding:11px;font-weight:800;font-size:15px;background:"+(on?C.acc:C.card)+";color:"+(on?"#14163a":"#fff"),t[1]);b.onclick=function(){S.tab=t[0];home()};tabs.append(b)});
  var q=inp("Pesquisar…",S.q),row=el("div","display:flex;gap:8px;flex-wrap:wrap;margin:4px 0"),list=el("div");
  row.append(btn(S.mine?"✓ Só as minhas":"Só as minhas",function(){S.mine=!S.mine;home()},"soft"),btn(S.tab==="pages"?"➕ Criar página":"➕ Criar grupo",function(){go(S.tab==="pages"?function(){pageForm()}:function(){groupForm()})}));
- body.append(tabs,q,row,list);if(S.tab==="reports"){q.style.display="none";row.style.display="none"}var t;q.oninput=function(){S.q=q.value;clearTimeout(t);t=setTimeout(load,300)};
+ var iv=el("div");body.append(tabs,iv,q,row,list);if(S.tab==="groups")invitesCard(iv);if(S.tab==="reports"){q.style.display="none";row.style.display="none"}var t;q.oninput=function(){S.q=q.value;clearTimeout(t);t=setTimeout(load,300)};
  function load(){list.replaceChildren(el("p","opacity:.7","A carregar…"));if(S.tab==="reports")return reportsList(list);var me=uid(),qq=S.q.trim().replace(/[,()*%&#]/g,""),nf=qq?"&name=ilike.*"+encodeURIComponent(qq)+"*":"";
   if(S.tab==="pages"){
    Promise.all([api("bengu_pages?select=*,bengu_page_follows(count)&order=created_at.desc&limit=60"+nf),S.mine?api("bengu_page_follows?select=page_id&user_id=eq."+me):Promise.resolve([])]).then(function(r){
@@ -9950,7 +9950,7 @@ function groupView(id){setTitle("Grupo");loading();var me=uid();
    if(!mine)bar.append(btn(pub?"➕ Entrar no grupo":"🔒 Pedir para entrar",function(){api("bengu_group_members","POST",{group_id:id,user_id:me,role:"member",status:pub?"active":"pending"}).then(function(){toast(pub?"Entrou no grupo.":"Pedido enviado ao administrador.");refresh()}).catch(fail)}));
    else if(mine.status==="pending")bar.append(el("span","display:inline-block;margin:8px 8px 8px 0;color:"+C.acc,"⏳ Pedido enviado"),btn("Cancelar pedido",function(){api("bengu_group_members?group_id=eq."+id+"&user_id=eq."+me,"DELETE").then(refresh).catch(fail)},"soft"));
    else if(!own)bar.append(btn("Sair do grupo",function(){if(!confirm("Sair deste grupo?"))return;api("bengu_group_members?group_id=eq."+id+"&user_id=eq."+me,"DELETE").then(refresh).catch(fail)},"soft"));
-   bar.append(btn("📤 Partilhar",function(){shareLink("grupo",id,g.name)},"soft"));if(!own)modBtn(bar,{kind:"group",id:id,owner:g.owner_id,title:g.name,suspended:g.suspended,gone:back});if(g.suspended)hd.append(el("div","background:#6b2330;border-radius:8px;padding:6px 10px;font-size:12px;margin-top:8px","⏸ Grupo suspenso pelo administrador"+(g.suspended_reason?": "+g.suspended_reason:"")));
+   bar.append(btn("📤 Partilhar",function(){shareLink("grupo",id,g.name)},"soft"));if(!g.suspended&&(admin||(isMem&&pub))){var kn={};mem.forEach(function(m){kn[m.user_id]=1});bar.append(btn("👥 "+(admin?"Adicionar / convidar":"Convidar"),function(){inviteSheet(g,admin,kn)},"soft"))}if(!own)modBtn(bar,{kind:"group",id:id,owner:g.owner_id,title:g.name,suspended:g.suspended,gone:back});if(g.suspended)hd.append(el("div","background:#6b2330;border-radius:8px;padding:6px 10px;font-size:12px;margin-top:8px","⏸ Grupo suspenso pelo administrador"+(g.suspended_reason?": "+g.suspended_reason:"")));
    if(own)bar.append(btn("✏️ Editar",function(){go(function(){groupForm(g)})},"soft"));
    if(own||isAdm())bar.append(btn("🗑 Apagar grupo",function(){if(!confirm("Apagar este grupo, os membros e as publicações? Não pode ser desfeito."))return;api("bengu_groups?id=eq."+id,"DELETE").then(function(){toast("Grupo apagado.");back()}).catch(fail)},"red"));
    hd.append(bar);body.append(hd);
@@ -10116,6 +10116,28 @@ function feedCard(r,again){var K=KK(),kind=r.kind,me=uid(),st={likes:0,dislikes:
  row.append(lk,dl,cm,sh,el("div","flex:1"),dw);a.append(row);
  if(me&&r.author_id!==me&&"IntersectionObserver" in window){var io=new IntersectionObserver(function(es){if(es[0]&&es[0].isIntersecting){io.disconnect();var k2=kind+r.id;if(SV[k2])return;SV[k2]=1;rpc("bengu_pg_view",{p_kind:kind,p_id:r.id}).then(function(){r.views=(r.views||0)+1;sb()}).catch(function(){})}},{threshold:.5});io.observe(a)}
  return a}
+/* BENGU 4.35: adicionar e convidar membros nos grupos. Requer bengu-paginas-grupos-6.sql */
+function invitesCard(box){var me=uid();if(!me)return;
+ api("bengu_group_invites?select=group_id,invited_by&user_id=eq."+me).then(function(r){if(!r.length)return;
+  return Promise.all([api("bengu_groups?select=id,name,photo_url&id=in.("+r.map(function(x){return x.group_id}).join(",")+")"),names(r.map(function(x){return x.invited_by}))]).then(function(z){
+   var gs={},c=card();z[0].forEach(function(g){gs[g.id]=g});c.append(el("b","","📨 Convites para grupos ("+r.length+")"));
+   r.forEach(function(iv){var g=gs[iv.group_id];if(!g)return;var rw=el("div","display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid "+C.line),tx=el("div","flex:1;min-width:0");
+    tx.append(el("div","font-weight:700",g.name),el("div","font-size:12px;color:"+C.mute,"Convidado por "+(z[1][iv.invited_by]||"um membro")));
+    rw.append(av(g.photo_url,g.name,36),tx,btn("Aceitar",function(){rpc("bengu_group_accept_invite",{p_group:g.id}).then(function(){toast("Entrou no grupo.");go(function(){groupView(g.id)})}).catch(fail)}),
+     btn("Recusar",function(){api("bengu_group_invites?group_id=eq."+g.id+"&user_id=eq."+me,"DELETE").then(function(){rw.remove()}).catch(fail)},"soft"));c.append(rw)});box.append(c)})}).catch(function(){})}
+function inviteSheet(g,canAdd,known){var me=uid(),t,o=el("div","position:fixed;inset:0;z-index:100005;background:rgba(0,0,0,.75);display:flex;align-items:flex-end;justify-content:center"),
+ b=el("div","background:"+C.bar+";color:#fff;border-radius:16px 16px 0 0;padding:14px;width:100%;max-width:560px;max-height:85vh;overflow:auto;box-sizing:border-box"),
+ q=inp("Pesquisar pessoas pelo nome…"),res=el("div"),hd=el("div","display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px"),
+ lk=btn("📤 Partilhar ligação de convite",function(){shareLink("grupo",g.id,g.name)},"soft");
+ hd.append(el("b","",(canAdd?"👥 Adicionar ou convidar":"📨 Convidar")),btn("Fechar",function(){o.remove()},"soft"));lk.style.cssText+=";display:block;width:100%;margin:6px 0";
+ b.append(hd,lk,q,res);o.append(b);o.onclick=function(e){if(e.target===o)o.remove()};document.body.append(o);
+ function row(p){var rw=el("div","display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid "+C.line);rw.append(av(null,p.name,32),el("span","flex:1;min-width:0",p.name||"Utilizador"));
+  function act(label,fn,doneT,kind){var x=btn(label,function(){x.disabled=true;fn().then(function(){x.textContent=doneT;[].forEach.call(rw.querySelectorAll("button"),function(y){y.disabled=true})}).catch(function(e){x.disabled=false;fail(e)})},kind);return x}
+  if(canAdd)rw.append(act("Adicionar",function(){return api("bengu_group_members","POST",{group_id:g.id,user_id:p.id,role:"member",status:"active"})},"✓ Adicionado"));
+  rw.append(act("Convidar",function(){return api("bengu_group_invites","POST",{group_id:g.id,user_id:p.id,invited_by:me})},"✓ Convite enviado","soft"));return rw}
+ function search(){var s=q.value.trim().replace(/[,()*%&#]/g,"");if(s.length<2){res.replaceChildren(el("p","opacity:.7;font-size:13px","Escreva pelo menos 2 letras para pesquisar."));return}
+  api("profiles?select=id,name&name=ilike.*"+encodeURIComponent(s)+"*&limit=15").then(function(r){r=r.filter(function(p){return p.id!==me&&!known[p.id]});res.replaceChildren();if(!r.length)res.append(el("p","opacity:.7;font-size:13px","Ninguém encontrado."));r.forEach(function(p){res.append(row(p))})}).catch(function(e){res.replaceChildren(el("p","color:#ff8a8a",e.message))})}
+ q.oninput=function(){clearTimeout(t);t=setTimeout(search,300)};search()}
 /* feed da Home */
 function openTo(kind,id){open();stack=[];go(home);go(kind==="page"?function(){pageView(id)}:function(){groupView(id)})}
 var feedT;
@@ -10132,7 +10154,7 @@ setTimeout(deep,2500);
 </script>
   <script>/* BENGU 4.3: actualização automática (cache / service worker) */
 (function(){
-var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.34.0_25.10.2026",KEY="bg_build",TRY="bg_build_try";
+var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.35.0_25.10.2026",KEY="bg_build",TRY="bg_build_try";
 function wipe(){var p=[];try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(n){return caches.delete(n)}))}))}catch(e){}
  try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}))}catch(e){}
  return Promise.all(p).catch(function(){})}

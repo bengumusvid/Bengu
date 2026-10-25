@@ -3830,6 +3830,7 @@ function J_() {
                   (se(!1), window.bengu_pg_open && window.bengu_pg_open());
                 },
               ],
+              ...(window.__bgInApp ? [] : [[Lc, "Instalar app Android", () => { (se(!1), window.bengu_install && window.bengu_install()); }]]),
               [Bc, x("logout"), zi],
             ],
           }),
@@ -11067,5 +11068,30 @@ function openGroup(g,c,after){var V=overlay(g.name,after),b=V.body,head=el("div"
 })();
 </script>
 
+<script>/* BENGU 4.26: instalar o Bengu como app (APK) e não como atalho */
+(function(){
+var ua=navigator.userAgent||"",android=/Android/i.test(ua),dp=null,
+ inApp=(document.referrer||"").indexOf("android-app://")===0||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true;
+window.__bgInApp=inApp||!android;
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();dp=e});
+window.addEventListener("appinstalled",function(){try{localStorage.setItem("bg_inst","1")}catch(x){}});
+function el(t,css,txt){var e=document.createElement(t);if(css)e.style.cssText=css;if(txt!=null)e.textContent=txt;return e}
+function dlg(){var o=el("div","position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center"),
+ c=el("div","background:#14163a;color:#fff;width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));font:15px/1.45 system-ui,sans-serif");
+ c.append(el("div","font-weight:800;font-size:18px;margin-bottom:8px","📲 Instalar o app Bengu"),
+  el("div","opacity:.9","1. Toque em Descarregar app.\n2. Quando acabar, abra o ficheiro Bengu.apk.\n3. Se o Android pedir, permita \"Instalar apps desconhecidas\" para este navegador e toque em Instalar.\n\nDepois fica um ícone Bengu no ecrã, como qualquer app.".replace(/\n/g,"\u2028")));
+ c.firstChild.nextSibling.style.whiteSpace="pre-line";c.firstChild.nextSibling.textContent="1. Toque em Descarregar app.\n2. Quando acabar, abra o ficheiro Bengu.apk.\n3. Se o Android pedir, permita \"Instalar apps desconhecidas\" para este navegador e toque em Instalar.\n\nDepois fica um ícone Bengu no ecrã, como qualquer app.";
+ var a=el("a","display:block;text-align:center;margin-top:14px;background:#f5b400;color:#14163a;font-weight:800;border-radius:12px;padding:12px;text-decoration:none","⬇️ Descarregar app");a.href="Bengu.apk";a.setAttribute("download","Bengu.apk");
+ var x=el("button","display:block;width:100%;margin-top:8px;border:0;background:none;color:#fff;opacity:.8;padding:10px;font:inherit","Fechar");x.onclick=function(){o.remove()};a.addEventListener("click",function(){setTimeout(function(){o.remove()},600)});
+ c.append(a,x);o.append(c);o.onclick=function(e){if(e.target===o)o.remove()};document.body.append(o)}
+window.bengu_install=function(){if(dp){var p=dp;dp=null;p.prompt();return}dlg()};
+function banner(){try{if(!android||inApp||localStorage.getItem("bg_inst")||(Date.now()-(+localStorage.getItem("bg_inst_x")||0))<14*864e5)return}catch(e){}
+ var b=el("div","position:fixed;left:10px;right:10px;bottom:calc(78px + env(safe-area-inset-bottom,0px));z-index:9000;background:#1b1f48;color:#fff;border:1px solid #3a4175;border-radius:14px;padding:10px 12px;display:flex;gap:10px;align-items:center;font:14px/1.3 system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.4)");
+ var t=el("div","flex:1;min-width:0","📲 Instale o app Bengu no telemóvel"),i=el("button","border:0;border-radius:10px;padding:9px 14px;font-weight:800;background:#f5b400;color:#14163a","Instalar"),
+ c=el("button","border:0;background:none;color:#fff;font-size:18px;opacity:.7","✕");
+ i.onclick=function(){b.remove();window.bengu_install()};c.onclick=function(){b.remove();try{localStorage.setItem("bg_inst_x",String(Date.now()))}catch(e){}};
+ b.append(t,i,c);document.body.append(b)}
+setTimeout(banner,5000)})();
+</script>
 </body>
 </html>

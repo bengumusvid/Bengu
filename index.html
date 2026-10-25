@@ -5070,7 +5070,7 @@ function nx({ me: e, posts: t, followers: r, onBack: n }) {
             style: { color: b ? k.ok : k.mute },
             children: x(b ? "eligibleYes" : "eligibleNo"),
           }),
-          u.jsx("p", { className: "text-xs mt-2", style: { color: k.mute }, children: x("adsShare") }),
+          window.__bgAdm === true ? u.jsx("p", { className: "text-xs mt-2", style: { color: k.mute }, children: x("adsShare") }) : null,
         ],
       }),
       u.jsxs("section", {
@@ -5082,11 +5082,10 @@ function nx({ me: e, posts: t, followers: r, onBack: n }) {
             style: { color: k.mute },
             children: [x("earnings"), " (", x("estimated"), ")"],
           }),
-          u.jsx("div", {
-            className: "text-3xl font-extrabold",
-            style: { color: k.ink, cursor: "pointer" },
+          u.jsx("button", {
+            style: { width: "100%", padding: "14px 12px", borderRadius: 12, border: "none", background: "#f5b400", color: "#14163a", fontSize: 18, fontWeight: 800, cursor: "pointer" },
             onClick: () => window.bengu_earnings_panel && window.bengu_earnings_panel(),
-            children: "Ver ganhos e levantar",
+            children: "💸 Ver ganhos e levantar",
           }),
           u.jsx("p", {
             className: "text-xs mt-2",

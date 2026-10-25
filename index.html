@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.29.0_25.10.2026" />
+    <meta name="bengu-build" content="4.30.0_25.10.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -10087,7 +10087,7 @@ setTimeout(deep,2500);
 </script>
   <script>/* BENGU 4.3: actualização automática (cache / service worker) */
 (function(){
-var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.29.0_25.10.2026",KEY="bg_build",TRY="bg_build_try";
+var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.30.0_25.10.2026",KEY="bg_build",TRY="bg_build_try";
 function wipe(){var p=[];try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(n){return caches.delete(n)}))}))}catch(e){}
  try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}))}catch(e){}
  return Promise.all(p).catch(function(){})}
@@ -11368,6 +11368,25 @@ function run(){
   if(n===t){toast("Sem erros encontrados.");return}
   setVal(e,n);toast("Texto corrigido.")
  }).catch(function(){toast("Não foi possível corrigir agora.")}).then(function(){busy=false;if(btn)btn.textContent="✨ Corrigir"})}
+})();
+</script>
+<script>/* BENGU 4.30: faixa do topo e barra de baixo escondem/mostram com a rolagem.
+   Rasteja para cima (conteúdo sobe): topo some, barra de baixo aparece. Rasteja para baixo: topo aparece, barra de baixo some. */
+(function(){
+var root=document.documentElement,last=window.pageYOffset||0,tick=false;
+var st=document.createElement("style");
+st.textContent="header.sticky.top-0,nav.fixed.bottom-0{transition:transform .2s ease}"+
+ "html[data-bgbars=\"up\"] header.sticky.top-0{transform:translateY(-100%)}"+
+ "html[data-bgbars=\"down\"] nav.fixed.bottom-0{transform:translateY(100%)}";
+document.head.appendChild(st);
+function upd(){
+ tick=false;
+ var c=window.pageYOffset||root.scrollTop||0,max=root.scrollHeight-window.innerHeight;
+ if(c<0||c>max+1)return;
+ var d=c-last;if(Math.abs(d)<3)return;
+ last=c;
+ root.setAttribute("data-bgbars",d>0?"up":"down")}
+window.addEventListener("scroll",function(){if(!tick){tick=true;requestAnimationFrame(upd)}},{passive:true});
 })();
 </script>
 </body>

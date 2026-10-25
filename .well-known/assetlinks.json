@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.getbengu.twa",
+    "sha256_cert_fingerprints": [
+      "7C:C7:1C:47:AA:A3:DB:F3:83:C1:50:F3:0A:58:DB:F4:6B:0F:93:F9:A3:CB:AC:1C:21:CC:09:80:7E:05:06:81"
+    ]
+  }
+}]

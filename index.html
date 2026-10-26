@@ -4290,7 +4290,7 @@ function BgAd() {
   return E(
     "div",
     { style: { position: "relative", display: "block", clear: "both", zIndex: 0, isolation: "isolate", contain: "layout paint", background: k.card, marginBottom: 8, padding: "8px 0", overflow: "hidden", minHeight: 100 } },
-    E("div", { style: { fontSize: 10, color: k.mute, letterSpacing: 0.6, padding: "0 16px 4px" } }, "PUBLICIDADE"),
+    E("div", { style: { fontSize: 10, color: k.mute, letterSpacing: 0.6, padding: "0 16px 4px" } }, bgAdLabel()),
     E("ins", {
       className: "adsbygoogle",
       style: { display: "block", position: "static", width: "100%" },
@@ -4905,6 +4905,7 @@ function es({
           style: { color: k.ink },
           children: Tg_(e.text),
         }),
+      e.text && u.jsx(BgPostTr, { text: e.text }),
       u.jsx(K_, { post: e, users: r, mine: n, onDeleteItem: delIt }),
       u.jsxs("div", {
         className: "flex items-center gap-5 px-4 pt-3 pb-1",
@@ -9797,6 +9798,36 @@ async function bgTr(text) {
   } catch (e) {}
   const r = await fetch("https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text.slice(0, 450)) + "&langpair=autodetect|" + to);
   const j = await r.json(); return j.responseData.translatedText;
+}
+const bgTrCache = {};
+const BG_TRL = {
+  pt: ["Traduzir", "Ver original", "Não foi possível traduzir agora. Tente de novo."],
+  en: ["Translate", "Show original", "Could not translate right now. Please try again."],
+  fr: ["Traduire", "Voir l'original", "Traduction impossible pour le moment. Réessayez."],
+  sw: ["Tafsiri", "Onyesha asili", "Imeshindwa kutafsiri sasa. Jaribu tena."],
+  ar: ["ترجمة", "عرض الأصل", "تعذرت الترجمة الآن. حاول مرة أخرى."],
+};
+function bgTrL() { return BG_TRL[(Tu.lang || "pt").slice(0, 2)] || BG_TRL.en; }
+function bgAdLabel() {
+  const L = { pt: "PUBLICIDADE", en: "ADVERTISEMENT", fr: "PUBLICITÉ", sw: "TANGAZO", ar: "إعلان" };
+  return L[(Tu.lang || "pt").slice(0, 2)] || "ADVERTISEMENT";
+}
+function BgPostTr({ text }) {
+  const h = B.createElement, L = bgTrL(), lg = (Tu.lang || "pt").slice(0, 2);
+  const [st, setSt] = B.useState({ open: false, busy: false, out: "", err: false });
+  const key = lg + "|" + text;
+  const go = () => {
+    if (st.open) return setSt({ ...st, open: false });
+    if (bgTrCache[key]) return setSt({ open: true, busy: false, out: bgTrCache[key], err: false });
+    setSt({ open: true, busy: true, out: "", err: false });
+    bgTr(text)
+      .then((v) => { bgTrCache[key] = v; setSt({ open: true, busy: false, out: v, err: false }); })
+      .catch(() => setSt({ open: true, busy: false, out: "", err: true }));
+  };
+  return h("div", { className: "px-4 pb-3" },
+    h("button", { onClick: go, className: "text-xs font-semibold", style: { color: k.mute } }, st.open ? L[1] : L[0]),
+    st.open && h("div", { className: "text-sm italic mt-1 whitespace-pre-wrap break-words", style: { color: k.mute } },
+      st.busy ? "…" : st.err ? L[2] : "🌐 " + st.out));
 }
 function BgNewsIcon({ size = 22 }) {
   const h = B.createElement, [dot, setDot] = B.useState(!!window.__bgNewsDot);

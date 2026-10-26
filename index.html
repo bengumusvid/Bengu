@@ -11387,6 +11387,18 @@ function px({
               style: { maxWidth: 300 },
               children: x("tagline"),
             }),
+            u.jsx("p", {
+              className: "mt-2 text-sm leading-snug",
+              style: { maxWidth: 320, color: "rgba(255,255,255,.8)", display: (e || "").startsWith("pt") ? "block" : "none" },
+              children: "Partilhe fotos, vídeos e música, converse com amigos e acompanhe torneios num só lugar.",
+            }),
+            u.jsx("div", {
+              className: "mt-4 flex flex-wrap gap-2",
+              style: { maxWidth: 340 },
+              children: [["📸", "Fotos e vídeos"], ["🎵", "Música"], ["💬", "Bate-papo"], ["🏆", "Torneios"], ["📰", "Notícias"], ["🎤", "Concursos"]].map(([ic, lb]) =>
+                u.jsx("span", { className: "text-xs font-semibold rounded-full px-3 py-1.5", style: { background: "rgba(255,255,255,.14)", color: "#fff" }, children: (e || "").startsWith("pt") ? ic + " " + lb : ic }, lb),
+              ),
+            }),
           ],
         }),
         u.jsxs("div", {
@@ -11527,6 +11539,16 @@ u.jsxs("div", {
                   style: { color: k.ink },
                   children: x(z ? "login" : "createAccount"),
                 }),
+              ],
+            }),
+            u.jsxs("div", {
+              className: "mt-6 pt-4 text-center text-xs",
+              style: { borderTop: "1px solid " + k.line, color: k.mute },
+              children: [
+                u.jsx("a", { href: "privacidade.html", target: "_blank", rel: "noopener", className: "underline mx-2", children: "Privacidade" }),
+                u.jsx("a", { href: "termos.html", target: "_blank", rel: "noopener", className: "underline mx-2", children: "Termos de Uso" }),
+                u.jsx("a", { href: "contacto.html", target: "_blank", rel: "noopener", className: "underline mx-2", children: "Contacto" }),
+                u.jsx("div", { className: "mt-2", children: "© 2026 Bengu" }),
               ],
             }),
           ],

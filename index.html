@@ -219,7 +219,32 @@ window.bengu_mention=function(hd){get("profiles","select=id&handle=eq."+encodeUR
 var FAST=null;
 function fastSet(){if(FAST)return FAST;FAST=get("payment_methods","select=country_code&active=eq.true&fast=eq.true").catch(function(){return get("payment_methods","select=country_code&active=eq.true")}).then(function(r){var m={};r.forEach(function(x){m[x.country_code]=1});return m}).catch(function(){return{}});return FAST}
 function copt(code,txt,m){var ok=m[code];return h("option",{value:code,style:"color:"+(ok?PINK:"#ff4d4d")},(ok?"✔ ":"✘ ")+txt)}
-window.bengu_full=function(src){var o=h("div",{style:"position:fixed;inset:0;z-index:100000;background:#000;display:flex;align-items:center;justify-content:center",on:{click:function(){o.remove()}}},[h("img",{src:src,style:"max-width:100%;max-height:100%;object-fit:contain"}),h("button",{style:"position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:12px;width:40px;height:40px;border:0;border-radius:50%;background:rgba(255,255,255,.25);color:#fff;font-size:22px",on:{click:function(){o.remove()}}},"✕")]);document.body.append(o)};
+window.window.bgZoom=function(box,target){
+  var z=1,lx=0,ly=0,lt=0,sx=0,sy=0,moved=false;
+  function tgt(){return typeof target==="function"?target():target}
+  function setZoom(nz,cx,cy){
+    var t=tgt(); if(!t)return;
+    if(nz<=1){z=1;t.style.transform="";t.style.transformOrigin="";box.style.overflow="";box.scrollLeft=0;box.scrollTop=0;return}
+    var r=box.getBoundingClientRect(),px=cx-r.left+box.scrollLeft,py=cy-r.top+box.scrollTop;
+    var ol=t.offsetLeft,ot=t.offsetTop,oz=z;
+    var nx=ol+(px-ol)*nz/oz,ny=ot+(py-ot)*nz/oz;
+    z=nz;t.style.transformOrigin="0 0";t.style.transform="scale("+z+")";
+    box.style.overflow="auto";box.style.overscrollBehavior="contain";
+    box.scrollLeft=nx-(cx-r.left);box.scrollTop=ny-(cy-r.top);
+  }
+  function toggle(cx,cy){setZoom(z>1?1:2.5,cx,cy)}
+  box.style.touchAction="manipulation";
+  box.addEventListener("touchstart",function(e){if(e.touches.length===1){var t=e.touches[0];sx=t.clientX;sy=t.clientY;moved=false}},{passive:true});
+  box.addEventListener("touchmove",function(e){var t=e.touches[0];if(t&&Math.abs(t.clientX-sx)+Math.abs(t.clientY-sy)>10)moved=true},{passive:true});
+  box.addEventListener("touchend",function(e){
+    if(e.touches.length||moved)return;
+    var t=e.changedTouches[0],now=Date.now();
+    if(now-lt<300&&Math.abs(t.clientX-lx)<30&&Math.abs(t.clientY-ly)<30){lt=0;toggle(t.clientX,t.clientY)}
+    else{lt=now;lx=t.clientX;ly=t.clientY}
+  });
+  box.addEventListener("dblclick",function(e){toggle(e.clientX,e.clientY)});
+};
+bengu_full=function(src){var o=h("div",{style:"position:fixed;inset:0;z-index:100000;background:#000;display:flex;align-items:center;justify-content:center",on:{click:function(){o.remove()}}},[h("img",{src:src,style:"max-width:100%;max-height:100%;object-fit:contain;margin:auto",on:{click:function(e){e.stopPropagation()}}}),h("button",{style:"position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:12px;width:40px;height:40px;border:0;border-radius:50%;background:rgba(255,255,255,.25);color:#fff;font-size:22px",on:{click:function(){o.remove()}}},"✕")]);document.body.append(o);bgZoom(o,function(){return o.querySelector("img")})};
 function setCat(c){cat=c;PINK=CATS[c].color;LITE=CATS[c].lite;styles()}
 
 var ov=h("div",{style:"display:none;position:fixed;inset:0;z-index:99999;background:#12183A;color:#fff;overflow:auto;padding:12px;padding-top:calc(12px + env(safe-area-inset-top,0px));font-family:system-ui,sans-serif"});
@@ -914,7 +939,7 @@ function openPdf(n){bgCountView("journal",n);var b=sheet("📰 "+n.title);b.pare
   pdf.getPage(1).then(function(p1){var v1=p1.getViewport({scale:1}),ratio=v1.height/v1.width;
    for(var i=1;i<=pdf.numPages;i++)(function(i){var w=h("div",{style:"background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.25);width:100%;min-height:"+Math.round(W*ratio)+"px;position:relative"}),done=false;
     w.__go=function(){if(done)return;done=true;pdf.getPage(i).then(function(pg){var v0=pg.getViewport({scale:1}),sc=(W/v0.width)*dpr,vp=pg.getViewport({scale:sc}),cv=document.createElement("canvas");cv.width=Math.floor(vp.width);cv.height=Math.floor(vp.height);cv.style.cssText="width:100%;display:block";w.style.minHeight="0";w.append(cv);return pg.render({canvasContext:cv.getContext("2d"),viewport:vp}).promise}).catch(function(){})};
-    box.append(w);io.observe(w)})(i)})
+    box.append(w);bgZoom(w,function(){return w.querySelector("canvas")});io.observe(w)})(i)})
  }).catch(function(){info.textContent="Could not show the PDF here. Use the link below to open it."})}
 function addJournal(done){var me=uid();if(!me){alert("Log in to add a newspaper.");return}
  var b=sheet("➕ Add newspaper (PDF)"),GI2="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cfd4e3;border-radius:10px;margin:6px 0;font:inherit",

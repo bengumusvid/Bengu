@@ -5,4 +5,9 @@
 <h2>4. Competitions, tournaments and payments</h2><p>Paid votes only count after payment is confirmed. Registration and posting fees are non-refundable. Each user pays their own transfer fees. Prize splits and fees are shown in the app before you confirm.</p>
 <h2>5. Ads and earnings</h2><p>Earnings come from Bengu ads. While ads are not active there is nothing to withdraw. Bengu keeps 20% of monthly ad revenue. Creators must meet the follower and view requirements shown in the app.</p>
 <h2>6. Availability</h2><p>The service is provided as is. We may change or stop features at any time.</p>
-<h2>7. Contact</h2><p>Questions: getbengu@gmail.com.</p><footer>Bengu · Last updated: 26 October 2026 · This English text is the master version; other languages are translations.</footer></body></html>
+<h2>7. Contact</h2><p>Questions: getbengu@gmail.com.</p><footer>Bengu · Last updated: 26 October 2026 · This English text is the master version; other languages are translations.</footer><script>(function(){var l=null;try{l=localStorage.getItem("bengu_lang")}catch(e){}if(!l)l=(navigator.language||"en").slice(0,2).toLowerCase();if(l==="en")return;
+var G={ndc:"sn",nb:"no",fil:"tl"},K="bg_legal_"+l,C={};try{C=JSON.parse(localStorage.getItem(K))||{}}catch(e){}
+function mt(s){return fetch("https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl="+encodeURIComponent(G[l]||l)+"&dt=t&q="+encodeURIComponent(s)).then(function(r){return r.json()}).then(function(d){var o="";(d[0]||[]).forEach(function(x){o+=x[0]||""});return o||s})}
+var els=[].slice.call(document.querySelectorAll("h1,h2,p,li,nav a,footer"));document.documentElement.lang=l;if(l==="ar")document.documentElement.dir="rtl";
+els.forEach(function(e){if(e.querySelector("a,ul")&&e.tagName!=="LI"&&e.tagName!=="P"&&e.tagName!=="FOOTER")return;var t=e.textContent.trim();if(!t)return;if(C[t]){e.textContent=C[t];return}
+ if(e.querySelector("a")){return}mt(t).then(function(v){C[t]=v;e.textContent=v;try{localStorage.setItem(K,JSON.stringify(C))}catch(x){}}).catch(function(){})})})();</script></body></html>

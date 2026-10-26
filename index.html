@@ -734,7 +734,8 @@ function loadTab(f,force){var c=NC[f.k];if(c&&!force)return Promise.resolve(c);r
 function isNew(f){var c=NC[f.k];if(!c||!c.latest)return false;var s=seenGet()[f.k];return!s||c.latest>s}
 function dotState(){window.__bgNewsDot=FEEDS.some(isNew);try{window.dispatchEvent(new Event("bgnewsdot"))}catch(e){}}
 function refreshDots(){return Promise.all(FEEDS.map(function(f){return loadTab(f,true)})).then(dotState).catch(function(){})}
-setTimeout(refreshDots,6000);setInterval(function(){if(document.visibilityState==="visible")refreshDots()},600000);
+function bgLogged(){try{return!!localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")}catch(e){return false}}
+setTimeout(function(){if(bgLogged())refreshDots()},6000);setInterval(function(){if(document.visibilityState==="visible"&&bgLogged())refreshDots()},600000);
 function shareNews(t,x,u){var d={title:"Bengu",text:t+(x?"\n"+x:""),url:u};if(navigator.share){navigator.share(d).catch(function(){});return}var tx=d.text+" "+u;if(navigator.clipboard)navigator.clipboard.writeText(tx).then(function(){alert("Ligação copiada.")}).catch(function(){prompt("Copie:",tx)});else prompt("Copie:",tx)}
 function nmsg(e){var t=(e&&e.message)||"Erro.";if(/schema cache|does not exist|Could not find/i.test(t))t="Falta executar o SQL 4.7 no Supabase (SQL Editor).";return t}
 function when(s){try{return new Date(s).toLocaleString("pt-PT",{dateStyle:"short",timeStyle:"short"})}catch(e){return""}}

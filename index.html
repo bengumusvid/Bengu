@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="pt">
   <head>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1053880648239353"
+     crossorigin="anonymous"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
@@ -1432,7 +1434,7 @@ function BgAd() {
   const c = window.BENGU_ADS || {};
   B.useEffect(() => {
     if (!bgAdsOn()) return;
-    if (!document.getElementById("bg-adsense")) {
+    if (!document.getElementById("bg-adsense") && !document.querySelector('script[src*="adsbygoogle.js"]')) {
       const sc = document.createElement("script");
       sc.id = "bg-adsense";
       sc.async = true;

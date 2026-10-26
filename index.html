@@ -5049,11 +5049,12 @@ function J_() {
     return () => clearTimeout(V);
   }, [w, v, b, h, be, l]),
     B.useEffect(() => {
+      if (!b) return;
       try {
         navigator.serviceWorker &&
           navigator.serviceWorker.register("./sw.js").catch(() => {});
       } catch {}
-    }, []));
+    }, [!!b]));
   const _e = (I) => {
       (ft(I),
         clearTimeout(Nr.current),

@@ -5479,6 +5479,11 @@ function J_() {
           : `${I.trim().replace(/^@/, "").toLowerCase()}@users.bengu.app`,
         password: V,
       });
+      if (!Z) {
+        try {
+          localStorage.setItem("bengu_last_login", I.trim().toLowerCase());
+        } catch (e) {}
+      }
       return Z ? { error: pa(Z) } : {};
     },
     Lg = async ({ phone: I, meta: V }) => {
@@ -6745,6 +6750,7 @@ function J_() {
 function Z_({ items: e, prefs: t, setPref: r, onClose: n }) {
   return u.jsx("div", {
     className: "fixed inset-0 z-40",
+    style: { touchAction: "none", overscrollBehavior: "contain" },
     onClick: n,
     children: u.jsx("div", {
       className: "max-w-md mx-auto relative h-full",
@@ -6754,6 +6760,7 @@ function Z_({ items: e, prefs: t, setPref: r, onClose: n }) {
           top: 56,
           right: 12,
           width: 290,
+           maxHeight: "calc(100dvh - 72px)", overflowY: "auto", overscrollBehavior: "contain", touchAction: "pan-y",
           background: k.card,
           border: `1px solid ${k.line}`,
           boxShadow: "0 8px 28px rgba(0,0,0,0.25)",
@@ -11348,7 +11355,13 @@ function px({
     [l, c] = B.useState("signup"),
     [d, p] = B.useState("form"),
     [w, f] = B.useState(""),
-    [v, g] = B.useState(""),
+    [v, g] = B.useState(() => {
+      try {
+        return l === "signup" ? "" : localStorage.getItem("bengu_last_login") || "";
+      } catch (e) {
+        return "";
+      }
+    }),
     [b, m] = B.useState(""),
     [h, y] = B.useState(""),
     [E, C] = B.useState(""),
@@ -11589,7 +11602,7 @@ u.jsxs("div", {
                       onClick: () => q(!S),
                       "aria-label": x("password"),
                       className: "absolute right-1 top-1/2 flex items-center justify-center",
-                      style: { transform: "translateY(-50%)", color: k.mute, width: 44, height: 44 },
+                      style: { position: "absolute", right: 2, top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", justifyContent: "center", color: k.mute, width: 44, height: 44 },
                       children: S
                         ? u.jsx(b_, { size: 20 })
                         : u.jsx(__, { size: 20 }),

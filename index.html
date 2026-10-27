@@ -418,7 +418,7 @@ function register(){stop();
   if(!l)return Promise.reject(new Error("Cole o link ou carregue um ficheiro."));
   if(!/^https?:\/\//i.test(l))return Promise.reject(new Error("O link deve começar por https://"));
   return Promise.resolve(l.slice(0,300))}
- var co=sel("País",[]),pr=sel("Província",[]),di=sel("Distrito",[]),where=h("div",{style:DIM},"Continente e região aparecem ao escolher o país");
+ var co=sel("Country",[]),pr=sel("Province",[]),di=sel("District",[]),where=h("div",{style:DIM},"Continente e região aparecem ao escolher o país");
  geo(co,pr,di);
  co.addEventListener("change",function(){var x=co["_"+co.value];where.textContent=x?"Continente: "+x.continent+(x.region?" · Região de África: "+x.region:""):""});
  box.replaceChildren(h("h3",{style:"color:"+LITE},C.reg),nm,bio,kd,lk,fi,rl,co,where,pr,di,
@@ -431,7 +431,7 @@ function create(){stop();
  var C=CATS[cat];
  var t=inp("Título"),d=inp("Descrição"),lv=sel("Nível",Object.keys(LV).map(function(k){return[k,LV[k]]})),
  rg=sel("Região de África",["Norte","Ocidental","Central","Oriental","Austral"].map(function(x){return[x,x]})),
- co=sel("País",[]),pr=sel("Província",[]),di=sel("Distrito",[]),pc=inp("Preço de 1 voto","number"),
+ co=sel("Country",[]),pr=sel("Province",[]),di=sel("District",[]),pc=inp("Preço de 1 voto","number"),
  st=inp("","datetime-local"),en=inp("","datetime-local"),
  om=inp("O seu meio para receber (ex.: M-Pesa)"),oa=inp("A sua conta/número para receber"),
  quote=h("div",{style:"padding:10px;border-radius:8px;background:#2a1240;border:1px solid "+PINK+";margin:6px 0"},"Escolha o nível e o local para ver a taxa."),
@@ -456,8 +456,8 @@ function create(){stop();
  box.replaceChildren(h("h3",{style:"color:"+LITE},"Criar "+C.label.toLowerCase()),
   h("div",{style:"padding:10px;border-radius:8px;background:#0f1437;border:1px dashed #3a4175;margin:6px 0;font-size:13px"},
    "🔒 Divisão do total arrecadado (privada, só você vê): 1º 35% · 2º 25% · 3º 15% · 4º 5% · organizador 10%. Os valores são enviados automaticamente no fim da competição. Cada utilizador paga as suas próprias taxas de transferência (descontadas do valor que recebe)."),
-  t,d,lv,rg,co,pr,di,quote,pc,lab("Início da competição",st),lab("Fim da competição",en),
-  h("div",{style:DIM},"Onde recebe a sua parte:"),om,oa,
+  t,d,lv,rg,co,pr,di,quote,pc,lab("Competition start",st),lab("Competition end",en),
+  h("div",{style:DIM},"Where you receive your share:"),om,oa,
   btn("Criar e pagar taxa",function(){
    if(!need())return;
    if(!q)return msg("Escolha o nível e o local.");
@@ -609,11 +609,11 @@ function chips(){return h("div",{style:"display:flex;gap:6px;overflow-x:auto;mar
 function list(){curT=null;box.replaceChildren(HD("🏆 Torneios"),chips(),h("p",{},"A carregar…"));
  api("tournaments?select=*&order=starts_at.desc").then(function(r){box.replaceChildren(HD("🏆 Torneios"),chips());
   r=r.filter(function(t){return FIL=="todos"||(t.sport||"futebol")==FIL});
-  if(!r.length)box.append(h("p",{},"Ainda não há torneios aqui. Toque em Criar torneio."));
+  if(!r.length)box.append(h("p",{},"No tournaments here yet. Tap Create tournament."));
   r.forEach(function(t){box.append(h("div",{style:CARD},[h("b",{},sp(t).ico+" "+t.name),h("div",{style:DIM},sp(t).nome+" · "+ph(t)),strip(t),btn("Abrir",function(){detail(t)})]))})}).catch(function(e){box.replaceChildren(h("p",{},e.message))})}
 function create(){curT=null;var sel=h("select",{style:S},Object.keys(SP).map(function(k){return h("option",{value:k},SP[k].ico+" "+SP[k].nome)}));if(SP[FIL])sel.value=FIL;
  var fm=h("select",{style:S},[h("option",{value:"grupos"},"Fase de grupos + eliminatórias"),h("option",{value:"campeonato"},"Campeonato (todos contra todos)")]),n=inp("Nome do torneio"),d=inp("Descrição (opcional)"),a=inp("","datetime-local"),b=inp("","datetime-local");
- box.replaceChildren(HD("Criar torneio"),h("label",{style:DIM},["Sports",sel]),h("label",{style:DIM},["Tipo de torneio",fm]),n,d,h("label",{style:DIM},["Início",a]),h("label",{style:DIM},["Fim",b]),btn("Criar",function(){if(!need())return;
+ box.replaceChildren(HD("Criar torneio"),h("label",{style:DIM},["Sports",sel]),h("label",{style:DIM},["Tipo de torneio",fm]),n,d,h("label",{style:DIM},["Start",a]),h("label",{style:DIM},["End",b]),btn("Criar",function(){if(!need())return;
   if(n.value.trim().length<3||!a.value||!b.value)return msg("Indique nome, início e fim.");
   api("tournaments","POST",Object.assign(fm.value=="campeonato"?{format:"campeonato"}:{},{owner_id:uid(),sport:sel.value,name:n.value.trim(),description:d.value.trim(),starts_at:new Date(a.value).toISOString(),ends_at:new Date(b.value).toISOString()})).then(function(r){dots();detail(r[0])}).catch(fail)}))}
 function detail(t){var me=uid(),own=!!(me&&t.owner_id==me),again=function(){detail(t)},P=sp(t);curT=t;curOwn=own;
@@ -2842,7 +2842,7 @@ function toast(t){var d=document.createElement("div");d.textContent=t;
  document.body.appendChild(d);setTimeout(function(){d.remove()},2600)}
 function ensure(){
  if(btn)return btn;
- btn=document.createElement("button");btn.type="button";btn.textContent="✨ Corrigir";
+ btn=document.createElement("button");btn.type="button";btn.textContent="✨ Fix";
  btn.style.cssText="position:fixed;right:12px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:2147483646;border:0;border-radius:999px;padding:9px 14px;font:700 13px system-ui,sans-serif;background:#f5b400;color:#14163a;box-shadow:0 4px 14px rgba(0,0,0,.35);display:none";
  btn.addEventListener("mousedown",function(ev){ev.preventDefault()});
  btn.addEventListener("click",run);
@@ -2861,7 +2861,7 @@ function run(){
   var n=r.data.text;
   if(n===t){toast("Sem erros encontrados.");return}
   setVal(e,n);toast("Texto corrigido.")
- }).catch(function(){toast("Não foi possível corrigir agora.")}).then(function(){busy=false;if(btn)btn.textContent="✨ Corrigir"})}
+ }).catch(function(){toast("Não foi possível corrigir agora.")}).then(function(){busy=false;if(btn)btn.textContent="✨ Fix"})}
 })();
 </script>
 <script>/* BENGU 4.30: faixa do topo e barra de baixo escondem/mostram com a rolagem.

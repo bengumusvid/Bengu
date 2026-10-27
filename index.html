@@ -943,19 +943,20 @@ function openPdf(n){bgCountView("journal",n);var b=sheet("📰 "+n.title);b.pare
  }).catch(function(){info.textContent="Could not show the PDF here. Use the link below to open it."})}
 function addJournal(done){var me=uid();if(!me){alert("Log in to add a newspaper.");return}
  var b=sheet("➕ Add newspaper (PDF)"),GI2="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cfd4e3;border-radius:10px;margin:6px 0;font:inherit",
- ti=h("input",{placeholder:"Newspaper name and date (e.g. News, 17 Oct 2026)",style:GI2,maxlength:120}),fi=h("input",{type:"file",accept:"application/pdf",style:GI2}),
+ ti=h("input",{placeholder:"Newspaper name and date (e.g. News, 17 Oct 2026)",style:GI2,maxlength:120}),fi=h("input",{type:"file",accept:"application/pdf",style:"position:absolute;width:1px;height:1px;opacity:0;pointer-events:none"}),fn=h("span",{style:"font-size:14px;margin-left:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"},"No file chosen"),fw=h("label",{style:GI2+";display:flex;align-items:center;cursor:pointer;position:relative"},[h("span",{style:"background:#6B7391;color:#fff;padding:6px 12px;border-radius:8px;font-weight:600;flex:none"},"Choose PDF file"),fn,fi]),
  rl=h("label",{style:"display:block;font-size:13px;margin:8px 0"}),rc=h("input",{type:"checkbox"}),
  go=h("button",{style:"width:100%;padding:12px;border:0;border-radius:12px;background:#43A047;color:#fff;font-weight:800;font-size:16px;margin-top:10px"},"Publish newspaper");
+ fi.addEventListener("change",function(){var f=fi.files&&fi.files[0];fn.textContent=f?f.name:"No file chosen"});
  rl.append(rc," I declare that I am the author or have permission to publish this newspaper.");
  go.addEventListener("click",function(){var t=ti.value.trim(),f=fi.files&&fi.files[0];
-  if(t.length<2){alert("Write the newspaper name.");return}if(!f){alert("Escolha o ficheiro PDF.");return}
-  if(f.type!=="application/pdf"&&!/\.pdf$/i.test(f.name)){alert("O ficheiro tem de ser PDF.");return}
-  if(f.size>15*1048576){alert("O PDF tem mais de 15 MB.");return}if(!rc.checked){alert("You must declare that you are the author or have permission.");return}
+  if(t.length<2){alert("Write the newspaper name.");return}if(!f){alert("Choose the PDF file.");return}
+  if(f.type!=="application/pdf"&&!/\.pdf$/i.test(f.name)){alert("The file must be a PDF.");return}
+  if(f.size>15*1048576){alert("The PDF is larger than 15 MB.");return}if(!rc.checked){alert("You must declare that you are the author or have permission.");return}
   var pth=me+"/"+Date.now()+"-"+Math.random().toString(36).slice(2,8)+".pdf";go.disabled=true;go.textContent="A enviar…";
   fetch(U+"/storage/v1/object/journals/"+pth,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/pdf"},body:f}).then(function(r){if(!r.ok)throw new Error("Could not upload the PDF (max. 15 MB). Run SQL 4.16.");return U+"/storage/v1/object/public/journals/"+pth})
   .then(function(url){return api("bengu_journals","POST",{author_id:me,title:t.slice(0,120),pdf_url:url})}).then(function(){b.parentNode.remove();done()})
   .catch(function(e){alert((e&&e.message)||"Publishing error.");go.disabled=false;go.textContent="Publish newspaper"})});
- b.append(h("p",{style:"margin:10px 0 4px;font-size:13px;opacity:.75"},"Only publish newspapers you own or have permission for. Copied newspapers are removed."),ti,fi,rl,go)}
+ b.append(h("p",{style:"margin:10px 0 4px;font-size:13px;opacity:.75"},"Only publish newspapers you own or have permission for. Copied newspapers are removed."),ti,fw,rl,go)}
 window.bengu_news_open=function(){var b=sheet("📰 News"),o=b.parentNode,admin=false,cur=0,sub=0,spt="Soccer";o.classList.add("bgnews-open");o.style.background="#FBF6E9";
  var mast=h("div",{class:"bgn-mast",style:"position:sticky;top:56px;z-index:5;margin:8px 0 0;padding:5px 0;border-radius:8px;overflow:hidden;white-space:nowrap;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.45);font:900 15px Georgia,serif;letter-spacing:2px;background:linear-gradient(90deg,#E53935,#FB8C00,#FDD835 50%,#43A047,#1E88E5)"},h("span",{},"BENGU NOTÍCIAS  \u2605  BENGU NOTÍCIAS  \u2605  BENGU NOTÍCIAS  \u2605")),
  tabs=h("div",{style:"display:flex;gap:8px;overflow-x:auto;padding:12px 0"}),list=h("div");b.append(mast,tabs,list);var hd0=b.parentNode.firstChild;if(hd0&&hd0.offsetHeight)mast.style.top=hd0.offsetHeight+"px";

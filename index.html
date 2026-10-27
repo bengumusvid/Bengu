@@ -1419,7 +1419,7 @@ function earnCard(s,body){var c=card();c.append(el("b","","💰 Ganhos estimados
  rpc("bengu_creator_stats").then(function(z){var k=z.rpm*z.creator_pct/100/1000,usd=function(v){return Number(v||0).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})+" US$"},
   sum=function(a,n){return(a||[]).slice(-n).reduce(function(t,x){return t+(x.views||0)},0)},g=el("div","display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px");
   [["Total",(s.totals||{}).views],["7 dias",sum(s.days,7)],["30 dias",sum(s.days,30)],["12 meses",sum(s.months,12)]].forEach(function(q){var d=el("div","background:"+C.card2+";border-radius:10px;padding:10px;text-align:center");d.append(el("div","font-size:17px;font-weight:800",usd(q[1]*k)),el("div","font-size:11px;color:"+C.mute,q[0]));g.append(d)});
-  c.append(g,el("div","font-size:11px;color:"+C.mute+";margin-top:6px","Estimativa: visualizações × "+usd(z.rpm)+" por 1000 × "+z.creator_pct+"% para o criador. O valor real depende dos anúncios."),el("div","margin-top:10px",""));var wb=btn("💸 Levantar rendimentos",function(){if(window.bengu_earnings_panel)window.bengu_earnings_panel();else toast("Indisponível de momento.")});c.append(wb)}).catch(function(){c.append(el("div","font-size:12px;color:"+C.mute+";margin-top:6px","Ganhos indisponíveis de momento."))})}
+  c.append(g,(window.__bgAdm===true?el("div","font-size:11px;color:"+C.mute+";margin-top:6px","Estimativa: visualizações × "+usd(z.rpm)+" por 1000 × "+z.creator_pct+"% para o criador. O valor real depende dos anúncios."):""),el("div","margin-top:10px",""));var wb=btn("💸 Levantar rendimentos",function(){if(window.bengu_earnings_panel)window.bengu_earnings_panel();else toast("Indisponível de momento.")});c.append(wb)}).catch(function(){c.append(el("div","font-size:12px;color:"+C.mute+";margin-top:6px","Ganhos indisponíveis de momento."))})}
 function asPage(p,bar){var me=uid();if(!me)return;
  Promise.all([api("bengu_pages?select=id,name&owner_id=eq."+me+"&id=neq."+p.id),api("bengu_page_following?select=page_id&target_page_id=eq."+p.id)]).then(function(z){var mine=z[0],f={};if(!mine.length)return;z[1].forEach(function(r){f[r.page_id]=1});
   bar.append(btn("📄 Seguir como página",function(){var o=el("div","position:fixed;inset:0;z-index:100005;background:rgba(0,0,0,.75);display:flex;align-items:flex-end;justify-content:center"),b=el("div","background:"+C.bar+";color:#fff;border-radius:16px 16px 0 0;padding:14px;width:100%;max-width:560px;box-sizing:border-box");
@@ -1793,12 +1793,12 @@ window.bengu_earnings_panel=function(){
   box.replaceChildren();
   var g=el("div","display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px");
   [["Esta semana",earn(wk)],["Este mês",earn(mo)],["12 meses",earn(yr)]].forEach(function(q){var d=el("div","background:#1b1f48;border-radius:10px;padding:10px;text-align:center");d.append(el("div","font-size:15px;font-weight:800",usd(q[1])),el("div","font-size:11px;opacity:.7",q[0]));g.append(d)});box.append(g);
-  box.append(el("p","font-size:11px;opacity:.65;margin:6px 0","Estimativa: visualizações das publicações de cada período × "+usd(s.rpm)+" por 1000 × "+s.creator_pct+"% para si. O valor real depende dos anúncios."));
+  if(window.__bgAdm===true)box.append(el("p","font-size:11px;opacity:.65;margin:6px 0","Estimativa: visualizações das publicações de cada período × "+usd(s.rpm)+" por 1000 × "+s.creator_pct+"% para si. O valor real depende dos anúncios."));
   tabs(box,[["Dias","days","day"],["Semanas","weeks","week"],["Meses","months","month"]],function(it,area){var d=s[it[1]];
    area.append(el("div","font-weight:700;margin:6px 0 2px","Ganhos estimados"),chart(d.map(function(x){return earn(x.views)}),d.map(function(x){return lbl(x.t,it[2])}),"bar","#f5b400",usd),
     el("div","font-weight:700;margin:10px 0 2px","Crescimento de visualizações (acumulado)"),chart(cum(d.map(function(x){return x.views})),d.map(function(x){return lbl(x.t,it[2])}),"line","#4cc9f0",num));
    if(it[1]==="months"&&s.followers_months&&s.followers_months.length)area.append(el("div","font-weight:700;margin:10px 0 2px","Novos seguidores por mês"),chart(s.followers_months.map(function(x){return x.n}),s.followers_months.map(function(x){return lbl(x.t,"month")}),"bar","#2fbf71",num))});
-  var el1=el("div",CARD);el1.append(el("b","","Elegibilidade para levantar"),bar("Seguidores",s.followers,s.min_followers),bar("Visualizações em 30 dias",s.views30,s.min_views30),el("div","font-size:12px;margin-top:6px;opacity:.8",s.eligible?"Conta elegível.":"Ainda não elegível."));box.append(el1);
+  var el1=el("div",CARD);el1.append(el("b","","Elegibilidade para levantar"),bar("Seguidores",s.followers,s.min_followers),bar("Visualizações em 30 dias",s.views30,s.min_views30),el("div","font-size:12px;margin-top:6px;opacity:.8",s.eligible?"Conta elegível.":"Ainda não elegível."));if(window.__bgAdm===true)box.append(el1);
    (function(){var uu=me();if(!uu)return;var cardV=el("div",CARD);box.append(cardV);cardV.append(el("b","","👀 Visualizações de músicas, jornais e notícias"),el("div","font-size:12px;opacity:.7;margin-top:4px","A carregar…"));
     Promise.all([["music_tracks","Músicas"],["bengu_journals","Jornais"],["bengu_news","Notícias"]].map(function(t){return rest(t[0]+"?select=id,title,views&author_id=eq."+uu+"&order=views.desc.nullslast&limit=200").then(function(r){return{n:t[1],r:r||[]}}).catch(function(){return null})})).then(function(z){cardV.replaceChildren(el("b","","👀 Visualizações de músicas, jornais e notícias"));
      if(!z.some(function(x){return x})){cardV.append(el("div","font-size:12px;opacity:.7;margin-top:4px","Ainda sem dados. Execute o SQL 4.24 no Supabase."));return}
@@ -7968,7 +7968,7 @@ function nx({ me: e, posts: t, followers: r, onBack: n }) {
           ),
         ],
       }),
-      u.jsxs("section", {
+      window.__bgAdm === true ? u.jsxs("section", {
         className: h,
         style: { background: k.card },
         children: [
@@ -7986,7 +7986,7 @@ function nx({ me: e, posts: t, followers: r, onBack: n }) {
           }),
           window.__bgAdm === true ? u.jsx("p", { className: "text-xs mt-2", style: { color: k.mute }, children: x("adsShare") }) : null,
         ],
-      }),
+      }) : null,
       u.jsxs("section", {
         className: h,
         style: { background: k.card },

@@ -592,7 +592,7 @@ function maybeUp(p,kind){return p.get()?upload(p.get(),kind):Promise.resolve(nul
 /* ecrãs */
 var FIL="todos",curT=null,curOwn=false;
 function open(s){if(s&&SP[s])FIL=s;ov.style.display="block";bar.replaceChildren(btn("✕",function(){curT=null;ov.style.display="none"}),btn("Torneios",list),btn("Criar torneio",create));list();
- if(tok())api("rpc/is_admin","POST",{}).then(function(a){if(a===true)bar.append(btn("🔒 Admin",adminAcc),btn("💲 Taxas",adminFees))}).catch(function(){})}
+ if(tok())api("rpc/is_admin","POST",{}).then(function(a){if(a===true)bar.append(btn("🔒 Admin",adminAcc),btn("💲 Fees",adminFees))}).catch(function(){})}
 function adminAcc(){curT=null;box.replaceChildren(HD("🔒 Conta M-Pesa de recebimento"),h("p",{style:DIM},"Só o administrador vê esta informação."),h("p",{},"A carregar…"));
  api("rpc/admin_fee_account","POST",{}).then(function(r){var a=r&&r[0]||{},nm=inp("Nome do titular"),ph2=inp("Número (ex.: 258848199912)","tel");nm.value=a.holder_name||"";ph2.value=a.phone||"";
   box.replaceChildren(HD("🔒 Conta M-Pesa de recebimento"),h("p",{style:DIM},"Só o administrador vê esta informação. Os utilizadores nunca a veem."),nm,ph2,btn("Guardar",function(){var v=ph2.value.replace(/\D/g,"");if(!/^258(84|85)\d{7}$/.test(v)||nm.value.trim().length<3)return msg("Indique o nome e um número M-Pesa válido (258XXXXXXXXX).");
@@ -600,7 +600,7 @@ function adminAcc(){curT=null;box.replaceChildren(HD("🔒 Conta M-Pesa de receb
 function adminFees(){curT=null;box.replaceChildren(HD("💲 Taxas de criação de eventos"),h("p",{},"A carregar…"));
  api("creation_fee_prices?select=zone,label,amount_usd").then(function(r){
   var ord=["mossurize","mocambique","africa","fora_africa"];r=(r||[]).slice().sort(function(a,b){return ord.indexOf(a.zone)-ord.indexOf(b.zone)});
-  var kids=[HD("💲 Taxas de criação de eventos"),h("p",{style:DIM},"Valores em USD, só para criar eventos. O administrador nunca paga. As taxas de inscrição são pagas pelos utilizadores.")];
+  var kids=[HD("💲 Taxas de criação de eventos"),h("p",{style:DIM},"Amounts in USD, for creating events only. The administrator never pays. Registration fees are paid by users.")];
   r.forEach(function(x){var i=inp("Valor em USD","number");i.min="0";i.step="0.01";i.value=x.amount_usd;
    kids.push(h("div",{style:"margin:10px 0"},[h("b",{},x.label),i,btn("Guardar",function(){var v=Number(i.value);if(i.value===""||!(v>=0))return msg("Indique um valor válido (0 ou mais).");
     api("rpc/admin_set_creation_fee","POST",{p_zone:x.zone,p_amount:v}).then(function(){msg(x.label+": "+v+" USD guardado.",1)}).catch(fail)})]))});

@@ -788,8 +788,9 @@ function nm(id){return api("profiles?select=name&id=eq."+id).then(function(r){re
 window.bgGate=function(id,go){var me=uid();if(!me){toast("Inicie sessão.");return}
  if(window.__bgAdm===true)return go();
  api("chat_requests?select=*&or=(and(requester_id.eq."+me+",target_id.eq."+id+"),and(requester_id.eq."+id+",target_id.eq."+me+"))").then(function(r){var q=r[0];
-  if(q&&q.status=="accepted")return go();
+  if(q&&q.status=="accepted")return nm(id).then(function(n){if(/^\s*(bengu|novas da bengu|bengu news|news bengu)\s*$/i.test(n||"")&&window.__bgAdm!==true)return toast("This official account does not accept chats.");go()});
   nm(id).then(function(n){
+   if(/^\s*(bengu|novas da bengu|bengu news|news bengu)\s*$/i.test(n||"")&&window.__bgAdm!==true)return toast("This official account does not accept chat requests.");
    if(!q){if(confirm("Pedir autorização a "+n+" para conversar?"))api("chat_requests","POST",{requester_id:me,target_id:id}).then(function(){toast("Pedido enviado. Aguarde a autorização de "+n+".")}).catch(function(e){toast(e.message)});return}
    if(q.status=="pending"&&q.requester_id==me)return toast("A aguardar a autorização de "+n+".");
    if(q.status=="pending"){if(confirm(n+" quer conversar consigo. Aceitar?"))api("chat_requests?id=eq."+q.id,"PATCH",{status:"accepted"}).then(go);return}
@@ -1206,6 +1207,7 @@ function mediaOf(x){var m=Array.isArray(x.media)?x.media.slice():[];if(x.photo_u
 function postCard(x,name,photo,canDel,table,again,reel){var c=card(),h=el("div","display:flex;align-items:center;gap:10px;margin-bottom:8px");h.append(av(photo,name,34));
  var t2=el("div","flex:1;min-width:0");t2.append(el("b","",name||"Utilizador"),el("div","font-size:12px;color:"+C.mute,(reel?"🎞 Reel · ":"")+when(x.created_at)));h.append(t2);
  if(canDel){var d=el("button","border:0;background:none;color:#ff8a8a;font-size:18px","🗑");d.onclick=function(){if(!confirm("Apagar esta publicação?"))return;api(table+"?id=eq."+x.id,"DELETE").then(again).catch(fail)};h.append(d)}
+ if(canDel&&x.body!==undefined){var ed=el("button","border:0;background:none;color:#9ecbff;font-size:18px","✏️");ed.setAttribute("aria-label","Edit");ed.onclick=function(){var nv=prompt("Edit post:",x.body||"");if(nv===null)return;nv=nv.trim();if(!nv&&!mediaOf(x).length)return toast("The post cannot be empty.");api(table+"?id=eq."+x.id,"PATCH",{body:nv||null}).then(function(){toast("Post updated.");again&&again()}).catch(fail)};h.insertBefore(ed,h.lastChild===t2?null:h.lastChild)}
  c.append(h);if(x.suspended)c.append(el("div","background:#6b2330;border-radius:8px;padding:6px 10px;font-size:12px;margin-bottom:8px","⏸ Suspenso pelo administrador"+(x.suspended_reason?": "+x.suspended_reason:"")));
  mediaOf(x).forEach(function(m){if(!m||!m.url)return;
   if(m.kind==="image"){var im=el("img","width:100%;border-radius:10px;margin-bottom:8px;cursor:zoom-in");im.src=m.url;im.loading="lazy";im.onclick=function(){full(m.url)};c.append(im)}
@@ -1817,7 +1819,18 @@ window.bengu_earnings_panel=function(){
 var admBtn=null,pendN=0;
 window.bengu_admin_earnings=function(){
  var m=modal("💰 Comissão do Bengu · v4.20"),box=m.body;box.append(el("p","opacity:.7","A carregar…"));
- Promise.all([rpc("bengu_admin_commission"),rpc("bengu_admin_withdrawals"),rpc("bengu_admin_get_setting",{p_key:"usd_mzn_rate"}).catch(function(){return 64})]).then(function(z){var c=z[0],w=z[1];c.fx=z[2];box.replaceChildren();
+ Promise.all([rpc("bengu_admin_commission"),rpc("bengu_admin_withdrawals"),rpc("bengu_admin_get_setting",{p_key:"usd_mzn_rate"}).catch(function(){return 64}),rpc("bengu_admin_get_setting",{p_key:"payout_auto"}).catch(function(){return 0}),rpc("bengu_admin_get_setting",{p_key:"adsense_quota_usd"}).catch(function(){return 0})]).then(function(z){var c=z[0],w=z[1];c.fx=z[2];var pa=Number(z[3])===1,aq=Number(z[4])||0;box.replaceChildren();
+  var pp=el("div",CARD);pp.append(el("b","","💳 User payouts"));
+  var q1=el("div","display:flex;gap:6px;align-items:center;margin-top:6px"),qi=el("input",FLD+"margin:0;flex:1"),qb=el("button",G,"Save");qi.type="number";qi.step="0.01";qi.value=aq;qb.onclick=function(){rpc("bengu_admin_set_setting",{p_key:"adsense_quota_usd",p_value:Number(qi.value)}).then(function(){msg(pp,"Quota saved.",true);aq=Number(qi.value);qs()}).catch(function(e){msg(pp,e.message,false)})};q1.append(el("span","font-size:12px;flex:1.4","AdSense quota received (US$)"),qi,qb);
+  var qsx=el("div","font-size:12px;opacity:.85;margin:6px 0");function qs(){var rest2=aq-(c.paid_amount||0)-(c.pending_amount||0);qsx.textContent="Quota: "+usd(aq)+" · Paid: "+usd(c.paid_amount||0)+" · Pending: "+usd(c.pending_amount||0)+" · Free balance: "+usd(rest2)+(rest2<0?" ⚠️ requests exceed the quota":"")}qs();
+  var md=el("div","display:flex;gap:6px;margin:6px 0"),bM=el("button",pa?G:Y+"flex:1","✋ Manual"),bA=el("button",pa?Y+"flex:1":G,"⚙️ Automatic");bM.style.flex=bA.style.flex="1";
+  function setMode(v){rpc("bengu_admin_set_setting",{p_key:"payout_auto",p_value:v}).then(function(){pa=v===1;bM.style.cssText=(pa?G:Y)+"flex:1";bA.style.cssText=(pa?Y:G)+"flex:1";msg(pp,pa?"Automatic mode on: M-Pesa requests are paid while this panel is open.":"Manual mode on.",true);if(pa)autoPay()}).catch(function(e){msg(pp,e.message,false)})}
+  bM.onclick=function(){setMode(0)};bA.onclick=function(){if(confirm("Turn on automatic payouts? Pending M-Pesa requests will be paid without manual approval."))setMode(1)};md.append(bM,bA);
+  function payOne(x){return fetch(U+"/functions/v1/mpesa-payout",{method:"POST",headers:hd(),body:JSON.stringify({id:x.id})}).then(function(r){return r.json()})}
+  function payAll(){var L=w.filter(function(x){return x.method==="mpesa"&&x.status==="pending"&&(x.amount_usd||0)>0});if(!L.length)return Promise.resolve(0);var n=0;return L.reduce(function(p,x){return p.then(function(){return payOne(x).then(function(j){if(j&&j.ok)n++}).catch(function(){})})},Promise.resolve()).then(function(){return n})}
+  function autoPay(){if(!pa||window.__bgAutoBusy)return;window.__bgAutoBusy=true;payAll().then(function(n){window.__bgAutoBusy=false;if(n){m.close();window.bengu_admin_earnings();pollAdmin()}}).catch(function(){window.__bgAutoBusy=false})}
+  var pb2=el("button",Y+"width:100%","💸 Pay all pending M-Pesa requests");pb2.onclick=function(){var k=w.filter(function(x){return x.method==="mpesa"&&x.status==="pending"}).length;if(!k)return msg(pp,"No pending M-Pesa requests.",false);if(!confirm("Pay "+k+" M-Pesa request(s) now?"))return;pb2.disabled=true;payAll().then(function(n){msg(pp,n+" of "+k+" paid.",n>0);setTimeout(function(){m.close();window.bengu_admin_earnings()},1200)})};
+  pp.append(q1,qsx,el("div","font-size:12px;opacity:.8","Payout mode:"),md,pb2,el("div","font-size:11px;opacity:.65;margin-top:6px","Users choose their own withdrawal method and account on their earnings page. Funds are paid out from the Bengu account."));box.append(pp);autoPay();
   var g=el("div","display:grid;grid-template-columns:1fr 1fr;gap:8px");
   [["Comissão do Bengu ("+c.bengu_pct+"%)",usd(c.bengu_commission)],["Para criadores",usd(c.creators_total)],["Criadores elegíveis",num(c.eligible_creators)],["Pedidos pendentes",num(c.pending_count)+" · "+usd(c.pending_amount)],["Já pago",usd(c.paid_amount)],["Receita bruta estimada",usd(c.gross)]].forEach(function(q){var d=el("div","background:#1b1f48;border-radius:10px;padding:10px;text-align:center");d.append(el("div","font-size:15px;font-weight:800",q[1]),el("div","font-size:11px;opacity:.7",q[0]));g.append(d)});box.append(g);
   box.append(el("div","font-weight:700;margin:12px 0 2px","Comissão estimada por mês"),chart(c.months.map(function(x){return x.v}),c.months.map(function(x){return lbl(x.t,"month")}),"bar","#f5b400",usd));
@@ -1949,7 +1962,7 @@ window.bengu_open_record=window.bengu_open_live=function(){
     W=Math.round(vw*k);H=Math.round(vh*k);W-=W%2;H-=H%2;cv.width=W;cv.height=H;
     if(vw>vh&&portrait){fill=false;cv.style.objectFit="contain"}else{fill=true;cv.style.objectFit="cover";fitB.textContent="⤡"}
     hq.textContent=(sh>=1080?"FHD":sh>=720?"HD":"SD")+" "+Math.round(st.frameRate||30)+"fps"+(vw>vh&&portrait?" ↔":"")})})}
- function stopAll(){closed=true;try{bgSeg&&bgSeg.close()}catch(e){}cancelAnimationFrame(raf);clearInterval(timer);try{if(rec&&rec.state!=="inactive")rec.stop()}catch(e){}
+ function stopAll(){closed=true;try{preMic&&preMic.getTracks().forEach(function(t){t.stop()});preMic=null}catch(e){}try{bgSeg&&bgSeg.close()}catch(e){}cancelAnimationFrame(raf);clearInterval(timer);try{if(rec&&rec.state!=="inactive")rec.stop()}catch(e){}
   [cam,micStream].forEach(function(s){if(s)s.getTracks().forEach(function(t){t.stop()})});stopRecSrcs();stopPv();if(actx)try{actx.close()}catch(e){}
   if(blob&&pv.src)try{URL.revokeObjectURL(pv.src)}catch(e){}}
  close.onclick=function(){if(recording&&!confirm("Parar e sair? A gravação atual será perdida."))return;stopAll();o.remove()};
@@ -1966,7 +1979,8 @@ window.bengu_open_record=window.bengu_open_live=function(){
   flip=el("button",SM+"width:46px;height:46px;padding:0;font-size:20px","🔄");
  mic.type="checkbox";mic.checked=true;
  function paintMic(){bMic.style.opacity=mic.checked?"1":".45";bMic.textContent=mic.checked?"🎙️":"🔇";bMic.setAttribute("aria-label",mic.checked?"Voz ligada":"Voz desligada")}
- paintMic();bMic.onclick=function(){if(recording||mic.disabled)return;mic.checked=!mic.checked;paintMic()};
+ var preMic=null,preMicP=null;function warmMic(){if(!mic.checked||preMic||preMicP||closed)return;preMicP=navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}).then(function(s){preMicP=null;if(closed||!mic.checked){s.getTracks().forEach(function(t){t.stop()});return}preMic=s}).catch(function(){preMicP=null})}
+ paintMic();warmMic();bMic.onclick=function(){if(recording||mic.disabled)return;mic.checked=!mic.checked;paintMic();if(mic.checked)warmMic();else if(preMic){preMic.getTracks().forEach(function(t){t.stop()});preMic=null}};
  [[bBeauty,"Beleza"],[bFilter,"Filtros"],[bMusic,"Música"],[flip,"Trocar câmara"],[recB,"Gravar"]].forEach(function(a){a[0].setAttribute("aria-label",a[1])});
 
  /* embelezamento */
@@ -2288,7 +2302,7 @@ window.bengu_open_record=window.bengu_open_live=function(){
   var out=cv.captureStream?cv.captureStream(30):null;if(!out){say("Este navegador não suporta gravação com filtros.");return Promise.resolve()}
   var needAudio=!!music||mic.checked;var p=Promise.resolve();
   if(needAudio){ensureAudio();if(actx.state==="suspended")actx.resume();
-   if(mic.checked)p=navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}).then(function(s){micStream=s;voiceChain(actx.createMediaStreamSource(s))}).catch(function(){mic.checked=false;paintMic();say("Sem acesso ao microfone. A gravar sem voz.")});
+   if(mic.checked)p=(preMic?Promise.resolve(preMic):preMicP?preMicP.then(function(){return preMic}):Promise.resolve(null)).then(function(s){return s||navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}})}).then(function(s){preMic=null;micStream=s;voiceChain(actx.createMediaStreamSource(s))}).catch(function(){mic.checked=false;paintMic();say("Sem acesso ao microfone. A gravar sem voz.")});
    }
   return p.then(function(){
    if(destS&&destS.stream.getAudioTracks().length&&(music||mic.checked))destS.stream.getAudioTracks().forEach(function(t){out.addTrack(t)});
@@ -2320,7 +2334,7 @@ window.bengu_open_record=window.bengu_open_live=function(){
     done:function(f,dur){shut();try{URL.revokeObjectURL(url)}catch(e){}blob=f;recDur=dur>0?dur:recDur;fxReset();review();say("Edição aplicada ao reel.",true)}})};
   bar2.append(edit,save,again,pub);panel.append(edBox,size,cap,bar2);
   save.onclick=function(){var a=document.createElement("a");a.href=url;a.download="bengu-reel-"+Date.now()+"."+ext;document.body.appendChild(a);a.click();a.remove();say("Guardado no telemóvel.",true)};
-  again.onclick=function(){try{URL.revokeObjectURL(url)}catch(e){}pv.pause();pv.removeAttribute("src");pv.style.display="none";cv.style.display="block";blob=null;origBlob=null;capVal="";fxReset();panel.style.maxHeight="";panel.style.overflowY="";recording=false;recB.style.borderRadius="50%";recB.style.transform="";mic.disabled=false;flip.disabled=false;bMusic.disabled=false;flip.style.opacity=bMusic.style.opacity="";hq.style.display="";panel.style.background="linear-gradient(to top,rgba(0,0,0,.65),rgba(0,0,0,0))";panel.style.borderRadius="";panel.replaceChildren(sheet,bar)};
+  again.onclick=function(){try{URL.revokeObjectURL(url)}catch(e){}pv.pause();pv.removeAttribute("src");pv.style.display="none";cv.style.display="block";blob=null;origBlob=null;capVal="";fxReset();panel.style.maxHeight="";panel.style.overflowY="";recording=false;warmMic();recB.style.borderRadius="50%";recB.style.transform="";mic.disabled=false;flip.disabled=false;bMusic.disabled=false;flip.style.opacity=bMusic.style.opacity="";hq.style.display="";panel.style.background="linear-gradient(to top,rgba(0,0,0,.65),rgba(0,0,0,0))";panel.style.borderRadius="";panel.replaceChildren(sheet,bar)};
   pub.onclick=function(){pub.disabled=true;pub.textContent="⏳";var uid=me(),path=uid+"/"+Date.now()+"-reel."+ext;
    fetch(U+"/storage/v1/object/media/"+path,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":blob.type,"x-upsert":"false","cache-control":"max-age=31536000"},body:blob}).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(/exceeded|too large|payload/i.test(t)?"O vídeo é demasiado grande.":"Não foi possível enviar o vídeo.")})})
    .then(function(){return window.bengu_prep_audio?window.bengu_prep_audio(blob):null}).then(function(wb){if(!wb)return null;var p2=uid+"/"+Date.now()+"-reel-som.wav";return fetch(U+"/storage/v1/object/media/"+p2,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"audio/wav","x-upsert":"false","cache-control":"max-age=31536000"},body:wb}).then(function(r){return r.ok?U+"/storage/v1/object/public/media/"+p2:null}).catch(function(){return null})})

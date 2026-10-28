@@ -5100,6 +5100,7 @@ function es({
         }),
       e.text && u.jsx(BgPostTr, { text: e.text }),
       u.jsx(K_, { post: e, users: r, mine: n, onDeleteItem: delIt }),
+      u.jsx(BgPostMusic, { post: e }),
       u.jsxs("div", {
         className: "flex items-center gap-5 px-4 pt-3 pb-1",
         children: [
@@ -5836,6 +5837,7 @@ function J_() {
       title: Ce,
       link: De,
       bg: Ne,
+      music: bgMus,
     }) => {
       if (Te) return (_e(x("waitUpload")), !1);
       const Kt =
@@ -5854,6 +5856,7 @@ function J_() {
             const un =
                 Z.reduce((Ke, ot) => Ke + ot.file.size, 0) +
                 (Ne && Ne.file ? Ne.file.size : 0) +
+                (bgMus && bgMus.file ? bgMus.file.size : 0) +
                 1,
               Ir = async (Ke, ot) => {
                 const Mi = await Mo(Ke, ot, (Ui) =>
@@ -5927,6 +5930,17 @@ function J_() {
             if (I === "text" && window.__bgFont && bgWords(V) > 0 && bgWords(V) <= 50) {
               const bgF = window.__bgFont;
               Lr = Lr.length && Lr[0] && Lr[0].kind === "bg" ? [{ ...Lr[0], font: bgF }] : [{ kind: "bg", plain: !0, font: bgF }];
+            }
+            if (bgMus && (I === "text" || I === "media")) {
+              const mUrl = bgMus.file ? await Ir(bgMus.file, bgMus.file.name) : bgMus.url,
+                mObj = {
+                  url: mUrl,
+                  title: String(bgMus.title || "Música").slice(0, 120),
+                  start: Math.max(0, +bgMus.start || 0),
+                  end: Math.max(0, +bgMus.end || 0),
+                  lib: !bgMus.file,
+                };
+              Lr = Lr.length ? [{ ...Lr[0], music: mObj }, ...Lr.slice(1)] : [{ kind: "bg", plain: !0, music: mObj }];
             }
             const { error: Oe } = await me.from("posts").insert({
               user_id: h.id,
@@ -6022,7 +6036,7 @@ function J_() {
       if (Z) return _e(Ze(Z));
       P((he) => he.filter((Ce) => Ce.id !== I));
       const le = ((V == null ? void 0 : V.items) || [])
-        .flatMap((he) => [Ds(he.url), Ds(he.cover), Ds(he.image)])
+        .flatMap((he) => [Ds(he.url), Ds(he.cover), Ds(he.image), he.music && !he.music.lib ? Ds(he.music.url) : null])
         .filter(Boolean);
       if (le.length)
         try {
@@ -10425,6 +10439,327 @@ function dx({ post: e, me: t, users: us, onClose: r, say: n }) {
     }),
   });
 }
+
+function bgMmss(t) {
+  t = Math.max(0, Math.floor(t || 0));
+  return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
+}
+function BgMusicPick({ value, onChange, onError }) {
+  const h = B.createElement,
+    pt = Tu.lang === "pt",
+    MAXC = 60;
+  const [lib, setLib] = B.useState(null),
+    [q, setQ] = B.useState(""),
+    [busy, setBusy] = B.useState(false),
+    [playing, setPlaying] = B.useState(""),
+    aud = B.useRef(null),
+    urls = B.useRef([]);
+  B.useEffect(
+    () => () => {
+      urls.current.forEach((v) => URL.revokeObjectURL(v));
+      if (aud.current) aud.current.pause();
+    },
+    [],
+  );
+  const stop = () => {
+      if (aud.current) aud.current.pause();
+      setPlaying("");
+    },
+    playClip = (key, url, st, en) => {
+      const a = aud.current || (aud.current = new Audio());
+      a.pause();
+      a.onended = () => setPlaying("");
+      a.ontimeupdate = () => {
+        if (en && a.currentTime >= en) {
+          a.pause();
+          setPlaying("");
+        }
+      };
+      const go = () => {
+        try {
+          a.currentTime = st || 0;
+        } catch {}
+        a.play().then(() => setPlaying(key), () => setPlaying(""));
+      };
+      if (a.getAttribute("data-u") !== url) {
+        a.setAttribute("data-u", url);
+        a.onloadedmetadata = go;
+        a.src = url;
+        a.load();
+      } else go();
+    },
+    loadDur = (url) =>
+      new Promise((res) => {
+        const a = new Audio();
+        a.preload = "metadata";
+        a.onloadedmetadata = () => res(isFinite(a.duration) ? a.duration : 0);
+        a.onerror = () => res(0);
+        a.src = url;
+      }),
+    setTrack = async (v) => {
+      stop();
+      const dur = await loadDur(v.url);
+      onChange({ ...v, dur, start: 0, end: dur ? Math.min(dur, MAXC) : 0 });
+    },
+    pickFile = (e) => {
+      const f = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if (!f) return;
+      if (!(f.type.startsWith("audio/") || /\.(mp3|m4a|wav|ogg|aac)$/i.test(f.name)))
+        return onError(pt ? "Escolha um ficheiro de áudio (mp3)." : "Choose an audio file (mp3).");
+      if (f.size > s_ * 1048576) return onError(x("tooBig"));
+      const url = URL.createObjectURL(f);
+      urls.current.push(url);
+      setTrack({ src: "file", file: f, url, title: f.name.replace(/\.[a-z0-9]{1,5}$/i, "") });
+    },
+    openLib = async () => {
+      setBusy(true);
+      try {
+        const base = (cols) =>
+          me
+            .from("music_tracks")
+            .select(cols)
+            .eq("status", "published")
+            .eq("kind", "upload")
+            .order("created_at", { ascending: false })
+            .limit(100);
+        let r = await base("id,title,artist,audio_url,cover_url");
+        if (r.error) r = await base("id,title,artist,audio_url");
+        if (r.error) throw r.error;
+        setLib((r.data || []).filter((t) => t.audio_url));
+        setQ("");
+      } catch (err) {
+        onError(Ze(err));
+      }
+      setBusy(false);
+    },
+    closeLib = () => {
+      stop();
+      setLib(null);
+    },
+    btn = {
+      padding: "9px 14px",
+      borderRadius: 999,
+      fontSize: 13,
+      fontWeight: 700,
+      background: k.paper,
+      color: k.ink,
+    },
+    rng = (label, val, min, max, set) =>
+      h(
+        "label",
+        { style: { display: "block", fontSize: 12, marginTop: 8, color: k.mute } },
+        label + ": " + bgMmss(val),
+        h("input", {
+          type: "range",
+          min,
+          max,
+          step: 0.5,
+          value: val,
+          onChange: (e) => set(Number(e.target.value)),
+          style: { width: "100%", accentColor: k.saffron },
+        }),
+      );
+  const fileInput = h("input", {
+    type: "file",
+    accept: "audio/*,.mp3",
+    onChange: pickFile,
+    style: { display: "none" },
+    id: "bg-mus-file",
+  });
+  let body;
+  if (!value) {
+    body = h(
+      "div",
+      { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+      h("button", { type: "button", style: btn, onClick: () => document.getElementById("bg-mus-file").click() }, "📱 " + (pt ? "Do telemóvel" : "From phone")),
+      h("button", { type: "button", style: btn, onClick: openLib, disabled: busy }, "📚 " + (busy ? "…" : pt ? "Da plataforma" : "From platform")),
+    );
+  } else {
+    const dur = value.dur || 0,
+      key = "sel";
+    body = h(
+      "div",
+      null,
+      h(
+        "div",
+        { style: { display: "flex", alignItems: "center", gap: 8 } },
+        h("span", { style: { flex: 1, fontSize: 14, fontWeight: 700, color: k.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, "🎵 " + value.title),
+        h(
+          "button",
+          { type: "button", style: btn, onClick: () => (playing === key ? stop() : playClip(key, value.url, value.start, value.end)) },
+          playing === key ? "⏸" : "▶",
+        ),
+        h(
+          "button",
+          {
+            type: "button",
+            style: btn,
+            "aria-label": pt ? "Tirar música" : "Remove music",
+            onClick: () => {
+              stop();
+              onChange(null);
+            },
+          },
+          "✕",
+        ),
+      ),
+      dur > 0 &&
+        h(
+          "div",
+          null,
+          rng(pt ? "Início" : "Start", value.start, 0, Math.max(0, dur - 1), (v) => {
+            const st = Math.min(v, dur - 1);
+            onChange({ ...value, start: st, end: Math.min(Math.max(value.end, st + 1), dur, st + MAXC) });
+          }),
+          rng(pt ? "Fim" : "End", value.end, Math.min(dur, value.start + 1), Math.min(dur, value.start + MAXC), (v) => onChange({ ...value, end: v })),
+          h(
+            "div",
+            { style: { fontSize: 12, marginTop: 6, color: k.mute } },
+            (pt ? "Duração do recorte: " : "Clip length: ") + bgMmss(value.end - value.start) + " · " + (pt ? "máximo " : "max ") + MAXC + " s",
+          ),
+        ),
+      h("div", { style: { fontSize: 11, marginTop: 6, color: k.mute } }, pt ? "O recorte aplica-se na reprodução. O ficheiro original não é alterado." : "The trim applies on playback. The original file is not changed."),
+    );
+  }
+  const f = (q || "").trim().toLowerCase(),
+    rows = lib ? lib.filter((t) => !f || (t.title + " " + (t.artist || "")).toLowerCase().includes(f)) : [];
+  const modal =
+    lib &&
+    h(
+      "div",
+      { style: { position: "fixed", inset: 0, zIndex: 100002, background: k.card, color: k.ink, display: "flex", flexDirection: "column" } },
+      h(
+        "div",
+        { style: { display: "flex", alignItems: "center", gap: 8, padding: "14px 16px", borderBottom: `1px solid ${k.line}` } },
+        h("button", { type: "button", onClick: closeLib, style: btn, "aria-label": x("close") }, "✕"),
+        h("div", { style: { fontWeight: 800, fontSize: 16 } }, "📚 " + (pt ? "Músicas da plataforma" : "Platform music")),
+      ),
+      h("input", {
+        value: q,
+        onChange: (e) => setQ(e.target.value),
+        placeholder: pt ? "Pesquisar música ou cantor" : "Search song or artist",
+        style: { margin: "10px 16px", padding: 12, borderRadius: 10, background: k.paper, color: k.ink, outline: "none", fontSize: 15 },
+      }),
+      h(
+        "div",
+        { style: { flex: 1, overflowY: "auto", padding: "0 16px 24px" } },
+        rows.length === 0 && h("p", { style: { color: k.mute, fontSize: 14 } }, pt ? "Nenhuma música encontrada." : "No songs found."),
+        rows.map((t) =>
+          h(
+            "div",
+            { key: t.id, style: { display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: `1px solid ${k.line}` } },
+            t.cover_url
+              ? h("img", { src: t.cover_url, alt: "", loading: "lazy", style: { width: 44, height: 44, borderRadius: 8, objectFit: "cover", flex: "none" } })
+              : h("div", { style: { width: 44, height: 44, borderRadius: 8, background: k.paper, flex: "none", textAlign: "center", lineHeight: "44px" } }, "🎵"),
+            h(
+              "div",
+              { style: { flex: 1, minWidth: 0 } },
+              h("div", { style: { fontWeight: 700, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, t.title),
+              h("div", { style: { fontSize: 12, color: k.mute, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, t.artist || ""),
+            ),
+            h("button", { type: "button", style: btn, onClick: () => (playing === t.id ? stop() : playClip(t.id, t.audio_url, 0, 0)) }, playing === t.id ? "⏸" : "▶"),
+            h(
+              "button",
+              {
+                type: "button",
+                style: { ...btn, background: k.saffron, color: k.onAccent },
+                onClick: () => {
+                  const title = t.artist ? t.title + " - " + t.artist : t.title;
+                  closeLib();
+                  setTrack({ src: "lib", url: t.audio_url, title });
+                },
+              },
+              pt ? "Usar" : "Use",
+            ),
+          ),
+        ),
+      ),
+    );
+  return h(
+    "div",
+    { style: { marginTop: 12, paddingTop: 12, borderTop: `1px solid ${k.line}` } },
+    h("div", { style: { fontSize: 14, fontWeight: 600, color: k.ink, marginBottom: 8 } }, "🎵 " + (pt ? "Música para acompanhar (opcional)" : "Music to go with it (optional)")),
+    fileInput,
+    body,
+    modal,
+  );
+}
+function BgPostMusic({ post }) {
+  const h = B.createElement,
+    it = (post.items || []).find((i) => i && i.music && i.music.url),
+    a = B.useRef(null),
+    box = B.useRef(null),
+    [on, setOn] = B.useState(false);
+  B.useEffect(() => {
+    if (!it || !box.current || !("IntersectionObserver" in window)) return;
+    const io = new IntersectionObserver((es) => {
+      if (!es[0].isIntersecting && a.current && !a.current.paused) {
+        a.current.pause();
+        setOn(false);
+      }
+    });
+    io.observe(box.current);
+    return () => {
+      io.disconnect();
+      if (a.current) a.current.pause();
+    };
+  }, [post.id]);
+  if (!it) return null;
+  const m = it.music,
+    st = Math.max(0, +m.start || 0),
+    en = +m.end || 0,
+    toggle = () => {
+      const el = a.current;
+      if (!el) return;
+      if (!el.paused) {
+        el.pause();
+        setOn(false);
+        return;
+      }
+      if (window.__bgMusicCur && window.__bgMusicCur !== el) window.__bgMusicCur.pause();
+      window.__bgMusicCur = el;
+      const go = () => {
+        try {
+          el.currentTime = st;
+        } catch {}
+        el.play().then(() => setOn(true), () => setOn(false));
+      };
+      if (el.readyState >= 1) go();
+      else {
+        el.addEventListener("loadedmetadata", go, { once: true });
+        el.load();
+      }
+    };
+  return h(
+    "div",
+    { ref: box, style: { padding: "0 16px 10px" } },
+    h(
+      "button",
+      {
+        onClick: toggle,
+        "aria-label": m.title || "Música",
+        style: { display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 999, background: k.paper, color: k.ink, fontSize: 13, fontWeight: 700, maxWidth: "100%" },
+      },
+      h("span", null, on ? "⏸" : "▶"),
+      h("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, "🎵 " + (m.title || "Música")),
+      en > st ? h("span", { style: { opacity: 0.6, fontWeight: 600 } }, bgMmss(en - st)) : null,
+    ),
+    h("audio", {
+      ref: a,
+      src: m.url,
+      preload: "none",
+      onTimeUpdate: (e) => {
+        if (en > 0 && e.target.currentTime >= en) {
+          e.target.pause();
+          setOn(false);
+        }
+      },
+      onPause: () => setOn(false),
+      onEnded: () => setOn(false),
+    }),
+  );
+}
 const gf = [
   ["text", "tText", xg, ""],
   ["media", "tMedia", Es, "image/*,video/*"],
@@ -10450,6 +10785,7 @@ function hx({ minor: e, allowDefault: t, onPublish: r, onError: n }) {
     [S, q] = B.useState(null),
     [pe, G] = B.useState(6),
     [cpI, setCpI] = B.useState(null),
+    [mus, setMus] = B.useState(null),
     J = B.useRef(null),
     F = B.useRef([]);
   (B.useEffect(
@@ -10497,7 +10833,7 @@ function hx({ minor: e, allowDefault: t, onPublish: r, onError: n }) {
       p((xe) => xe.map((Ie, _) => (_ === Y ? { ...Ie, ...ve } : Ie))),
     fe = (Y) => p((ve) => ve.filter((xe, Ie) => Ie !== Y)),
     ae = (Y) => {
-      (i(Y), p([]), m(!1));
+      (i(Y), p([]), m(!1), setMus(null));
     },
     te = gf.find((Y) => Y[0] === s)[3],
     be = s === "media" || s === "audio" || s === "doc",
@@ -10548,9 +10884,13 @@ function hx({ minor: e, allowDefault: t, onPublish: r, onError: n }) {
           featuring: ve.featuring,
         })),
         bg: s === "text" && O ? { color: U, file: j, blur: pe } : null,
+        music:
+          mus && (s === "text" || (s === "media" && d.every((Z_) => Pu(Z_.file) === "image")))
+            ? { file: mus.file || null, url: mus.src === "lib" ? mus.url : null, title: mus.title, start: mus.start, end: mus.end }
+            : null,
       });
       (y(!1),
-        Y && (p([]), o(""), c(""), P(""), m(!1), R(!1), M(null), q(null)));
+        Y && (p([]), o(""), c(""), P(""), m(!1), R(!1), M(null), q(null), setMus(null)));
     };
   return u.jsxs("div", {
     className: "px-4 py-5",
@@ -11050,6 +11390,8 @@ function hx({ minor: e, allowDefault: t, onPublish: r, onError: n }) {
             }),
           ],
         }),
+      (s === "text" || (s === "media" && d.every((Z_) => Pu(Z_.file) === "image"))) &&
+        u.jsx(BgMusicPick, { value: mus, onChange: setMus, onError: n }),
       s !== "live" &&
         u.jsxs(u.Fragment, {
           children: [

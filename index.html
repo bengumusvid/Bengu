@@ -812,7 +812,7 @@ function bgComments(kind,id,title,upd){var b=sheet("💬 "+String(title||"Coment
   var ids=[];r.forEach(function(c){if(ids.indexOf(c.user_id)<0)ids.push(c.user_id)});
   return api("profiles?select=id,name&id=in.("+ids.join(",")+")").catch(function(){return[]}).then(function(ps){var nm1={};(ps||[]).forEach(function(p){nm1[p.id]=p.name});
    list.replaceChildren.apply(list,r.map(function(c){var d=h("div",{style:"padding:8px 0;border-bottom:1px solid #eee"},[h("div",{style:"font-size:12px;opacity:.7"},(nm1[c.user_id]||"Membro")+" · "+when(c.created_at)),h("div",{style:"white-space:pre-wrap;word-break:break-word"},c.body)]);
-    if(me0&&c.user_id==me0){var x=h("button",{style:"border:0;background:none;font-size:12px;color:#B71C1C;padding:2px 0"},"🗑 Delete");x.addEventListener("click",function(){api("bengu_content_comments?id=eq."+c.id,"DELETE").then(function(){draw()}).catch(function(){})});d.append(x)}return d}))})}).catch(function(){list.replaceChildren(h("p",{},"Falta executar o SQL 4.24 no Supabase (SQL Editor)."))})}
+    if(me0&&c.user_id==me0){var x=h("button",{style:"border:0;background:none;font-size:12px;color:#B71C1C;padding:2px 0"},"🗑 Delete");x.addEventListener("click",function(){api("bengu_content_comments?id=eq."+c.id,"DELETE").then(function(){draw()}).catch(function(){})});var ed=h("button",{style:"border:0;background:none;font-size:12px;color:#1E88E5;padding:2px 10px 2px 0"},BG_L("✏️ Edit","✏️ Editar"));ed.addEventListener("click",function(){var t=prompt(BG_L("Edit comment","Editar comentário"),c.body);if(t==null)return;t=t.trim().slice(0,1000);if(!t||t===c.body)return;api("bengu_content_comments?id=eq."+c.id,"PATCH",{body:t}).then(function(r){if(!r||!r.length){alert(BG_L("Could not edit. Editing must be allowed in the database (SQL).","Não foi possível editar. Falta permitir a edição na base de dados (SQL)."));return}draw()}).catch(function(){alert(BG_L("Could not edit the comment.","Não foi possível editar o comentário."))})});d.append(ed);d.append(x)}return d}))})}).catch(function(){list.replaceChildren(h("p",{},"Falta executar o SQL 4.24 no Supabase (SQL Editor)."))})}
  go.addEventListener("click",function(){var t=inp.value.trim();if(!t)return;if(!me0){alert("Entre na sua conta para comentar.");return}go.disabled=true;
   api("bengu_content_comments","POST",{kind:kind,content_id:String(id),body:t.slice(0,1000)}).then(function(){inp.value="";go.disabled=false;draw()}).catch(function(){go.disabled=false;alert("Não foi possível comentar. Falta executar o SQL 4.24?")})});
  draw()}
@@ -1110,10 +1110,11 @@ function jView(c,f){var out=[],ad=h("button",{style:"width:100%;padding:12px;bor
   (c.com||[]).forEach(function(n){var mine=uid()&&n.author_id==uid(),cd=h("div",{style:"background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;border-left:5px solid #FB8C00"}),
    au=h("div",{style:"font-size:12px;opacity:.65;margin-top:2px"},"Por membro · "+when(n.created_at)),bar=h("div",{style:"display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"}),
    sb=function(t,fn,col){var x=h("button",{style:"padding:8px 14px;border:0;border-radius:8px;font-weight:700;background:"+(col||"#eef0f6")+";color:"+(col?"#fff":"#12183A")},t);x.addEventListener("click",fn);return x};
-   cd.append(h("div",{style:"font-weight:800;line-height:1.3"},"📰 "+n.title),au);jPrev(cd,n);
+   var tt=h("div",{style:"font-weight:800;line-height:1.3"},"📰 "+n.title);cd.append(tt,au);jPrev(cd,n);
    var vws=n.views!=null?" · 👀 "+n.views:"";au.textContent="Por membro · "+when(n.created_at)+vws;
    api("profiles?select=name&id=eq."+n.author_id).then(function(r){if(r&&r[0]&&r[0].name)au.textContent="Por "+r[0].name+" · "+when(n.created_at)+vws}).catch(function(){});
    bar.append(sb("📖 Read now",function(){openPdf(n)},"#1E88E5"));
+   if(mine)bar.append(sb(BG_L("✏️ Edit title","✏️ Editar título"),function(){var t=prompt(BG_L("Newspaper title","Título do jornal"),n.title);if(t==null)return;t=t.trim().slice(0,120);if(!t||t===n.title)return;api("bengu_journals?id=eq."+n.id,"PATCH",{title:t}).then(function(r){if(!r||!r.length){alert(BG_L("Could not edit the title. Editing must be allowed in the database (SQL).","Não foi possível editar o título. Falta permitir a edição na base de dados (SQL)."));return}n.title=t;tt.textContent="📰 "+t;if(NC[f.k])delete NC[f.k]}).catch(function(){alert(BG_L("Could not edit the title.","Não foi possível editar o título."))})}));
    if(admin||mine)bar.append(sb("🗑 Delete",function(){if(!confirm("Delete this newspaper? This cannot be undone."))return;api("bengu_journals?id=eq."+n.id,"DELETE").then(function(){var m=window.bgKeyOf(n.pdf_url,"journals");if(m)fetch(U+"/storage/v1/object/journals/"+m,{method:"DELETE",headers:{apikey:K,Authorization:"Bearer "+tok()}}).catch(function(){});delete NC[f.k];show(cur)}).catch(function(e){alert((e&&e.message)||"Erro.")})},"#B71C1C"));
    cd.append(bgEng("journal",n,{title:n.title,dl:{url:n.pdf_url,name:n.title,ext:"pdf"}}),bar);bgNV("journal",n,cd);out.push(cd)});
   if(!(c.com||[]).length)out.push(h("p",{style:"opacity:.7"},"No newspapers yet. Tap “Add newspaper” to publish the first one."));
@@ -1421,6 +1422,7 @@ function commentsSheet(kind,x,canMod,upd){var me=uid(),o=el("div","position:fixe
  function draw(){api("bengu_post_comments?select=id,user_id,body,created_at&post_kind=eq."+kind+"&post_id=eq."+x.id+"&order=created_at.asc&limit=100").then(function(r){if(upd)upd(r.length);
   return names(r.map(function(c){return c.user_id})).then(function(nm){list.replaceChildren();if(!r.length)list.append(el("p","opacity:.7","Ainda não há comentários."));
    r.forEach(function(c){var d=el("div","padding:8px 0;border-bottom:1px solid "+C.line);d.append(el("div","font-size:12px;color:"+C.mute,(nm[c.user_id]||"Utilizador")+" · "+when(c.created_at)),el("div","white-space:pre-wrap;word-break:break-word",c.body));
+    if(c.user_id===me){var ed=el("button","border:0;background:none;color:#7fb8ff;font-size:12px;padding:2px 10px 2px 0",BG_L("✏️ Edit","✏️ Editar"));ed.onclick=function(){var t=prompt(BG_L("Edit comment","Editar comentário"),c.body);if(t==null)return;t=t.trim().slice(0,1000);if(!t||t===c.body)return;api("bengu_post_comments?id=eq."+c.id,"PATCH",{body:t}).then(function(r){if(!r||!r.length){alert(BG_L("Could not edit. Editing must be allowed in the database (SQL).","Não foi possível editar. Falta permitir a edição na base de dados (SQL)."));return}draw()}).catch(fail)};d.append(ed)}
     if(c.user_id===me||canMod){var del=el("button","border:0;background:none;color:#ff8a8a;font-size:12px;padding:2px 0","🗑 Delete");del.onclick=function(){api("bengu_post_comments?id=eq."+c.id,"DELETE").then(draw).catch(fail)};d.append(del)}list.append(d)})})}).catch(function(e){list.replaceChildren(el("p","color:#ff8a8a",e.message))})}
  function send(){var t=i.value.trim();if(!t)return;if(!me)return toast("Inicie sessão.");go2.disabled=true;api("bengu_post_comments","POST",{post_kind:kind,post_id:x.id,user_id:me,body:t.slice(0,1000)}).then(function(){i.value="";go2.disabled=false;draw()}).catch(function(e){go2.disabled=false;fail(e)})}
  draw()}
@@ -4218,6 +4220,7 @@ function BgFontPick({ text }) {
 }
 const BG_PIN_END = new Date(2027, 9, 10).getTime();
 const BG_PIN_TXT = "A Bengu é uma nova rede social de entretenimento para todos. Convide outros a aderir e a criar contas e páginas. Vamos publicar conteúdos! Quanto mais usuários existirem, mais seguidores teremos para ver, assistir e escutar as nossas publicações. Não desanime — um dia será uma referência nesta rede social!";
+const BG_PIN_EN = "Bengu is a new entertainment social network for everyone. Invite others to join and create accounts and pages. Let's publish content! The more users there are, the more followers we will have to see, watch and listen to our posts. Don't give up — one day it will be a reference in this social network!";
 function BgPinned() {
   if (Date.now() >= BG_PIN_END) return null;
   return u.jsxs("div", {
@@ -4225,7 +4228,7 @@ function BgPinned() {
     style: { background: k.card, border: `1px solid ${k.saffron}` },
     children: [
       u.jsx("div", { className: "text-xs font-bold mb-1", style: { color: k.saffron }, children: "📌 Bengu" }),
-      u.jsx("p", { className: "text-sm leading-snug whitespace-pre-wrap", style: { color: k.ink }, children: BG_PIN_TXT }),
+      u.jsx("p", { className: "text-sm leading-snug whitespace-pre-wrap", style: { color: k.ink }, children: BG_L(BG_PIN_EN, BG_PIN_TXT) }),
     ],
   });
 }

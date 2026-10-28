@@ -1952,8 +1952,8 @@ function pickMime(){var c=["video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4",
 function mm(s){s=Math.floor(s);return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
 
 /* BENGU 4.23: áudio preparado. Ao publicar um vídeo, o som é extraído já no telemóvel e enviado como um ficheiro pequeno (WAV mono 22 kHz, até 90 s). Assim "Usar áudio" abre quase de imediato. */
-window.bengu_prep_audio=function(file){return new Promise(function(ok){var done=false,tm=setTimeout(function(){fin(null)},45000);function fin(b){if(done)return;done=true;clearTimeout(tm);ok(b)}
- try{var OA=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!OA||!file||!file.size||file.size>120*1048576)return fin(null);var R=22050;
+window.bengu_prep_audio=function(file){return new Promise(function(ok){var done=false,tm=setTimeout(function(){fin(null)},12000);function fin(b){if(done)return;done=true;clearTimeout(tm);ok(b)}
+ try{var OA=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!OA||!file||!file.size||file.size>25*1048576)return fin(null);var R=22050;
   file.arrayBuffer().then(function(ab){var c=new OA(1,1,R),pr=c.decodeAudioData(ab,function(buf){try{var n=Math.min(buf.length,Math.floor(buf.sampleRate*90)),ch=buf.numberOfChannels,out=new DataView(new ArrayBuffer(44+n*2)),i,k,v;
     function ws(o,t){for(var j=0;j<t.length;j++)out.setUint8(o+j,t.charCodeAt(j))}
     ws(0,"RIFF");out.setUint32(4,36+n*2,true);ws(8,"WAVE");ws(12,"fmt ");out.setUint32(16,16,true);out.setUint16(20,1,true);out.setUint16(22,1,true);out.setUint32(24,buf.sampleRate,true);out.setUint32(28,buf.sampleRate*2,true);out.setUint16(32,2,true);out.setUint16(34,16,true);ws(36,"data");out.setUint32(40,n*2,true);
@@ -2963,6 +2963,42 @@ function upd(){
  last=c;
  root.setAttribute("data-bgbars",d>0?"up":"down")}
 window.addEventListener("scroll",function(){if(!tick){tick=true;requestAnimationFrame(upd)}},{passive:true});
+})();
+</script>
+<script>/* BENGU 4.37: listas de seguidores / a seguir ao tocar nos números do perfil; som dos vídeos fica ligado até o utilizador desligar */
+(function(){
+window.__bgSoundOn=function(){try{if(localStorage.getItem("bg_sound")!=="1")return false;var ua=navigator.userActivation;return !ua||ua.hasBeenActive}catch(e){return false}};
+window.__bgSetSound=function(on){try{localStorage.setItem("bg_sound",on?"1":"0")}catch(e){}};
+function lum(c){var m=String(c).match(/\d+(\.\d+)?/g);if(!m||m.length<3)return 255;return(+m[0]*299+ +m[1]*587+ +m[2]*114)/1000}
+function el(t,css,txt){var e=document.createElement(t);if(css)e.style.cssText=css;if(txt!=null)e.textContent=txt;return e}
+window.__bgFollowList=function(uid,kind){
+ if(!uid||!window.__sb)return;var old=document.getElementById("bg-fl");if(old)old.remove();
+ var bg=getComputedStyle(document.body).backgroundColor,dark=lum(bg)<128,B1=dark?"#161b3a":"#ffffff",T1=dark?"#f2f3fa":"#12183A",M1=dark?"#a9afd0":"#667",L1=dark?"#2a3060":"#e6e8f0";
+ var o=el("div","position:fixed;inset:0;z-index:100010;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center");o.id="bg-fl";
+ var sh=el("div","width:100%;max-width:560px;max-height:82%;display:flex;flex-direction:column;border-radius:18px 18px 0 0;background:"+B1+";color:"+T1+";padding-bottom:env(safe-area-inset-bottom,0px)");
+ var hd=el("div","display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid "+L1);
+ var ti=el("div","font-weight:800;font-size:16px",kind==="followers"?"Seguidores":"A seguir");
+ var cl=el("button","border:0;background:transparent;color:"+T1+";font-size:20px;padding:4px 8px;cursor:pointer","✕");cl.setAttribute("aria-label","Fechar");
+ hd.append(ti,cl);var ls=el("div","overflow-y:auto;padding:4px 16px 16px");var st=el("p","text-align:center;padding:36px 0;color:"+M1+";font-size:14px","A carregar...");ls.append(st);
+ sh.append(hd,ls);o.append(sh);document.body.append(o);
+ function close(){o.remove()}cl.onclick=close;o.addEventListener("click",function(e){if(e.target===o)close()});
+ var col=kind==="followers"?"follower_id":"following_id",fil=kind==="followers"?"following_id":"follower_id",sb=window.__sb;
+ sb.from("follows").select(col).eq(fil,uid).limit(1000).then(function(r){
+  if(r.error)throw r.error;var ids=(r.data||[]).map(function(x){return x[col]});
+  if(!ids.length){st.textContent=kind==="followers"?"Ainda sem seguidores.":"Ainda não segue ninguém.";return}
+  return sb.from("profiles").select("*").in("id",ids).then(function(p){
+   if(p.error)throw p.error;var rows=p.data||[];rows.sort(function(a,b){return String(a.name||"").localeCompare(String(b.name||""))});
+   ls.textContent="";
+   rows.forEach(function(u){
+    var row=el("button","display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:transparent;color:"+T1+";padding:10px 0;cursor:pointer;border-bottom:1px solid "+L1);
+    var av;if(u.avatar_url){av=el("img","width:42px;height:42px;border-radius:50%;object-fit:cover;flex:0 0 auto");av.src=u.avatar_url;av.alt=""}
+    else{av=el("div","width:42px;height:42px;border-radius:50%;background:#e08a00;color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto",(String(u.name||"?").split(" ").filter(Boolean).map(function(w){return w[0]}).slice(0,2).join("")||"?").toUpperCase())}
+    var tx=el("div","min-width:0");tx.append(el("div","font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis",u.name||"Utilizador"));
+    var h=u.handle||u.username;if(h)tx.append(el("div","font-size:13px;color:"+M1,"@"+h));
+    row.append(av,tx);row.onclick=function(){close();if(window.bengu_td)window.bengu_td(u.id)};ls.append(row)});
+   if(!rows.length)st.textContent="Sem resultados.",ls.append(st)})
+ }).catch(function(){st.textContent="Não foi possível carregar a lista. Tente de novo."});
+};
 })();
 </script>
 <script type="module" crossorigin>(function(){const t=document.createElement("link").relList;if(t&&t.supports&&t.supports("modulepreload"))return;for(const s of document.querySelectorAll('link[rel="modulepreload"]'))n(s);new MutationObserver(s=>{for(const i of s)if(i.type==="childList")for(const a of i.addedNodes)a.tagName==="LINK"&&a.rel==="modulepreload"&&n(a)}).observe(document,{childList:!0,subtree:!0});function r(s){const i={};return s.integrity&&(i.integrity=s.integrity),s.referrerPolicy&&(i.referrerPolicy=s.referrerPolicy),s.crossOrigin==="use-credentials"?i.credentials="include":s.crossOrigin==="anonymous"?i.credentials="omit":i.credentials="same-origin",i}function n(s){if(s.ep)return;s.ep=!0;const i=r(s);fetch(s.href,i)}})();var $i=typeof globalThis<"u"?globalThis:typeof window<"u"?window:typeof global<"u"?global:typeof self<"u"?self:{};function ty(e){return e&&e.__esModule&&Object.prototype.hasOwnProperty.call(e,"default")?e.default:e}var yf={exports:{}},fo={},vf={exports:{}},Ee={};/**
@@ -4144,6 +4180,55 @@ const Ag = (e, t) =>
       ((t >> 16) * 299 + ((t >> 8) & 255) * 587 + (t & 255) * 114) / 1e3 > 160
     );
   };
+const BG_FONTS = [
+  ["", "Normal", "inherit"],
+  ["serif", "Elegante", "Georgia, 'Times New Roman', serif"],
+  ["mono", "Máquina", "'Courier New', Courier, monospace"],
+  ["script", "Manuscrito", "'Brush Script MT', 'Segoe Script', 'Lucida Handwriting', cursive"],
+  ["bold", "Forte", "Impact, 'Arial Black', sans-serif"],
+  ["round", "Redonda", "'Trebuchet MS', Verdana, sans-serif"],
+];
+const bgFontCss = (id) => (BG_FONTS.find((f) => f[0] === id) || BG_FONTS[0])[2];
+const bgWords = (t) => (String(t || "").trim().match(/\S+/g) || []).length;
+function BgFontPick({ text }) {
+  const [v, setV] = B.useState(() => (window.__bgFont = ""));
+  const n = bgWords(text), on = n > 0 && n <= 50, cur = on ? v : "";
+  window.__bgFont = cur;
+  if (!on) return null;
+  return u.jsxs("div", {
+    className: "mb-3",
+    children: [
+      u.jsx("div", { className: "text-xs font-semibold mb-1.5", style: { color: k.mute }, children: "Tipo de letra (textos até 50 palavras)" }),
+      u.jsx("div", {
+        className: "flex items-center gap-2 overflow-x-auto pb-1",
+        children: BG_FONTS.map(([id, nm, css]) =>
+          u.jsx("button", {
+            key: id || "n",
+            onClick: () => setV(id),
+            "aria-pressed": cur === id,
+            className: "shrink-0 px-3 py-1.5 rounded-full text-sm",
+            style: { fontFamily: css, background: cur === id ? k.strong : k.paper, color: cur === id ? k.onStrong : k.ink },
+            children: nm,
+          }),
+        ),
+      }),
+      u.jsx("p", { className: "mt-2 px-1 text-base leading-snug whitespace-pre-wrap", style: { fontFamily: bgFontCss(cur), color: k.ink }, children: text }),
+    ],
+  });
+}
+const BG_PIN_END = new Date(2027, 9, 10).getTime();
+const BG_PIN_TXT = "A Bengu é uma nova rede social de entretenimento para todos. Convide outros a aderir e a criar contas e páginas. Vamos publicar conteúdos! Quanto mais usuários existirem, mais seguidores teremos para ver, assistir e escutar as nossas publicações. Não desanime — um dia será uma referência nesta rede social!";
+function BgPinned() {
+  if (Date.now() >= BG_PIN_END) return null;
+  return u.jsxs("div", {
+    className: "mx-4 mt-3 mb-1 rounded-xl p-4",
+    style: { background: k.card, border: `1px solid ${k.saffron}` },
+    children: [
+      u.jsx("div", { className: "text-xs font-bold mb-1", style: { color: k.saffron }, children: "📌 Bengu" }),
+      u.jsx("p", { className: "text-sm leading-snug whitespace-pre-wrap", style: { color: k.ink }, children: BG_PIN_TXT }),
+    ],
+  });
+}
 function Ng({ post: e }) {
   const t = Iu(e),
     r = !t.image && V_(t.color);
@@ -4169,7 +4254,7 @@ function Ng({ post: e }) {
       u.jsx("p", {
         className:
           "relative px-5 py-8 text-xl font-bold leading-snug whitespace-pre-wrap",
-        style: { color: r ? "#12183A" : "#fff" },
+        style: { color: r ? "#12183A" : "#fff", fontFamily: t.font ? bgFontCss(t.font) : void 0 },
         children: e.text,
       }),
     ],
@@ -4351,7 +4436,7 @@ function q_({ src: e, className: t, style: r }) {
       const a = new IntersectionObserver(
         ([o]) => {
           o.isIntersecting
-            ? ((i.muted = !0), i.play().catch(() => {}))
+            ? ((i.__bgAuto = Date.now(), i.muted = !(window.__bgSoundOn && window.__bgSoundOn())), i.play().catch(() => { i.__bgAuto = Date.now(); i.muted = !0; i.play().catch(() => {}); }))
             : i.pause();
         },
         { threshold: 0.6 },
@@ -4362,6 +4447,7 @@ function q_({ src: e, className: t, style: r }) {
       ref: n,
       src: e,
       controls: !0,
+      onVolumeChange: (g) => { const t = g.currentTarget; if (t.__bgAuto && Date.now() - t.__bgAuto < 800) return; window.__bgSetSound && window.__bgSetSound(!t.muted && t.volume > 0); },
       playsInline: !0,
       loop: s,
       preload: "metadata",
@@ -5003,13 +5089,13 @@ function es({
               }),
         ],
       }),
-      e.text && e.type === "text" && Iu(e) && u.jsx(Ng, { post: e }),
+      e.text && e.type === "text" && Iu(e) && !Iu(e).plain && u.jsx(Ng, { post: e }),
       e.text &&
         e.type !== "live" &&
-        !(e.type === "text" && Iu(e)) &&
+        !(e.type === "text" && Iu(e) && !Iu(e).plain) &&
         u.jsx("p", {
           className: `px-4 pb-3 text-left whitespace-pre-wrap ${e.type === "text" ? "text-lg leading-snug" : "text-[15px] leading-snug"}`,
-          style: { color: k.ink },
+          style: { color: k.ink, fontFamily: e.type === "text" && Iu(e) && Iu(e).font ? bgFontCss(Iu(e).font) : void 0 },
           children: Tg_(e.text),
         }),
       e.text && u.jsx(BgPostTr, { text: e.text }),
@@ -5837,6 +5923,10 @@ function J_() {
                 ];
               }
             }
+            if (I === "text" && window.__bgFont && bgWords(V) > 0 && bgWords(V) <= 50) {
+              const bgF = window.__bgFont;
+              Lr = Lr.length && Lr[0] && Lr[0].kind === "bg" ? [{ ...Lr[0], font: bgF }] : [{ kind: "bg", plain: !0, font: bgF }];
+            }
             const { error: Oe } = await me.from("posts").insert({
               user_id: h.id,
               type: I,
@@ -6353,6 +6443,7 @@ function J_() {
                       ),
                     ),
                   }),
+                  Y !== "users" && u.jsx(BgPinned, {}),
                   Y === "following" && O.length > 0 && u.jsx(BgFolder, { ids: O.filter((id) => E[id]), users: E, onOpen: td }),
                   Y === "all" && u.jsx("div", { id: "bg-pg-feed" }),
                   Y === "users"
@@ -7307,7 +7398,8 @@ function ex({ r: e, cardProps: t }) {
   const r = B.useRef(null),
     n = B.useRef(null),
     { autoplay: s, autoNext: i } = Tg(),
-    [a, o] = B.useState(!0),
+    [a, bgSetM] = B.useState(() => !(window.__bgSoundOn && window.__bgSoundOn())),
+    o = (bgV) => { window.__bgSetSound && window.__bgSetSound(!bgV); bgSetM(bgV); },
     [l, c] = B.useState(!s),
     [hz, setHz] = B.useState(!1),
     d = t(e.post);
@@ -10554,6 +10646,7 @@ function hx({ minor: e, allowDefault: t, onPublish: r, onError: n }) {
         u.jsxs("div", {
           className: "mt-3",
           children: [
+            u.jsx(BgFontPick, { text: a }),
             u.jsxs("div", {
               className: "flex items-center gap-2 overflow-x-auto pb-1",
               children: [
@@ -11222,13 +11315,16 @@ function fx({
                   u.jsx("div", {
                     className: "flex-1 grid grid-cols-3 text-center pb-1",
                     children: [
-                      [s, x("pPosts")],
-                      [Mt(i.followers), x("followers")],
-                      [Mt(i.following), x("followingLbl")],
-                    ].map(([M, S]) =>
+                      [s, x("pPosts"), null],
+                      [Mt(i.followers), x("followers"), "followers"],
+                      [Mt(i.following), x("followingLbl"), "following"],
+                    ].map(([M, S, bgK]) =>
                       u.jsxs(
                         "div",
                         {
+                          onClick: bgK ? () => window.__bgFollowList && window.__bgFollowList(e.id, bgK) : void 0,
+                          role: bgK ? "button" : void 0,
+                          style: bgK ? { cursor: "pointer" } : void 0,
                           children: [
                             u.jsx("div", {
                               className: "font-extrabold text-lg",

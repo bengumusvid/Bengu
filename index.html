@@ -2996,7 +2996,7 @@ window.__bgFollowList=function(uid,kind){
     var av;if(u.avatar_url){av=el("img","width:42px;height:42px;border-radius:50%;object-fit:cover;flex:0 0 auto");av.src=u.avatar_url;av.alt=""}
     else{av=el("div","width:42px;height:42px;border-radius:50%;background:#e08a00;color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto",(String(u.name||"?").split(" ").filter(Boolean).map(function(w){return w[0]}).slice(0,2).join("")||"?").toUpperCase())}
     var tx=el("div","min-width:0");tx.append(el("div","font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis",u.name||"Utilizador"));
-    var h=u.handle||u.username;if(h)tx.append(el("div","font-size:13px;color:"+M1,"@"+h));
+    
     row.append(av,tx);row.onclick=function(){close();if(window.bengu_td)window.bengu_td(u.id)};ls.append(row)});
    if(!rows.length)st.textContent="Sem resultados.",ls.append(st)})
  }).catch(function(){st.textContent="Não foi possível carregar a lista. Tente de novo."});
@@ -5050,9 +5050,9 @@ function es({
                 className: "text-xs flex items-center gap-1",
                 style: { color: k.mute },
                 children: [
-                  "@",
-                  t.handle,
-                  " · ",
+                  n ? "@" : null,
+                  n ? t.handle : null,
+                  n ? " · " : null,
                   sg(e.createdAt),
                   e.visibility === "private" &&
                     u.jsx(pg, { size: 12, "aria-label": x("private") }),

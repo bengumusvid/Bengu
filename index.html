@@ -3008,7 +3008,7 @@ function run(){
  }).catch(function(){toast("Não foi possível corrigir agora.")}).then(function(){busy=false;if(btn)btn.textContent="✨ Fix"})}
 })();
 </script>
-<script>/* BENGU 4.30b: a faixa do topo aparece NO MESMO INSTANTE em que o dedo desliza para baixo (e esconde ao deslizar para cima); não espera a rolagem acabar */
+<script>/* BENGU 4.30c: a faixa do topo aparece NO MESMO INSTANTE em que o dedo desliza para baixo (e esconde ao deslizar para cima); não espera a rolagem acabar */
 (function(){
 var root=document.documentElement,last=window.pageYOffset||0,dir="",touchAt=0,touchDir="",ty=null,tx=null,tgt=null;
 var st=document.createElement("style");
@@ -3016,7 +3016,7 @@ st.textContent="header.sticky.top-0,nav.fixed.bottom-0{transition:transform .12s
  "html[data-bgbars=\"up\"] header.sticky.top-0{transform:translateY(-100%)}"+
  "html[data-bgbars=\"down\"] nav.fixed.bottom-0{transform:translateY(100%)}";
 document.head.appendChild(st);
-function set(d){if(d===dir)return;dir=d;root.setAttribute("data-bgbars",d)}
+function set(d){dir=d;if(root.getAttribute("data-bgbars")===d)return;root.setAttribute("data-bgbars",d)}
 function inner(t){/* o gesto é dentro de uma lista com rolagem própria (modais, reels, chat)? */
  while(t&&t!==document.body&&t.nodeType===1){var cs=getComputedStyle(t);
   if(/(auto|scroll)/.test(cs.overflowY)&&t.scrollHeight>t.clientHeight+2)return true;
@@ -3024,9 +3024,9 @@ function inner(t){/* o gesto é dentro de uma lista com rolagem própria (modais
 document.addEventListener("touchstart",function(e){var t=e.touches[0];ty=t.clientY;tx=t.clientX;tgt=e.target},{passive:true,capture:true});
 document.addEventListener("touchmove",function(e){if(ty==null)return;var t=e.touches[0],dy=t.clientY-ty,dx=t.clientX-tx;
  if(Math.abs(dy)<2||Math.abs(dx)>Math.abs(dy)*1.2)return;
- if(inner(tgt))return;
  var d=dy>0?"down":"up";ty=t.clientY;tx=t.clientX;touchAt=Date.now();touchDir=d;
- if(d==="down")set("down");else if((window.pageYOffset||root.scrollTop||0)>8)set("up")},{passive:true,capture:true});
+ if(d==="down"){set("down");return}
+ if(!inner(tgt)&&(window.pageYOffset||root.scrollTop||0)>8)set("up")},{passive:true,capture:true});
 window.addEventListener("wheel",function(e){if(Math.abs(e.deltaY)<2||inner(e.target))return;touchAt=Date.now();touchDir=e.deltaY<0?"down":"up";
  if(e.deltaY<0)set("down");else if((window.pageYOffset||root.scrollTop||0)>8)set("up")},{passive:true});
 window.addEventListener("scroll",function(){
@@ -3034,11 +3034,11 @@ window.addEventListener("scroll",function(){
  if(c<0||c>max+1)return;
  var d=c-last;last=c;
  if(c<=4){set("down");return}
- if(Math.abs(d)<3)return;
- var want=d>0?"up":"down";
- /* o gesto do utilizador manda: saltos de layout (fotos a carregar) não escondem nem mostram a faixa */
- if(Date.now()-touchAt<1500&&want!==touchDir)return;
- set(want)},{passive:true});
+ if(d<=-1){if(Date.now()-touchAt<250&&touchDir==="up")return;set("down");return}
+ if(d<3)return;
+ /* esconder só quando o utilizador está mesmo a deslizar para cima (saltos de layout não escondem) */
+ if(Date.now()-touchAt<1500&&touchDir==="down")return;
+ set("up")},{passive:true});
 })();
 /* BENGU: pré-visualização das fotos antes de publicar (e ao tocar numa miniatura) */
 window.bgPubPreview=function(o,ok){

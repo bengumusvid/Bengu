@@ -10726,42 +10726,30 @@ function BgMusicPick({ value, onChange, onError }) {
 function BgPostMusic({ post }) {
   const h = B.createElement,
     it = (post.items || []).find((i) => i && i.music && i.music.url),
+    m = it ? it.music : null,
+    st = m ? Math.max(0, +m.start || 0) : 0,
+    en = m ? +m.end || 0 : 0,
     a = B.useRef(null),
     box = B.useRef(null),
-    [on, setOn] = B.useState(false);
+    [mu, setMu] = B.useState(true);
   B.useEffect(() => {
-    if (!it || !box.current || !("IntersectionObserver" in window)) return;
-    const io = new IntersectionObserver((es) => {
-      if (!es[0].isIntersecting && a.current && !a.current.paused) {
-        a.current.pause();
-        setOn(false);
-      }
-    });
-    io.observe(box.current);
-    return () => {
-      io.disconnect();
-      if (a.current) a.current.pause();
-    };
-  }, [post.id]);
-  if (!it) return null;
-  const m = it.music,
-    st = Math.max(0, +m.start || 0),
-    en = +m.end || 0,
-    toggle = () => {
-      const el = a.current;
-      if (!el) return;
-      if (!el.paused) {
-        el.pause();
-        setOn(false);
-        return;
-      }
+    const el = a.current;
+    if (!m || !el || !box.current || !("IntersectionObserver" in window)) return;
+    const start = () => {
       if (window.__bgMusicCur && window.__bgMusicCur !== el) window.__bgMusicCur.pause();
       window.__bgMusicCur = el;
+      const snd = !!(window.__bgSoundOn && window.__bgSoundOn());
+      el.muted = !snd;
+      setMu(!snd);
       const go = () => {
         try {
-          el.currentTime = st;
+          if (el.currentTime < st || (en && el.currentTime >= en)) el.currentTime = st;
         } catch {}
-        el.play().then(() => setOn(true), () => setOn(false));
+        el.play().catch(() => {
+          el.muted = true;
+          setMu(true);
+          el.play().catch(() => {});
+        });
       };
       if (el.readyState >= 1) go();
       else {
@@ -10769,32 +10757,51 @@ function BgPostMusic({ post }) {
         el.load();
       }
     };
+    const io = new IntersectionObserver(
+      (es) => {
+        if (es[0].isIntersecting) start();
+        else el.pause();
+      },
+      { threshold: 0.6 },
+    );
+    io.observe(box.current);
+    return () => {
+      io.disconnect();
+      el.pause();
+    };
+  }, [post.id, m && m.url, st, en]);
+  if (!m) return null;
+  const pt = Tu.lang === "pt",
+    pill = { padding: "6px 10px", borderRadius: 999, fontSize: 15, background: k.card, color: k.ink, flex: "none" },
+    toggleMute = () => {
+      const el = a.current;
+      if (!el) return;
+      el.muted = !el.muted;
+      setMu(el.muted);
+      window.__bgSetSound && window.__bgSetSound(!el.muted);
+      if (!el.muted && el.paused) el.play().catch(() => {});
+    };
   return h(
     "div",
     { ref: box, style: { padding: "0 16px 10px" } },
     h(
-      "button",
-      {
-        onClick: toggle,
-        "aria-label": m.title || "Música",
-        style: { display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 999, background: k.paper, color: k.ink, fontSize: 13, fontWeight: 700, maxWidth: "100%" },
-      },
-      h("span", null, on ? "⏸" : "▶"),
-      h("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, "🎵 " + (m.title || "Música")),
-      en > st ? h("span", { style: { opacity: 0.6, fontWeight: 600 } }, bgMmss(en - st)) : null,
+      "div",
+      { style: { display: "flex", alignItems: "center", gap: 8, padding: "6px 8px 6px 14px", borderRadius: 999, background: k.paper, color: k.ink, fontSize: 13, fontWeight: 700 } },
+      h("span", { style: { flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, "🎵 " + (m.title || "Música")),
+      h("button", { type: "button", onClick: toggleMute, style: pill, "aria-label": mu ? (pt ? "Ativar som" : "Turn sound on") : pt ? "Desativar som" : "Turn sound off", title: mu ? (pt ? "Ativar som" : "Turn sound on") : pt ? "Desativar som" : "Turn sound off" }, mu ? "🔇" : "🔊"),
+      h("button", { type: "button", onClick: () => window.bengu_use_audio && window.bengu_use_audio(m.url, m.title || "Música", null, false), style: pill, "aria-label": pt ? "Usar esta música" : "Use this music", title: pt ? "Usar esta música" : "Use this music" }, "🎼"),
     ),
     h("audio", {
       ref: a,
       src: m.url,
       preload: "none",
       onTimeUpdate: (e) => {
-        if (en > 0 && e.target.currentTime >= en) {
-          e.target.pause();
-          setOn(false);
-        }
+        if (en > 0 && e.target.currentTime >= en) e.target.currentTime = st;
       },
-      onPause: () => setOn(false),
-      onEnded: () => setOn(false),
+      onEnded: (e) => {
+        e.target.currentTime = st;
+        e.target.play().catch(() => {});
+      },
     }),
   );
 }

@@ -4892,14 +4892,14 @@ function BgGrid({ items: i, RT, lim, post: e, mine: mine, onDel: onDel }) {
           return u.jsxs("div", {
             onClick: () => {
               if (last) { setOpen(true); setSel(-1); return; }
-              if (canDel) setSel(sel === c ? -1 : c);
-              else if (l.kind === "image" && window.bengu_full) { const g = i.filter((q) => q.kind === "image").map((q) => q.url); window.bengu_full(l.url, g, g.indexOf(l.url)); }
+              if (l.kind === "image" && window.bengu_full) { const g = i.filter((q) => q.kind === "image").map((q) => q.url); window.bengu_full(l.url, g, g.indexOf(l.url)); }
             },
             style: { position: "relative", breakInside: "avoid", marginBottom: 6, borderRadius: 10, overflow: "hidden", cursor: "pointer", outline: sel === c ? "3px solid " + k.saffron : "none", outlineOffset: -3 },
             children: [
               l.kind === "image"
                 ? u.jsx("img", { src: l.url, alt: "", loading: "lazy", className: "w-full block", style: { width: "100%", aspectRatio: RT[c % RT.length], objectFit: "cover", background: k.paper } })
                 : u.jsx(q_, { src: l.url, className: "w-full block bg-black", style: { maxHeight: 460 } }),
+              canDel && !last && u.jsx("button", { onClick: (ev) => { ev.stopPropagation(); setSel(sel === c ? -1 : c); }, "aria-label": "Apagar só esta", style: { position: "absolute", top: 6, right: 6, width: 32, height: 32, borderRadius: 999, background: "rgba(8,10,24,.65)", color: "#fff", fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center" }, children: "🗑" }),
               last && u.jsx("div", { style: { position: "absolute", inset: 0, background: "rgba(8,10,24,.62)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34, fontWeight: 800 }, children: "+" + (rest + 1) }),
             ],
           }, c);

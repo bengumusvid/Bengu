@@ -857,7 +857,7 @@ function bgEng(kind,n,o){o=o||{};var id=String(n.id),st={likes:0,comments:0,like
  return bar}
 function nm(id){return api("profiles?select=name&id=eq."+id).then(function(r){return r[0]?r[0].name:"Utilizador"}).catch(function(){return"Utilizador"})}
 /* pedir e esperar autorização antes de abrir uma conversa */
-window.bgGate=function(id,go){var me=uid();if(!me){toast("Inicie sessão.");return}
+var bgGate0=function(id,go){var me=uid();if(!me){toast("Inicie sessão.");return}
  if(window.__bgAdm===true)return go();
  api("chat_requests?select=*&or=(and(requester_id.eq."+me+",target_id.eq."+id+"),and(requester_id.eq."+id+",target_id.eq."+me+"))").then(function(r){var q=r[0];
   if(q&&q.status=="accepted")return nm(id).then(function(n){if(/^\s*(bengu|novas da bengu|bengu news|news bengu)\s*$/i.test(n||"")&&window.__bgAdm!==true)return toast(BG_L("This official account does not accept chats.","Esta conta oficial não aceita conversas."));go()});
@@ -867,6 +867,11 @@ window.bgGate=function(id,go){var me=uid();if(!me){toast("Inicie sessão.");retu
    if(q.status=="pending"&&q.requester_id==me)return toast("A aguardar a autorização de "+n+".");
    if(q.status=="pending"){if(confirm(n+" quer conversar consigo. Aceitar?"))api("chat_requests?id=eq."+q.id,"PATCH",{status:"accepted"}).then(go);return}
    toast("O pedido de conversa foi recusado.")})}).catch(function(e){toast(e.message)})};
+/* conta oficial Bengu: abre sempre (só leitura, sem pedido de autorização) */
+window.bgOffRe=/^\s*(bengu|novas da bengu|bengu news|news bengu)\s*$/i;
+window.bgGate=function(id,go){var me=uid();if(!me){toast("Inicie sessão.");return}
+ if(window.__bgAdm===true||(window.__bgOff&&window.__bgOff[id]))return go();
+ nm(id).then(function(n){if(window.bgOffRe.test(n||"")){(window.__bgOff=window.__bgOff||{})[id]=1;return go()}bgGate0(id,go)}).catch(function(){bgGate0(id,go)})};
 var shown={},BS="margin:8px 8px 0 0;padding:7px 14px;border:0;border-radius:8px;font-weight:700;";
 function poll(){var me=uid();if(!me)return;api("chat_requests?select=id,requester_id&target_id=eq."+me+"&status=eq.pending").then(function(r){r.forEach(function(q){if(shown[q.id])return;shown[q.id]=1;nm(q.requester_id).then(function(n){
  var d=h("div",{style:"position:fixed;left:12px;right:12px;top:calc(60px + env(safe-area-inset-top,0px));z-index:100001;padding:12px;border-radius:12px;background:#fff;color:#12183A;font:14px system-ui;box-shadow:0 4px 18px rgba(0,0,0,.35)"},
@@ -9205,6 +9210,30 @@ const TTLS = [
   [31536000, "ttl1y"],
   [157680000, "ttl5y"],
 ];
+const BG_MAIL = "getbengu@gmail.com";
+function BgSign() {
+  return u.jsxs("div", {
+    style: { marginTop: 8, paddingTop: 6, borderTop: `1px solid ${k.line}`, fontSize: 12, opacity: 0.9 },
+    children: [
+      u.jsx("div", { style: { fontWeight: 700 }, children: "— " + BG_L("Bengu Team", "Equipa Bengu") }),
+      u.jsxs("div", { children: [
+        BG_L("For more information, use the email ", "Para mais informações, use o email "),
+        u.jsx("a", { href: "mailto:" + BG_MAIL, style: { fontWeight: 700, textDecoration: "underline" }, children: BG_MAIL }),
+      ] }),
+      u.jsx("div", { children: "getbengu.com" }),
+    ],
+  });
+}
+function BgOffNotice({ kb }) {
+  return u.jsxs("div", {
+    className: "px-4 pt-3 shrink-0 text-center text-xs",
+    style: { background: k.card, borderTop: `1px solid ${k.line}`, color: k.mute, paddingBottom: kb ? 12 : "max(12px, env(safe-area-inset-bottom))" },
+    children: [
+      BG_L("This is an official Bengu account and you can't reply here. To reply, use the email ", "Esta é uma conta oficial do Bengu e não é possível responder aqui. Para responder, use o email "),
+      u.jsx("a", { href: "mailto:" + BG_MAIL, style: { fontWeight: 700, textDecoration: "underline", color: k.ink }, children: BG_MAIL }),
+    ],
+  });
+}
 function ox({ me: e, other: t, otherId: r, addUsers: n, onBack: s, say: i }) {
   const [a, o] = B.useState([]),
     [l, c] = B.useState(""),
@@ -9340,9 +9369,10 @@ function ox({ me: e, other: t, otherId: r, addUsers: n, onBack: s, say: i }) {
     } catch { i("Não foi possível usar o microfone. Permita o acesso nas definições."); }
   };
   const cancelRec = () => { rcCancel.current = !0; rcR.current && rcR.current.stop(); };
+  const isOff = window.__bgAdm !== true && !!((window.__bgOff && window.__bgOff[r]) || (window.bgOffRe && window.bgOffRe.test((t && t.name) || "")));
   const w = async (v) => {
       const g = (v ?? l).trim();
-      if (!g) return;
+      if (!g || isOff) return;
       v === void 0 && c("");
       const { error: b } = await me
         .from("messages")
@@ -9427,14 +9457,14 @@ function ox({ me: e, other: t, otherId: r, addUsers: n, onBack: s, say: i }) {
             ],
           }),
           u.jsx("button", { onClick: delChat, "aria-label": "Apagar conversa", className: "p-2 rounded-full text-base leading-none", style: { background: k.paper, color: k.ink }, children: "🗑" }),
-          u.jsx("button", {
+          !isOff && u.jsx("button", {
             onClick: () => stOpen(!0),
             "aria-label": x("autoDel"),
             className: "p-2 rounded-full text-base leading-none",
             style: { background: k.paper, color: k.ink },
             children: "⏱",
           }),
-          u.jsx("button", {
+          !isOff && u.jsx("button", {
             onClick: f,
             "aria-label": x("videoCall"),
             className: "p-2 rounded-full",
@@ -9488,7 +9518,9 @@ function ox({ me: e, other: t, otherId: r, addUsers: n, onBack: s, say: i }) {
                       WebkitTouchCallout: "none",
                       userSelect: "none",
                     },
-                    children: u.jsx(ix, { text: v.body, onDelete: () => ssheet(v) }),
+                    children: isOff && !g
+                      ? u.jsxs(B.Fragment, { children: [u.jsx(ix, { text: v.body, onDelete: () => ssheet(v) }), u.jsx(BgSign, {})] })
+                      : u.jsx(ix, { text: v.body, onDelete: () => ssheet(v) }),
                   }),
                   g &&
                     u.jsx("span", {
@@ -9516,7 +9548,7 @@ function ox({ me: e, other: t, otherId: r, addUsers: n, onBack: s, say: i }) {
           u.jsx("div", { ref: d }),
         ],
       }),
-      em && u.jsxs("div", { className: "shrink-0", style: { background: k.card, borderTop: `1px solid ${k.line}` }, children: [
+      !isOff && em && u.jsxs("div", { className: "shrink-0", style: { background: k.card, borderTop: `1px solid ${k.line}` }, children: [
         u.jsxs("div", { className: "flex items-center gap-2 px-3 py-2", children: [
           u.jsx("div", { className: "flex-1 min-w-0 truncate text-sm", style: { color: l ? k.ink : k.mute }, children: l || x("typeMessage") }),
           u.jsx("button", { onClick: () => w(), className: "px-4 py-1.5 rounded-full text-sm font-bold", style: { background: l.trim() ? k.saffron : k.line, color: k.onAccent }, children: x("send") }),
@@ -9534,10 +9566,10 @@ function ox({ me: e, other: t, otherId: r, addUsers: n, onBack: s, say: i }) {
           u.jsx("div", { style: { height: 5, borderRadius: 3, background: k.line, marginTop: 4, overflow: "hidden" }, children: u.jsx("div", { style: { height: 5, width: Math.round(up.pct * 100) + "%", background: k.saffron, transition: "width .15s" } }) }),
         ] }),
       ] }),
-      attOpen && u.jsx("div", { className: "flex items-center justify-around px-3 py-3 shrink-0", style: { background: k.card, borderTop: `1px solid ${k.line}` }, children: [
+      !isOff && attOpen && u.jsx("div", { className: "flex items-center justify-around px-3 py-3 shrink-0", style: { background: k.card, borderTop: `1px solid ${k.line}` }, children: [
         ["📷", "Foto", inPhoto], ["🎬", "Vídeo", inVideo], ["🎵", "Música", inAudio], ["📄", "Documento", inDoc],
       ].map(([ic, lb, rf]) => u.jsxs("button", { onClick: () => rf.current && rf.current.click(), className: "flex flex-col items-center gap-1 text-xs font-semibold", style: { color: k.ink }, children: [u.jsx("span", { className: "flex items-center justify-center rounded-full", style: { width: 46, height: 46, background: k.paper, fontSize: 22 }, children: ic }), lb] }, lb)) }),
-      u.jsxs("div", {
+      isOff ? u.jsx(BgOffNotice, { kb: vp.kb }) : u.jsxs("div", {
         className: "flex items-center gap-2 px-3 pt-2 shrink-0",
         style: {
           background: k.card,

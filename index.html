@@ -4165,6 +4165,8 @@ const Ag = (e, t) =>
   Iu = (e) => e.items.find((t) => t.kind === "bg"),
   pf = [
     "#12183A",
+    "#E0A820",
+    "#F8B820",
     "#0E6B5C",
     "#7A2E6E",
     "#1E4DB7",
@@ -4430,6 +4432,7 @@ function Ws({ on: e, onChange: t, label: r }) {
 }
 function q_({ src: e, className: t, style: r }) {
   const n = B.useRef(null),
+    [pv, setPv] = B.useState(false),
     { autoplay: s } = Tg();
   return (
     B.useEffect(() => {
@@ -4453,8 +4456,12 @@ function q_({ src: e, className: t, style: r }) {
       playsInline: !0,
       loop: s,
       preload: "metadata",
+      onLoadedMetadata: (g) => {
+        const v = g.currentTarget;
+        setPv(v.videoHeight > v.videoWidth);
+      },
       className: t,
-      style: r,
+      style: pv ? { ...r, maxHeight: "82vh", objectFit: "cover" } : r,
     })
   );
 }

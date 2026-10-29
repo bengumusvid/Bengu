@@ -256,10 +256,10 @@ window.bengu_legal=function(){var P=function(a,b){return[h("b",{},a),h("p",{styl
  P(BG_L("3. Data","3. Dados"),BG_L("We store your name, username, email or phone, country and the content you post, so the app works. We do not sell your data. You can delete your account in Settings.","Guardamos o seu nome, utilizador, email ou telefone, país e o conteúdo que publica, para a app funcionar. Não vendemos os seus dados. Pode apagar a sua conta em Definições.")),
  P(BG_L("4. Contests and payments","4. Concursos e pagamentos"),BG_L("Paid votes only count after payment is confirmed. Registration fees are non-refundable. Each user pays their own transfer fees.","Os votos pagos só contam depois de o pagamento ser confirmado. Taxas de inscrição não são reembolsáveis. Cada utilizador paga as suas próprias taxas de transferência.")),
  P(BG_L("5. Reports","5. Denúncias"),BG_L("You can report posts. Administrators can delete content and block accounts.","Pode denunciar publicações. Os administradores podem apagar conteúdo e bloquear contas.")),
- P(BG_L("6. Contact","6. Contacto"),BG_L("For questions or requests about your data: getbengu@gmail.com.","Para dúvidas ou pedidos sobre os seus dados: getbengu@gmail.com.")),
+ P(BG_L("6. Contact","6. Contacto"),BG_L("For support, help, complaints, reports and data requests: getbengu@gmail.com.","Para suporte, ajuda, reclamações, denúncias e pedidos sobre os seus dados: getbengu@gmail.com.")),
  [h("p",{style:"font-size:14px;margin:8px 0"},[h("a",{href:"privacy.html",target:"_blank",style:"color:#FFB020"},BG_L("Full Privacy Policy","Política de Privacidade completa")),document.createTextNode(" · "),h("a",{href:"terms.html",target:"_blank",style:"color:#FFB020"},BG_L("Full Terms of Use","Termos de Uso completos")),document.createTextNode(" · "),h("a",{href:"contact.html",target:"_blank",style:"color:#FFB020"},BG_L("Contact","Contacto"))])]))};
 window.bengu_recover=function(){var em=(prompt("Escreva o email da sua conta para receber o link de recuperação:")||"").trim().toLowerCase();if(!em)return;
- if(/@users\.bengu\.app$/.test(em)||em.indexOf("@")<0){alert("Contas criadas só com nome de utilizador não têm email e não podem recuperar a palavra-passe. Contacte a administração.");return}
+ if(/@users\.bengu\.app$/.test(em)||em.indexOf("@")<0){alert("Contas criadas só com nome de utilizador não têm email e não podem recuperar a palavra-passe. Contacte o suporte: getbengu@gmail.com.");return}
  call("/auth/v1/recover",{m:"POST",b:{email:em}}).then(function(){alert("Se este email tiver conta, enviámos um link para criar nova palavra-passe.")}).catch(function(e){alert(e.message)})};
 window.bengu_delete_account=function(){if(!tok()){alert("Inicie sessão primeiro.");return}
  if(!confirm("Apagar a sua conta? Esta ação não pode ser desfeita."))return;if(prompt("Para confirmar, escreva APAGAR")!=="APAGAR")return;
@@ -1464,7 +1464,7 @@ function pageDash(p){setTitle("📊 Painel do criador");loading();
  }).catch(function(e){body.replaceChildren(el("p","color:#ff8a8a",e.message+" (confirme que executou bengu-paginas-grupos-2.sql)"))})}
 /* BENGU 4.27: ganhos da página, páginas que seguem páginas, pré-visualização da 1.ª página dos PDF */
 function earnCard(s,body){var c=card();c.append(el("b","","💰 Ganhos estimados da página"));body.append(c);
- rpc("bengu_creator_stats").then(function(z){var k=z.rpm*z.creator_pct/100/1000,usd=function(v){return Number(v||0).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})+" US$"},
+ rpc("bengu_creator_stats").then(function(z){var k=(z.eligible===true?z.rpm*z.creator_pct/100/1000:0),usd=function(v){return Number(v||0).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})+" US$"},
   sum=function(a,n){return(a||[]).slice(-n).reduce(function(t,x){return t+(x.views||0)},0)},g=el("div","display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px");
   [["Total",(s.totals||{}).views],["7 dias",sum(s.days,7)],["30 dias",sum(s.days,30)],["12 meses",sum(s.months,12)]].forEach(function(q){var d=el("div","background:"+C.card2+";border-radius:10px;padding:10px;text-align:center");d.append(el("div","font-size:17px;font-weight:800",usd(q[1]*k)),el("div","font-size:11px;color:"+C.mute,q[0]));g.append(d)});
   c.append(g,(window.__bgAdm===true?el("div","font-size:11px;color:"+C.mute+";margin-top:6px","Estimativa: visualizações × "+usd(z.rpm)+" por 1000 × "+z.creator_pct+"% para o criador. O valor real depende dos anúncios."):""),el("div","margin-top:10px",""));var wb=btn("💸 Levantar rendimentos",function(){if(window.bengu_earnings_panel)window.bengu_earnings_panel();else toast("Indisponível de momento.")});c.append(wb)}).catch(function(){c.append(el("div","font-size:12px;color:"+C.mute+";margin-top:6px","Ganhos indisponíveis de momento."))})}
@@ -1677,7 +1677,7 @@ function rm(){if(dot){dot.remove();dot=null}}
 function modal(list){var o=document.createElement("div");o.style.cssText="position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:16px";
  var c=document.createElement("div");c.style.cssText="background:#14163a;color:#fff;border-radius:14px;padding:16px;max-width:420px;width:100%;max-height:80vh;overflow:auto;font-family:inherit";
  var t=document.createElement("b");t.textContent="🔴 Contas administradoras a mais";c.appendChild(t);
- var p=document.createElement("p");p.style.cssText="font-size:13px;opacity:.8";p.textContent="Só horacioeduardo1111@gmail.com é administrador. Estas contas foram adicionadas por engano e já não têm acesso ao painel. Para as remover da lista, apague-as nas tabelas indicadas (SQL 4.14, ponto 4).";c.appendChild(p);
+ var p=document.createElement("p");p.style.cssText="font-size:13px;opacity:.8";p.textContent="Só a conta de administração principal é administrador. Estas contas foram adicionadas por engano e já não têm acesso ao painel. Para as remover da lista, apague-as nas tabelas indicadas (SQL 4.14, ponto 4).";c.appendChild(p);
  list.forEach(function(x){var d=document.createElement("div");d.style.cssText="padding:8px;margin:6px 0;border-radius:8px;background:#8a2b2b;font-size:14px;word-break:break-all";d.textContent=x.email+" ("+x.origem+")";c.appendChild(d)});
  var b=document.createElement("button");b.textContent="Fechar";b.style.cssText="margin-top:10px;padding:10px 16px;border:0;border-radius:10px;background:#f5b400;font-weight:700";b.onclick=function(){o.remove()};c.appendChild(b);o.appendChild(c);document.body.appendChild(o)}
 function show(list){if(!list||!list.length){rm();return}
@@ -1780,7 +1780,7 @@ window.bengu_creator_panel=function(id,name){
    posts.forEach(function(p){var d2=(now-new Date(p.created_at))/864e5;if(d2<=30)v30+=p.views||0;if(d2<=365)v365+=p.views||0});
    var ek=el("div","background:#1b1f48;border-radius:10px;padding:10px;margin-top:8px"),us=function(v){return v.toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})+" US$"},ok2=fol>=mf&&v30>=mvw;
    function pb(l,v,mx){var r=el("div","margin:6px 0"),t2=el("div","display:flex;justify-content:space-between;font-size:13px");t2.append(el("span","",l),el("span","",fmt(v)+" / "+fmt(mx)));var tr=el("div","height:8px;border-radius:6px;background:#0f1130;margin-top:3px;overflow:hidden");tr.append(el("div","height:100%;background:#f5b400;width:"+Math.min(100,v/mx*100)+"%"));r.append(t2,tr);return r}
-   ek.append(el("div","font-weight:800","💳 "+BG_L("Withdrawal eligibility and estimated earnings","Elegibilidade para levantar e ganhos estimados")),pb(BG_L("Followers","Seguidores"),fol,mf),pb(BG_L("Post views in 30 days","Visualizações das publicações em 30 dias"),v30,mvw),el("div","font-size:13px;font-weight:700;margin-top:6px",ok2?BG_L("Eligible.","Elegível."):BG_L("Not eligible yet.","Ainda não elegível.")),el("div","font-size:12px;opacity:.85;margin-top:6px",BG_L("Estimated earnings: 30 days ","Ganhos estimados: 30 dias ")+us(v30*rp*pc/100000)+" · 12 "+BG_L("months ","meses ")+us(v365*rp*pc/100000)+" · Total "+us(views*rp*pc/100000)),el("div","font-size:11px;opacity:.65;margin-top:4px",BG_L("Estimate: views × ","Estimativa: visualizações × ")+us(rp)+BG_L(" per 1000 × "," por 1000 × ")+pc+"% "+BG_L("to the creator. Real value depends on ads. Admin only.","para o criador. O valor real depende dos anúncios. Só o administrador vê isto.")));body.append(ek);
+   ek.append(el("div","font-weight:800","💳 "+BG_L("Withdrawal eligibility and estimated earnings","Elegibilidade para levantar e ganhos estimados")),pb(BG_L("Followers","Seguidores"),fol,mf),pb(BG_L("Post views in 30 days","Visualizações das publicações em 30 dias"),v30,mvw),el("div","font-size:13px;font-weight:700;margin-top:6px",ok2?BG_L("Eligible.","Elegível."):BG_L("Not eligible yet.","Ainda não elegível.")),el("div","font-size:12px;opacity:.85;margin-top:6px",BG_L("Estimated earnings: 30 days ","Ganhos estimados: 30 dias ")+us(ok2?v30*rp*pc/100000:0)+" · 12 "+BG_L("months ","meses ")+us(ok2?v365*rp*pc/100000:0)+" · Total "+us(ok2?views*rp*pc/100000:0)),el("div","font-size:11px;opacity:.65;margin-top:4px",BG_L("Estimate: views × ","Estimativa: visualizações × ")+us(rp)+BG_L(" per 1000 × "," por 1000 × ")+pc+"% "+BG_L("to the creator. Real value depends on ads. Admin only.","para o criador. O valor real depende dos anúncios. Só o administrador vê isto.")));body.append(ek);
    (function(){var cv=el("div","background:#1b1f48;border-radius:10px;padding:10px;margin-top:8px");body.append(cv);cv.append(el("div","font-size:12px;opacity:.7","A carregar visualizações de músicas, jornais e notícias…"));
     Promise.all([["music_tracks","Músicas"],["bengu_journals","Jornais"],["bengu_news","Notícias"]].map(function(t){return get(t[0]+"?select=views&author_id=eq."+id+"&limit=500").then(function(r){return r.json()}).then(function(r){var v=0;(r||[]).forEach(function(i){v+=i.views||0});return t[1]+": "+fmt(v)}).catch(function(){return t[1]+": —"})})).then(function(z2){cv.replaceChildren(el("div","font-weight:800;margin-bottom:4px","👀 Músicas, jornais e notícias"),el("div","font-size:13px",z2.join(" · ")))})})();
    body.append(el("div","margin:14px 0 6px;font-weight:800","Publicações recentes"));
@@ -1842,7 +1842,7 @@ window.bengu_earnings_panel=function(){
  if(!tok()){alert("Inicie sessão.");return}
  var m=modal("💰 Ganhos estimados · v4.20"),box=m.body;box.append(el("p","opacity:.7","A carregar…"));
  Promise.all([rpc("bengu_creator_stats"),rpc("bengu_my_payout_status").catch(function(){return{reached:false,approved:false}})]).then(function(zz){var s=zz[0],ps=zz[1]||{},okp=ps.approved===true;
-  var k=s.rpm*s.creator_pct/100/1000,earn=function(v){return v*k};
+  var elig=(s.eligible===true||okp),k=s.rpm*s.creator_pct/100/1000,earn=function(v){return elig?v*k:0};
   var wk=s.weeks.length?s.weeks[s.weeks.length-1].views:0,mo=s.months.length?s.months[s.months.length-1].views:0,yr=s.months.reduce(function(a,x){return a+x.views},0);
   box.replaceChildren();
   var g=el("div","display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px");
@@ -1860,7 +1860,7 @@ window.bengu_earnings_panel=function(){
      z.forEach(function(x){var v=0;if(x)x.r.forEach(function(i){v+=i.views||0;if(i.views)top.push({t:i.title,v:i.views,k:x.n})});tot+=v;var d=el("div","background:#0f1233;border-radius:8px;padding:8px 4px;text-align:center");d.append(el("div","font-size:15px;font-weight:800",num(v)),el("div","font-size:10px;opacity:.7",x?x.n:"—"));g2.append(d)});
      var dt=el("div","background:#f5b400;color:#14163a;border-radius:8px;padding:8px 4px;text-align:center");dt.append(el("div","font-size:15px;font-weight:800",num(tot)),el("div","font-size:10px","Total"));g2.append(dt);cardV.append(g2);
      top.sort(function(a,b){return b.v-a.v}).slice(0,5).forEach(function(i){cardV.append(el("div","font-size:12px;margin-top:6px;opacity:.9",i.k+" · "+String(i.t||"").slice(0,40)+" · 👀 "+num(i.v)))})})})();
-  var w=el("div",CARD),wt=el("b","","");wt.append(el("span","font-weight:800;margin-right:6px;color:"+(okp?"#2fbf71":"#ff4d4d"),okp?BG_L("eligible","elegível"):BG_L("not eligible","não elegível")),document.createTextNode(BG_L("Withdraw","Levantar")));w.append(wt,el("div","font-size:13px;margin:4px 0","Disponível: "+usd(s.available)+" · mínimo "+usd(s.min_withdraw)));
+  var w=el("div",CARD),wt=el("b","","");wt.append(el("span","font-weight:800;margin-right:6px;color:"+(okp?"#2fbf71":"#ff4d4d"),okp?BG_L("Eligible","Elegível"):BG_L("Not eligible","Não elegível")),document.createTextNode(BG_L("Withdraw","Levantar")));w.append(wt,el("div","font-size:13px;margin:4px 0","Disponível: "+usd(s.available)+" · mínimo "+usd(s.min_withdraw)));
   var sel=el("select",FLD),acc=el("input",FLD),acc2=el("input",FLD),acc3=el("input",FLD),amt=el("input",FLD),go=el("button",Y+"width:100%;margin-top:6px","Levantar");
   METHODS.forEach(function(x){var o=el("option","",x[1]);o.value=x[0];sel.append(o)});
   setupAcct(sel,acc,acc2,acc3);amt.placeholder="Valor em US$";amt.type="number";amt.min=s.min_withdraw;amt.step="0.01";
@@ -2913,6 +2913,8 @@ var cur=null,btn=null,hideT=null,busy=false;
 function isAdm(){return window.__bgAdm===true}
 function okField(e){
  if(!e||!e.tagName)return false;
+ if(e.getAttribute&&e.getAttribute("data-nofix")!==null)return false;
+ if(/pesquisar|search/i.test(e.placeholder||""))return false;
  if(e.tagName==="TEXTAREA")return true;
  if(e.tagName==="INPUT")return (e.type||"text").toLowerCase()==="text";
  return false}
@@ -10515,6 +10517,27 @@ function BgMusicPick({ value, onChange, onError }) {
     openLib = async () => {
       setBusy(true);
       try {
+        const rows = [],
+          seen = {},
+          add = (id, title, artist, cover, url) => {
+            if (!url || seen[url]) return;
+            seen[url] = 1;
+            rows.push({ id, title: title || "Música", artist: artist || "", cover_url: cover || null, audio_url: url });
+          };
+        const pr = await me
+          .from("posts")
+          .select("id,type,media,media_url,file_name,file_size,visibility,created_at")
+          .eq("type", "audio")
+          .eq("visibility", "public")
+          .order("created_at", { ascending: false })
+          .limit(200);
+        if (!pr.error)
+          (pr.data || []).forEach((p) =>
+            F_(p).forEach((it, i) => {
+              if (it && it.kind === "audio" && it.url)
+                add("p" + p.id + "-" + i, String(it.title || String(it.name || "").replace(/\.[a-z0-9]{2,4}$/i, "")).trim(), it.artist, it.cover, it.url);
+            }),
+          );
         const base = (cols) =>
           me
             .from("music_tracks")
@@ -10525,8 +10548,9 @@ function BgMusicPick({ value, onChange, onError }) {
             .limit(100);
         let r = await base("id,title,artist,audio_url,cover_url");
         if (r.error) r = await base("id,title,artist,audio_url");
-        if (r.error) throw r.error;
-        setLib((r.data || []).filter((t) => t.audio_url));
+        if (!r.error) (r.data || []).forEach((t) => add("t" + t.id, t.title, t.artist, t.cover_url, t.audio_url));
+        if (pr.error && r.error) throw pr.error;
+        setLib(rows);
         setQ("");
       } catch (err) {
         onError(Ze(err));

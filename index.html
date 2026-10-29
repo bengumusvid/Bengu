@@ -10524,6 +10524,13 @@ function BgMusicPick({ value, onChange, onError }) {
             seen[url] = 1;
             rows.push({ id, title: title || "Música", artist: artist || "", cover_url: cover || null, audio_url: url });
           };
+        (window.__bgPosts || []).forEach((p) => {
+          if (p.visibility && p.visibility !== "public") return;
+          (p.items || []).forEach((it, i) => {
+            if (it && it.kind === "audio" && it.url)
+              add("p" + p.id + "-" + i, String(it.title || String(it.name || "").replace(/\.[a-z0-9]{1,5}$/i, "") || "Bengu").trim(), it.artist, it.cover, it.url);
+          });
+        });
         const pr = await me
           .from("posts")
           .select("id,type,media,media_url,file_name,file_size,visibility,created_at")
@@ -10549,7 +10556,7 @@ function BgMusicPick({ value, onChange, onError }) {
         let r = await base("id,title,artist,audio_url,cover_url");
         if (r.error) r = await base("id,title,artist,audio_url");
         if (!r.error) (r.data || []).forEach((t) => add("t" + t.id, t.title, t.artist, t.cover_url, t.audio_url));
-        if (pr.error && r.error) throw pr.error;
+        if (pr.error && r.error && !rows.length) throw pr.error;
         setLib(rows);
         setQ("");
       } catch (err) {

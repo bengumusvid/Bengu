@@ -297,7 +297,24 @@ window.window.bgZoom=function(box,target){
   });
   box.addEventListener("dblclick",function(e){toggle(e.clientX,e.clientY)});
 };
-bengu_full=function(src){var o=h("div",{style:"position:fixed;inset:0;z-index:100000;background:#000;display:flex;align-items:center;justify-content:center",on:{click:function(){o.remove()}}},[h("img",{src:src,style:"max-width:100%;max-height:100%;object-fit:contain;margin:auto",on:{click:function(e){e.stopPropagation()}}}),h("button",{style:"position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:12px;width:40px;height:40px;border:0;border-radius:50%;background:rgba(255,255,255,.25);color:#fff;font-size:22px",on:{click:function(){o.remove()}}},"✕")]);document.body.append(o);bgZoom(o,function(){return o.querySelector("img")})};
+bengu_full=function(src,list,idx){
+ var L=(list&&list.length>1)?list:null,n=L?(idx>=0&&idx<L.length?idx:Math.max(0,L.indexOf(src))):0,sx=0,sy=0,pt=0;
+ var im=h("img",{src:L?L[n]:src,style:"max-width:100%;max-height:100%;object-fit:contain;margin:auto;user-select:none;-webkit-user-drag:none",on:{click:function(e){e.stopPropagation()}}});
+ var BS="position:absolute;width:40px;height:40px;border:0;border-radius:50%;background:rgba(255,255,255,.25);color:#fff;font-size:22px;";
+ var cl=h("button",{style:BS+"top:calc(12px + env(safe-area-inset-top,0px));right:12px",on:{click:function(e){e.stopPropagation();close()}}},"\u2715");
+ var ct=h("div",{style:"position:absolute;top:calc(22px + env(safe-area-inset-top,0px));left:0;right:0;text-align:center;color:#fff;font:700 14px system-ui,sans-serif;pointer-events:none;text-shadow:0 1px 3px #000"},"");
+ var o=h("div",{style:"position:fixed;inset:0;z-index:100000;background:#000;display:flex;align-items:center;justify-content:center",on:{click:function(){close()}}},[im,ct,cl]);
+ function close(){document.removeEventListener("keydown",key);o.remove()}
+ function paint(d){im.src=L[n];ct.textContent=(n+1)+" / "+L.length;try{im.animate([{transform:"translateX("+(d*60)+"px)",opacity:0},{transform:"translateX(0)",opacity:1}],{duration:200,easing:"ease-out"})}catch(e){}[n-1,n+1].forEach(function(k){if(L[k]){var p=new Image();p.src=L[k]}})}
+ function go(d){if(!L)return;var m=n+d;if(m<0||m>=L.length)return;n=m;paint(d)}
+ function key(e){if(e.key==="ArrowRight")go(1);else if(e.key==="ArrowLeft")go(-1);else if(e.key==="Escape")close()}
+ if(L){
+  ct.textContent=(n+1)+" / "+L.length;
+  var pb=h("button",{style:BS+"left:10px;top:50%;margin-top:-20px",on:{click:function(e){e.stopPropagation();go(-1)}}},"\u2039"),nb=h("button",{style:BS+"right:10px;top:50%;margin-top:-20px",on:{click:function(e){e.stopPropagation();go(1)}}},"\u203A");
+  o.append(pb,nb);document.addEventListener("keydown",key);
+  o.addEventListener("touchstart",function(e){if(e.touches.length===1){sx=e.touches[0].clientX;sy=e.touches[0].clientY;pt=1}else pt=0},{passive:true});
+  o.addEventListener("touchend",function(e){if(!pt||e.touches.length)return;pt=0;if(im.style.transform)return;var t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)>50&&Math.abs(dx)>1.5*Math.abs(dy))go(dx<0?1:-1)},{passive:true})}
+ document.body.append(o);bgZoom(o,function(){return o.querySelector("img")})};
 function setCat(c){cat=c;PINK=CATS[c].color;LITE=CATS[c].lite;styles()}
 
 var ov=h("div",{style:"display:none;position:fixed;inset:0;z-index:99999;background:#12183A;color:#fff;overflow:auto;padding:12px;padding-top:calc(12px + env(safe-area-inset-top,0px));font-family:system-ui,sans-serif"});
@@ -4862,7 +4879,7 @@ function BgGrid({ items: i, RT, lim, post: e, mine: mine, onDel: onDel }) {
             onClick: () => {
               if (last) { setOpen(true); setSel(-1); return; }
               if (canDel) setSel(sel === c ? -1 : c);
-              else if (l.kind === "image" && window.bengu_full) window.bengu_full(l.url);
+              else if (l.kind === "image" && window.bengu_full) { const g = i.filter((q) => q.kind === "image").map((q) => q.url); window.bengu_full(l.url, g, g.indexOf(l.url)); }
             },
             style: { position: "relative", breakInside: "avoid", marginBottom: 6, borderRadius: 10, overflow: "hidden", cursor: "pointer", outline: sel === c ? "3px solid " + k.saffron : "none", outlineOffset: -3 },
             children: [
@@ -4877,7 +4894,7 @@ function BgGrid({ items: i, RT, lim, post: e, mine: mine, onDel: onDel }) {
       cur && u.jsxs("div", {
         style: { display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", padding: "2px 12px 8px" },
         children: [
-          cur.kind === "image" && u.jsx("button", { onClick: () => window.bengu_full && window.bengu_full(cur.url), style: pill(k.paper, k.ink), children: BG_L("🔍 View", "🔍 Ver") }),
+          cur.kind === "image" && u.jsx("button", { onClick: () => { const g = i.filter((q) => q.kind === "image").map((q) => q.url); window.bengu_full && window.bengu_full(cur.url, g, g.indexOf(cur.url)); }, style: pill(k.paper, k.ink), children: BG_L("🔍 View", "🔍 Ver") }),
           u.jsx("button", { onClick: () => { const it = cur; setSel(-1); onDel(e.id, e.items.indexOf(it)); }, "aria-label": "Apagar só esta", style: pill("#B71C1C", "#fff"), children: BG_L("🗑 Delete only this", "🗑 Apagar só esta") }),
           u.jsx("button", { onClick: () => setSel(-1), style: pill(k.paper, k.ink), children: "✕" }),
         ],
@@ -4956,7 +4973,7 @@ function K_({ post: e, users: t, mine: mn_, onDeleteItem: dit_ }) {
                         alt: "",
                         loading: "lazy",
                         className: "w-full block",
-                        onClick: () => window.bengu_full && window.bengu_full(l.url),
+                        onClick: () => { const g = i.filter((q) => q.kind === "image").map((q) => q.url); window.bengu_full && window.bengu_full(l.url, g, g.indexOf(l.url)); },
                         style: RT && l.kind === "image"
                           ? { width: "100%", aspectRatio: RT[c % RT.length], objectFit: "cover", background: k.paper, cursor: "zoom-in" }
                           : { maxHeight: 640, objectFit: "contain", background: k.paper, cursor: "zoom-in" },

@@ -4833,6 +4833,46 @@ function BgLayoutPick() {
         style: { background: v === id ? k.strong : k.paper, color: v === id ? k.onStrong : k.ink } },
         h("span", { style: { fontSize: 18 } }, ic), lb))));
 }
+function BgGrid({ items: i, RT, lim, post: e, mine: mine, onDel: onDel }) {
+  const [open, setOpen] = B.useState(false), [sel, setSel] = B.useState(-1);
+  const over = i.length > lim && !open, shown = over ? i.slice(0, lim) : i, rest = i.length - lim;
+  const canDel = !!(mine && onDel && i.length > 1);
+  const pill = (bg, col) => ({ padding: "8px 14px", borderRadius: 999, fontWeight: 700, fontSize: 13, background: bg, color: col });
+  const cur = sel >= 0 && sel < shown.length ? shown[sel] : null;
+  return u.jsxs("div", {
+    children: [
+      u.jsx("div", {
+        style: { columnCount: 2, columnGap: 6, padding: "0 6px" },
+        children: shown.map((l, c) => {
+          const last = over && c === lim - 1;
+          return u.jsxs("div", {
+            onClick: () => {
+              if (last) { setOpen(true); setSel(-1); return; }
+              if (canDel) setSel(sel === c ? -1 : c);
+              else if (l.kind === "image" && window.bengu_full) window.bengu_full(l.url);
+            },
+            style: { position: "relative", breakInside: "avoid", marginBottom: 6, borderRadius: 10, overflow: "hidden", cursor: "pointer", outline: sel === c ? "3px solid " + k.saffron : "none", outlineOffset: -3 },
+            children: [
+              l.kind === "image"
+                ? u.jsx("img", { src: l.url, alt: "", loading: "lazy", className: "w-full block", style: { width: "100%", aspectRatio: RT[c % RT.length], objectFit: "cover", background: k.paper } })
+                : u.jsx(q_, { src: l.url, className: "w-full block bg-black", style: { maxHeight: 460 } }),
+              last && u.jsx("div", { style: { position: "absolute", inset: 0, background: "rgba(8,10,24,.62)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34, fontWeight: 800 }, children: "+" + (rest + 1) }),
+            ],
+          }, c);
+        }),
+      }),
+      cur && u.jsxs("div", {
+        style: { display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", padding: "2px 12px 8px" },
+        children: [
+          cur.kind === "image" && u.jsx("button", { onClick: () => window.bengu_full && window.bengu_full(cur.url), style: pill(k.paper, k.ink), children: BG_L("🔍 View", "🔍 Ver") }),
+          u.jsx("button", { onClick: () => { const it = cur; setSel(-1); onDel(e.id, e.items.indexOf(it)); }, "aria-label": "Apagar só esta", style: pill("#B71C1C", "#fff"), children: BG_L("🗑 Delete only this", "🗑 Apagar só esta") }),
+          u.jsx("button", { onClick: () => setSel(-1), style: pill(k.paper, k.ink), children: "✕" }),
+        ],
+      }),
+      open && i.length > lim && u.jsx("div", { style: { padding: "0 12px 6px" }, children: u.jsx("button", { onClick: () => { setOpen(false); setSel(-1); }, style: pill(k.paper, k.ink), children: BG_L("Show less", "Mostrar menos") }) }),
+    ],
+  });
+}
 function K_({ post: e, users: t, mine: mn_, onDeleteItem: dit_ }) {
   const r = e.items.filter((l) => l.kind !== "bg");
   if (!r.length) return null;
@@ -4880,7 +4920,9 @@ function K_({ post: e, users: t, mine: mn_, onDeleteItem: dit_ }) {
     RT = { vertical: ["3 / 4"], square: ["1 / 1"], mixed: ["3 / 4", "1 / 1", "1 / 1", "3 / 4"] }[lay];
   return u.jsxs("div", {
     children: [
-      i.length > 0 &&
+      i.length > 0 && RT &&
+        u.jsx(BgGrid, { items: i, RT: RT, lim: lay === "mixed" ? 5 : 4, post: e, mine: mn_, onDel: dit_ }),
+      i.length > 0 && !RT &&
         u.jsx("div", {
           className:
             i.length > 1 && !RT ? "flex overflow-x-auto snap-x snap-mandatory" : "",

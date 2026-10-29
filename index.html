@@ -52,7 +52,7 @@ XMLHttpRequest.prototype.send=function(body){
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.41.0_30.10.2026" />
+    <meta name="bengu-build" content="4.41.1_30.10.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -1039,6 +1039,8 @@ function openPdf(n){bgCountView("journal",n);var b=sheet("📰 "+n.title);b.pare
     box.append(w);bgZoom(w,function(){return w.querySelector("canvas")});io.observe(w)})(i)})
  }).catch(function(){info.textContent=BG_L("Could not show the PDF here. Use the link below to open it.","Não foi possível mostrar o PDF aqui. Use a ligação abaixo para o abrir.")})}
 
+var ED_BC=[["Verde Bengu","#43A047"],["Azul Bengu","#1E88E5"],["Vermelho Bengu","#E53935"],["Laranja Bengu","#FB8C00"],["Amarelo Bengu","#FDD835"],["Azul-escuro Bengu","#12183A"],["Verde jornal","#1B8A3A"]];
+
 /* ---------- BENGU 4.39: taxa 2 USD (África/Mundo), anúncio no fim, jornais por secção ---------- */
 function jFee(sec){if(!sec)return null;var pm=document.createElement("input");pm.placeholder="Meio de pagamento da taxa (ex.: M-Pesa, PayPal)";pm.style.cssText="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cfd4e3;border-radius:10px;margin:6px 0;font:inherit";
  var bx=document.createElement("div");bx.style.cssText="padding:10px;border-radius:10px;background:#FFF3E0;margin:8px 0;font-size:14px";bx.append("💳 Taxa de publicação: 2 USD por jornal (não reembolsável). O jornal só aparece depois de o pagamento ser confirmado.",pm);
@@ -1170,10 +1172,9 @@ var lgf=E("input",{type:"file",accept:"image/*",style:"display:block;margin:4px 
 var set=E("div",{style:"background:#fff;border-radius:12px;padding:12px;margin:8px 0"}),box=E("div"),pv=E("div",{style:"margin-top:12px"});
 set.append(E("b",{textContent:"📰 Jornal"}),inp(S,"name","Nome do jornal"),row([lab("Data",inp(S,"date","Data")),lab("Edição",inp(S,"ed","Edição n.º"))]),
  row([lab("Colunas",sel(S,"cols",[[2,"2"],[3,"3"],[4,"4"]],1)),lab("Letra do título",sel(S,"mf",fo(),1))]),pal(S,"ac","#1B8A3A","Cor do jornal (cores do Bengu ou outra)"),row([lab("Índice",sel(S,"idx",[[1,"Sim"],[0,"Não"]],1)),lab("Anúncio no fim",sel(S,"ad",[["0","Nenhum"],["1","Caixa"],["2","Página inteira"]]))]),inp(S,"sub","Subtítulo (ex.: Boletim Informativo)"),inp(S,"info","Ficha técnica (director, editor, chefe de redação…)"),E("label",{style:"font-size:12px;font-weight:700;display:block"},["🏛 Logótipo da instituição",lgf]),row([lab("Destaques na capa",sel(S,"dest",[[1,"Sim"],[0,"Não"]],1))]),inp(S,"adt","Texto do anúncio (nome, contacto, oferta)","textarea",3),inp(S,"band","Faixa de publicidade em todas as páginas (opcional)"),E("label",{style:"font-size:12px;font-weight:700;display:block"},["🖼 Imagem do anúncio (opcional)",adf]));
-var BC=[["Verde Bengu","#43A047"],["Azul Bengu","#1E88E5"],["Vermelho Bengu","#E53935"],["Laranja Bengu","#FB8C00"],["Amarelo Bengu","#FDD835"],["Azul-escuro Bengu","#12183A"],["Verde jornal","#1B8A3A"]];
 function pal(o,k,def,t){var w=E("div",{style:"margin:6px 0"},[E("div",{style:"font-size:12px;font-weight:700",textContent:t})]),bx=E("div",{style:"display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px"}),ci=E("input",{type:"color",title:"Outra cor",style:"width:38px;height:34px;padding:0;border:0;background:none"});
  function mark(){var v=o[k]||def;ci.value=/^#[0-9a-f]{6}$/i.test(v)?v:"#000000";[].forEach.call(bx.querySelectorAll("button"),function(x){x.style.outline=x.dataset.c.toLowerCase()==String(v).toLowerCase()?"3px solid #12183A":"none"})}
- BC.forEach(function(p){var x=E("button",{title:p[0],style:"width:34px;height:34px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #aaa;background:"+p[1]});x.dataset.c=p[1];x.onclick=function(){o[k]=p[1];save();mark()};bx.append(x)});
+ ED_BC.forEach(function(p){var x=E("button",{title:p[0],style:"width:34px;height:34px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #aaa;background:"+p[1]});x.dataset.c=p[1];x.onclick=function(){o[k]=p[1];save();mark()};bx.append(x)});
  ci.oninput=function(){o[k]=ci.value;save();mark()};bx.append(ci);w.append(bx);mark();return w}
 function ta(a){var t=inp(a,"body","Escreva o texto aqui…","textarea",9);return t}
 function wr(t,l,r){var s=t.selectionStart,e=t.selectionEnd,v=t.value;t.value=v.slice(0,s)+l+v.slice(s,e)+r+v.slice(e);t.focus();t.setSelectionRange(s+l.length,e+l.length);t.oninput()}

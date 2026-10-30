@@ -2394,6 +2394,7 @@ window.bengu_open_record=window.bengu_open_live=function(){
   paint(1,f0.trim()||"none");
   if(beautyOn&&beauty.skin>0){var k=beauty.skin/100,px=(W/720)*(1+k*3.2);
    paint(.18+.5*k,(f0+" blur("+px.toFixed(1)+"px)").trim())}
+  if(FM.on&&FM.fm&&!FM.busy&&vid.readyState>=2)faceSend();if(FM.on&&FM.box&&beautyOn){var fe=faceEllipse();if(fe)faceSmooth(fe)}
   if(bgMode!=="none"&&bgReady)segFrame()}
  function startCam(){if(cam){cam.getTracks().forEach(function(t){t.stop()});cam=null}
   var portrait=window.innerHeight>=window.innerWidth,f={ideal:facing};
@@ -2441,16 +2442,39 @@ window.bengu_open_record=window.bengu_open_live=function(){
  paintMic();warmMic();bMic.onclick=function(){if(recording||mic.disabled)return;mic.checked=!mic.checked;paintMic();if(mic.checked)warmMic();else if(preMic){preMic.getTracks().forEach(function(t){t.stop()});preMic=null}};
  [[bBeauty,"Beleza"],[bFilter,"Filtros"],[bMusic,"Música"],[flip,"Trocar câmara"],[recB,"Gravar"]].forEach(function(a){a[0].setAttribute("aria-label",a[1])});
 
- /* embelezamento */
+ /* ---- efeitos de rosto (beta): MediaPipe Face Mesh, só suaviza a área do rosto ---- */
+var FM={on:false,fm:null,busy:false,box:null,since:0,res:[],cv:null,p:null,ui:null};
+var FACE_CDN="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/";
+function faceLoad(){if(FM.fm)return Promise.resolve(true);if(FM.p)return FM.p;FM.p=new Promise(function(ok){var s=document.createElement("script");s.src=FACE_CDN+"face_mesh.js";s.onerror=function(){ok(false)};s.onload=function(){try{var f=new window.FaceMesh({locateFile:function(n){return FACE_CDN+n}});f.setOptions({maxNumFaces:1,refineLandmarks:false,minDetectionConfidence:.5,minTrackingConfidence:.5});f.onResults(function(r){FM.res.push(performance.now());if(FM.res.length>200)FM.res.splice(0,100);FM.box=r.multiFaceLandmarks&&r.multiFaceLandmarks[0]?faceBox(r.multiFaceLandmarks[0]):null});FM.fm=f;ok(true)}catch(e){ok(false)}};document.head.appendChild(s)});return FM.p}
+function faceBox(lm){var x0=1,y0=1,x1=0,y1=0;for(var i=0;i<lm.length;i++){var p=lm[i];if(p.x<x0)x0=p.x;if(p.x>x1)x1=p.x;if(p.y<y0)y0=p.y;if(p.y>y1)y1=p.y}return{x0:x0,y0:y0,x1:x1,y1:y1}}
+function faceSend(){FM.busy=true;var t=performance.now();Promise.resolve(FM.fm.send({image:vid})).then(function(){FM.busy=false}).catch(function(){FM.busy=false});
+ if(FM.since&&t-FM.since>4000){FM.res=FM.res.filter(function(x){return t-x<2000});if(FM.res.length<30){FM.on=false;FM.box=null;if(FM.ui){FM.ui.cb.checked=false;FM.ui.st.textContent="Desligado automaticamente: o telemóvel não consegue manter 15 fps com o rosto."}}}}
+/* elipse do rosto em coordenadas do ecrã (com espelho quando a câmara é a frontal) */
+function faceEllipse(){if(!FM.box)return null;var vw=vid.videoWidth,vh=vid.videoHeight;if(!vw||!vh)return null;var s2=Math.max(W/vw,H/vh),dw=vw*s2,dh=vh*s2,ox=(W-dw)/2,oy=(H-dh)/2,b=FM.box,x0=ox+b.x0*dw,x1=ox+b.x1*dw,y0=oy+b.y0*dh,y1=oy+b.y1*dh;if(facing==="user"){var t=W-x1;x1=W-x0;x0=t}return{cx:(x0+x1)/2,cy:(y0+y1)/2,rx:(x1-x0)/2*1.15,ry:(y1-y0)/2*1.25}}
+/* suaviza só dentro do rosto: desfoca num recorte e mistura com máscara radial */
+function faceSmooth(e){var k=beauty.skin/100;if(k<=0)return;var x=Math.max(0,Math.floor(e.cx-e.rx)),y=Math.max(0,Math.floor(e.cy-e.ry)),w=Math.min(W,Math.ceil(e.cx+e.rx))-x,h=Math.min(H,Math.ceil(e.cy+e.ry))-y;if(w<8||h<8)return;
+ var o=FM.cv||(FM.cv=document.createElement("canvas"));o.width=w;o.height=h;var g=o.getContext("2d");
+ g.save();try{g.filter="blur("+(2+k*4).toFixed(1)+"px)"}catch(_){}
+ var vw=vid.videoWidth,vh=vid.videoHeight,s2=Math.max(W/vw,H/vh),dw=vw*s2,dh=vh*s2;
+ g.translate(-x,-y);if(facing==="user"){g.translate(W,0);g.scale(-1,1)}g.drawImage(vid,(W-dw)/2,(H-dh)/2,dw,dh);g.restore();
+ g.filter="none";g.globalCompositeOperation="destination-in";var lx=e.cx-x,ly=e.cy-y,gr=g.createRadialGradient(lx,ly,Math.min(e.rx,e.ry)*.5,lx,ly,Math.max(e.rx,e.ry));gr.addColorStop(0,"rgba(0,0,0,1)");gr.addColorStop(1,"rgba(0,0,0,0)");g.fillStyle=gr;g.fillRect(0,0,w,h);g.globalCompositeOperation="source-over";
+ ctx.save();ctx.globalAlpha=.25+.5*k;ctx.drawImage(o,x,y);ctx.restore()}
+
+/* embelezamento */
  var beautyBox=el("div","");
  function slider(label,key,max){var w=el("div","display:flex;align-items:center;gap:8px;margin:6px 0;font-size:13px"),l=el("span","width:92px;flex:none",label),r=el("input","flex:1;accent-color:#f5b400"),v=el("span","width:30px;text-align:right;opacity:.8",String(beauty[key]));
   r.type="range";r.min=0;r.max=max||100;r.value=beauty[key];r.oninput=function(){beauty[key]=Number(r.value);v.textContent=r.value};w.append(l,r,v);return w}
  var bTop=el("div","display:flex;justify-content:space-between;align-items:center;margin-bottom:2px"),bTog=el("label","display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700"),bcb=el("input"),bReset=el("button",SM+"padding:5px 10px;font-size:12px","Repor");
  bcb.type="checkbox";bcb.checked=true;bcb.onchange=function(){beautyOn=bcb.checked};bTog.append(bcb,"Embelezar rosto");bTop.append(bTog,bReset);
  var sSkin=slider("Pele lisa","skin"),sLight=slider("Luminosidade","light"),sTone=slider("Tom saudável","tone"),sClar=slider("Clareza","clar");
- function resetBeauty(){beauty.skin=40;beauty.light=25;beauty.tone=15;beauty.clar=0;beautyBox.replaceChildren(bTop,slider("Pele lisa","skin"),slider("Luminosidade","light"),slider("Tom saudável","tone"),slider("Clareza","clar"),beautyNote)}
+var fCb=el("input"),fSt=el("span","font-size:11px;opacity:.7;display:block",""),fLb=el("label","display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;margin:8px 0");
+fCb.type="checkbox";fCb.checked=false;FM.ui={cb:fCb,st:fSt};
+fCb.onchange=function(){if(!fCb.checked){FM.on=false;FM.box=null;fSt.textContent="";return}fSt.textContent="A carregar o rastreio do rosto…";faceLoad().then(function(ok){if(!ok){fCb.checked=false;fSt.textContent="Não foi possível carregar o rastreio do rosto.";return}FM.on=true;FM.box=null;FM.res=[];FM.since=performance.now();fSt.textContent="Ativo. O rosto fica mais suave; o efeito aparece quando o rosto é detetado."})};
+fLb.append(fCb,"Efeitos de rosto (beta)");var faceRow=el("div","");faceRow.append(fLb,fSt);
+
+ function resetBeauty(){beauty.skin=40;beauty.light=25;beauty.tone=15;beauty.clar=0;beautyBox.replaceChildren(bTop,slider("Pele lisa","skin"),slider("Luminosidade","light"),slider("Tom saudável","tone"),slider("Clareza","clar"),faceRow,beautyNote)}
  var beautyNote=el("div","font-size:11px;opacity:.65;margin-top:4px","O embelezamento suaviza a pele e aviva a luz, e fica gravado no vídeo.");
- bReset.onclick=resetBeauty;beautyBox.append(bTop,sSkin,sLight,sTone,sClar,beautyNote);
+ bReset.onclick=resetBeauty;beautyBox.append(bTop,sSkin,sLight,sTone,sClar,faceRow,beautyNote);
 
  /* filtros */
  var fr=el("div","display:flex;gap:6px;overflow-x:auto;padding:2px 0");

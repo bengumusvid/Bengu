@@ -2057,14 +2057,9 @@ var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat
 function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
 function api(p,m,b){return fetch(U+"/rest/v1/"+p,{method:m||"GET",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/json"},body:b?JSON.stringify(b):undefined}).then(function(r){if(!r.ok)throw 0;return r.status==204?[]:r.json()})}
 function check(){if(shown||!tok()||document.visibilityState!=="visible")return;
- api("bengu_warnings?select=id,message,created_at&seen=eq.false&order=created_at").then(function(a){if(!a||!a.length||shown)return;shown=true;
-  var o=document.createElement("div");o.style.cssText="position:fixed;inset:0;z-index:2147482000;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px";
-  var c=document.createElement("div");c.style.cssText="background:#fff;color:#12183A;border-radius:16px;max-width:380px;width:100%;padding:20px;font-family:system-ui,sans-serif;max-height:80vh;overflow:auto";
-  var t=document.createElement("div");t.textContent="⚠️ Aviso do administrador";t.style.cssText="font-weight:800;font-size:18px;margin-bottom:10px";c.appendChild(t);
-  a.forEach(function(w){var p=document.createElement("p");p.textContent=w.message;p.style.cssText="margin:8px 0;line-height:1.4";c.appendChild(p)});
-  var b=document.createElement("button");b.textContent="Entendi";b.style.cssText="margin-top:12px;width:100%;padding:12px;border-radius:999px;background:#FFB020;color:#12183A;font-weight:800";
-  b.onclick=function(){Promise.all(a.map(function(w){return api("bengu_warnings?id=eq."+w.id,"PATCH",{seen:true})})).catch(function(){});o.remove();shown=false};
-  c.appendChild(b);o.appendChild(c);document.body.appendChild(o)}).catch(function(){})}
+ api("bengu_warnings?select=id&seen=eq.false&limit=1").then(function(a){if(!a||!a.length||shown)return;shown=true;
+  /* o aviso já não abre no meio do ecrã: é entregue no Bate-Papo e no email (função bengu-aviso) */
+  return fetch(U+"/functions/v1/bengu-aviso",{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/json"},body:"{}"}).catch(function(){}).then(function(){shown=false})}).catch(function(){shown=false})}
 setTimeout(check,5000);setInterval(check,60000);
 })();
 </script>
@@ -6600,13 +6595,30 @@ function J_() {
           }
         })());
     },
-    Hg = async (I, V) => {
+    Hg = async (I, V, bgF) => {
+      const bgP = A.find((q) => q.id === I);
+      let bgItems = null;
+      if (bgP && bgP.type === "text" && typeof bgF === "string") {
+        const its = Array.isArray(bgP.items) ? bgP.items : [],
+          ix = its.findIndex((q) => q && q.kind === "bg");
+        if (ix >= 0) {
+          if ((its[ix].font || "") !== bgF) {
+            bgItems = its.map((q, j) => {
+              if (j !== ix) return q;
+              const { font: _f, ...rest } = q;
+              return bgF ? { ...rest, font: bgF } : rest;
+            });
+          }
+        } else if (bgF) {
+          bgItems = [{ kind: "bg", plain: !0, font: bgF }, ...its];
+        }
+      }
       const { error: Z } = await me
         .from("posts")
-        .update({ body: V })
+        .update(bgItems ? { body: V, media: bgItems } : { body: V })
         .eq("id", I);
       if (Z) return _e(Ze(Z));
-      (P((le) => le.map((he) => (he.id === I ? { ...he, text: V } : he))),
+      (P((le) => le.map((he) => (he.id === I ? { ...he, text: V, ...(bgItems ? { items: bgItems } : {}) } : he))),
         Tt(null),
         _e(x("textSaved")));
     },
@@ -7551,7 +7563,7 @@ function J_() {
           u.jsx(Y_, {
             post: qt(Pr),
             onClose: () => Tt(null),
-            onSave: (I) => Hg(Pr, I),
+            onSave: (I, F) => Hg(Pr, I, F),
           }),
         J && h && u.jsx(Q_, { onSave: Kc }),
         Se &&
@@ -7647,6 +7659,10 @@ function Z_({ items: e, prefs: t, setPref: r, onClose: n }) {
 }
 function Y_({ post: e, onClose: t, onSave: r }) {
   const [n, s] = B.useState(e.text);
+  const bgIt = Iu(e),
+    [bgFt, setBgFt] = B.useState((bgIt && bgIt.font) || ""),
+    bgCan = e.type === "text" && bgWords(n) > 0 && bgWords(n) <= 50,
+    bgCur = bgCan ? bgFt : "";
   return u.jsx(Cs, {
     title: x("editPost"),
     onClose: t,
@@ -7660,13 +7676,33 @@ function Y_({ post: e, onClose: t, onSave: r }) {
           maxLength: 2e3,
           "aria-label": x("editPost"),
           className: "w-full p-3 rounded-lg text-base outline-none resize-none",
-          style: { background: k.paper, color: k.ink },
+          style: { background: k.paper, color: k.ink, fontFamily: bgCan ? bgFontCss(bgCur) : void 0 },
         }),
+        bgCan &&
+          u.jsxs("div", {
+            className: "mt-3",
+            children: [
+              u.jsx("div", { className: "text-xs font-semibold mb-1.5", style: { color: k.mute }, children: "Tipo de letra (textos até 50 palavras)" }),
+              u.jsx("div", {
+                className: "flex items-center gap-2 overflow-x-auto pb-1",
+                children: BG_FONTS.map(([id, nm, css]) =>
+                  u.jsx("button", {
+                    key: id || "n",
+                    onClick: () => setBgFt(id),
+                    "aria-pressed": bgCur === id,
+                    className: "shrink-0 px-3 py-1.5 rounded-full text-sm",
+                    style: { fontFamily: css, background: bgCur === id ? k.strong : k.paper, color: bgCur === id ? k.onStrong : k.ink },
+                    children: nm,
+                  }),
+                ),
+              }),
+            ],
+          }),
         u.jsxs("div", {
           className: "flex gap-2 mt-3",
           children: [
             u.jsx("button", {
-              onClick: () => r(n.trim()),
+              onClick: () => r(n.trim(), bgCur),
               className: "flex-1 py-2.5 rounded-full text-sm font-bold",
               style: { background: k.saffron, color: k.onAccent },
               children: x("save"),

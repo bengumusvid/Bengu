@@ -1218,7 +1218,7 @@ function layout(){var P=[],pg,y,cols=S.cols,cw=(CW-G*(cols-1))/cols,T0=330,T1=19
    (function(res,lines,y,first,offs){var bh=Math.max(res.mx,Math.max.apply(null,offs));pg.o.push(function(c){for(var k=1;k<cols;k++){var t0=Math.max(offs[k-1],offs[k]);if(bh>t0+40){c.fillStyle="#d4d4d4";c.fillRect(M+k*(cw+G)-G/2-.5,y+t0,1,bh-t0)}}
     if(first&&dcw){c.textBaseline="alphabetic";c.fillStyle=ac;c.font=fnt(dcs,1,0,fam);c.fillText(ch.toUpperCase(),M,y+offs[0]+2*lh+sz*.88);c.textBaseline="top"}
     res.out.forEach(function(r){var L=lines[r[0]];if(L&&L.ws)dline(c,L,M+r[1]*(cw+G),y+r[2],sz,fam,a.al,ac);else if(L&&L.img){var px=M+r[1]*(cw+G),py=y+r[2];coverP(c,L.img,px,py,L.W,L.ih);if(L.ch){c.fillStyle=ac;c.fillRect(px,py+L.ih,L.W,L.ch);c.fillStyle="#fff";c.font=fnt(20,0,1,"Georgia,serif");L.cl.forEach(function(t,k){c.fillText(t,px+8,py+L.ih+6+k*26)})}}})})})(res,lines,y,first,offs);
-   y+=Math.max(res.mx,mo)+34;
+   y+=Math.max(res.mx,mo)+34;pg.la=a;pg.yEnd=y;
    if(res.used<lines.length&&g++<30){lines=lines.slice(res.used);first=0;np(a.sec);continue}
    break}});
  var its=arts.filter(function(a){return a.title.trim()||a.body.trim()});
@@ -1335,7 +1335,7 @@ function gen(){if(!arts.some(function(a){return a.title.trim()||a.body.trim()}))
   .then(function(url){return api("bengu_journals","POST",jBody({author_id:me,title:(tt.value.trim()||nm).slice(0,120),pdf_url:url},sec,fee))}).then(function(r){jDone(b,done,sec,r)}).catch(function(e){alert((e&&e.message)||"Erro ao publicar.");pb.disabled=false;pb.textContent="📰 Publicar no Bengu"})},"#43A047");pb.style.cssText+=";width:100%;padding:12px;font-size:16px;margin-top:8px";pv.append(pb);
  cvs.forEach(function(c){var d=E("div",{style:"margin:10px 0;box-shadow:0 2px 8px rgba(0,0,0,.3);background:#fff"});c.style.cssText="width:100%;display:block";d.append(c);pv.append(d)})},30)}
 /* ---------- desfazer / refazer (instantâneos do rascunho, com pausa de 500 ms) ---------- */
-var HST=[],FUT=[],LAST=null,hT=0,undoB=btn("↩ "+BG_L("Undo","Desfazer"),function(){hUndo()}),redoB=btn("↪ "+BG_L("Redo","Refazer"),function(){hRedo()}),urow=row([undoB,redoB]);
+var HST=[],FUT=[],LAST=null,hT=0,undoB=btn("↩ "+BG_L("Undo","Desfazer"),function(){hUndo()}),redoB=btn("↪ "+BG_L("Redo","Refazer"),function(){hRedo()}),urow=row([undoB,redoB,btn("🧩 "+BG_L("Fill blank spaces","Preencher espaços em branco"),function(){fillSpaces()},"#6B7391")]);
 function stCopy(a){var o=Object.assign({},a);o.im=(a.im||[]).map(function(p){return Object.assign({},p)});return o}
 function stSnap(){return{S:Object.assign({},S),a:arts.map(stCopy)}}
 function stKey(s){return JSON.stringify([s.S,s.a.map(function(a){var o=Object.assign({},a);o.im=0;return[o,(a.im||[]).map(function(p){return[p.cap,p.cr,p.z,p.fx,p.fy,p.img?uu(p.img):0]})]})])}
@@ -1344,6 +1344,15 @@ function hCommit(){clearTimeout(hT);hT=setTimeout(function(){if(!idbReady)return
 function stApply(s){Object.assign(S,s.S);arts=s.a.map(stCopy);LAST={s:s,k:stKey(s)};save();[].forEach.call(set.querySelectorAll("input,select,textarea"),function(e){if(e._o===S&&e._k!=null&&S[e._k]!=null)e.value=S[e._k]});draw();updLP();updH()}
 function hUndo(){if(!HST.length)return;FUT.push(LAST.s);stApply(HST.pop())}
 function hRedo(){if(!FUT.length)return;HST.push(LAST.s);stApply(FUT.pop())}
+/* ---------- preencher espaços: aumenta a letra da notícia que deixa um vão numa página, sem acrescentar páginas ---------- */
+function fillSpaces(){var P=layout();if(P.length<2){alert(BG_L("Only one page: nothing to fill.","Só há uma página; nada a preencher."));return}
+ var base=P.length,n=0;
+ for(var k=0;k<P.length-1;k++){var pg=P[k];if(!pg.la||pg.yEnd==null)continue;if(bot(pg)-pg.yEnd<60)continue;
+  var a=pg.la,s0=a.sz,best=s0;
+  for(var z=s0+1;z<=36;z++){a.sz=z;if(layout().length>base)break;best=z}
+  a.sz=best;if(best!=s0)n++;P=layout()}
+ save();draw();
+ alert(n?BG_L("Filled "+n+" text(s). Use Undo to go back.","Preenchi "+n+" texto(s). Use Desfazer para voltar atrás."):BG_L("No big gaps to fill.","Não há espaços grandes para preencher."))}
 /* ---------- ajustar ao espaço: o maior tamanho que não acrescenta páginas ---------- */
 function fitArt(a){var base=layout().length,best=a.sz;for(var z=30;z>=16;z--){a.sz=z;if(layout().length<=base){best=z;break}}a.sz=best;save();draw()}
 function szOps(a){var o=[[21,"Pequeno"],[24,"Médio"],[28,"Grande"]];if(o.every(function(p){return p[0]!=a.sz}))o.push([a.sz,"Ajustado ("+a.sz+")"]);return o}

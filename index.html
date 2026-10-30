@@ -12868,11 +12868,5 @@ Am(document.getElementById("root")).render(
   u.jsx(L_, { children: u.jsx(J_, {}) }),
 );
 </script>
-<button id="bg-fs" aria-label="Ecrã inteiro" style="position:fixed;left:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:2147482000;width:40px;height:40px;border-radius:50%;border:0;background:rgba(18,24,58,.78);color:#fff;font-size:20px;line-height:40px;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.3);display:none;cursor:pointer">⛶</button>
-<script>(function(){var b=document.getElementById("bg-fs"),de=document.documentElement;if(!b||!(de.requestFullscreen||de.webkitRequestFullscreen))return;b.style.display="block";
-function on(){return !!(document.fullscreenElement||document.webkitFullscreenElement)}
-function sync(){var f=on();b.textContent=f?"✕":"⛶";b.setAttribute("aria-label",f?"Sair do ecrã inteiro":"Ecrã inteiro")}
-b.addEventListener("click",function(){try{if(on()){(document.exitFullscreen||document.webkitExitFullscreen).call(document)}else{(de.requestFullscreen||de.webkitRequestFullscreen).call(de)}}catch(e){}sync()});
-document.addEventListener("fullscreenchange",sync);document.addEventListener("webkitfullscreenchange",sync);sync()})();</script>
 </body>
 </html>

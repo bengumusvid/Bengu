@@ -2364,7 +2364,7 @@ window.bengu_open_record=window.bengu_open_live=function(){
  var PGT=window.__bgReelTarget||null;window.__bgReelTarget=null;
  if(!tok()){alert("Inicie sessão para gravar um reel.");return}
  if(!navigator.mediaDevices||!window.MediaRecorder){alert("Este navegador não permite gravar vídeo.");return}
- var W=720,H=1280,facing="user",filter="none",beauty={skin:40,light:25,tone:15,clar:0},beautyOn=true,cam=null,micStream=null,raf=0,rec=null,chunks=[],blob=null,mime=pickMime(),t0=0,timer=null,
+ var W=720,H=1280,facing="user",filter="none",beauty={skin:40,light:25,tone:15,clar:0,age:"n"},beautyOn=true,cam=null,micStream=null,raf=0,rec=null,chunks=[],blob=null,mime=pickMime(),t0=0,timer=null,
   actx=null,dest=null,music=null,musicEl=null,musicSrc=null,musicLabel="",recording=false,closed=false,openTab="";
  var SAFE_T="calc(8px + env(safe-area-inset-top,0px))",SAFE_B="calc(10px + env(safe-area-inset-bottom,0px))";
  var SM="border:0;border-radius:999px;padding:7px 12px;font-weight:700;font-size:13px;cursor:pointer;background:rgba(0,0,0,.45);color:#fff;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);";
@@ -2394,7 +2394,7 @@ window.bengu_open_record=window.bengu_open_live=function(){
   paint(1,f0.trim()||"none");
   if(beautyOn&&beauty.skin>0){var k=beauty.skin/100,px=(W/720)*(1+k*3.2);
    paint(.18+.5*k,(f0+" blur("+px.toFixed(1)+"px)").trim())}
-  if(FM.on&&FM.fm&&!FM.busy&&vid.readyState>=2)faceSend();if(FM.on&&FM.box&&beautyOn){var fe=faceEllipse();if(fe)faceSmooth(fe)}
+  if(FM.on&&FM.fm&&!FM.busy&&vid.readyState>=2)faceSend();if(FM.on&&FM.box&&beautyOn){var fe=faceEllipse();if(fe){faceSmooth(fe);faceAge(fe)}}
   if(bgMode!=="none"&&bgReady)segFrame()}
  function startCam(){if(cam){cam.getTracks().forEach(function(t){t.stop()});cam=null}
   var portrait=window.innerHeight>=window.innerWidth,f={ideal:facing};
@@ -2459,6 +2459,17 @@ function faceSmooth(e){var k=beauty.skin/100;if(k<=0)return;var x=Math.max(0,Mat
  g.translate(-x,-y);if(facing==="user"){g.translate(W,0);g.scale(-1,1)}g.drawImage(vid,(W-dw)/2,(H-dh)/2,dw,dh);g.restore();
  g.filter="none";g.globalCompositeOperation="destination-in";var lx=e.cx-x,ly=e.cy-y,gr=g.createRadialGradient(lx,ly,Math.min(e.rx,e.ry)*.5,lx,ly,Math.max(e.rx,e.ry));gr.addColorStop(0,"rgba(0,0,0,1)");gr.addColorStop(1,"rgba(0,0,0,0)");g.fillStyle=gr;g.fillRect(0,0,w,h);g.globalCompositeOperation="source-over";
  ctx.save();ctx.globalAlpha=.25+.5*k;ctx.drawImage(o,x,y);ctx.restore()}
+/* idade ligeira (só dentro do rosto): "mae" = tom mais quente; "velho" = tom mais quente e dessaturado, com sombras nas margens (sugere vincos, sem traços infantis) */
+function faceAge(e){var m=beauty.age;if(!m||m==="n")return;var x=Math.max(0,Math.floor(e.cx-e.rx)),y=Math.max(0,Math.floor(e.cy-e.ry)),w=Math.min(W,Math.ceil(e.cx+e.rx))-x,h=Math.min(H,Math.ceil(e.cy+e.ry))-y;if(w<8||h<8)return;
+ var o=FM.ac||(FM.ac=document.createElement("canvas"));o.width=w;o.height=h;var g=o.getContext("2d");
+ var f=m==="velho"?"sepia(.3) saturate(.8) contrast(1.08)":"sepia(.12) saturate(1.05) brightness(1.02)",al=m==="velho"?.45:.3;
+ g.save();try{g.filter=f}catch(_){}
+ var vw=vid.videoWidth,vh=vid.videoHeight,s2=Math.max(W/vw,H/vh),dw=vw*s2,dh=vh*s2;
+ g.translate(-x,-y);if(facing==="user"){g.translate(W,0);g.scale(-1,1)}g.drawImage(vid,(W-dw)/2,(H-dh)/2,dw,dh);g.restore();
+ g.filter="none";g.globalCompositeOperation="destination-in";var lx=e.cx-x,ly=e.cy-y,gr=g.createRadialGradient(lx,ly,Math.min(e.rx,e.ry)*.5,lx,ly,Math.max(e.rx,e.ry));gr.addColorStop(0,"rgba(0,0,0,1)");gr.addColorStop(1,"rgba(0,0,0,0)");g.fillStyle=gr;g.fillRect(0,0,w,h);g.globalCompositeOperation="source-over";
+ ctx.save();ctx.globalAlpha=al;ctx.drawImage(o,x,y);ctx.restore();
+ if(m==="velho"){ctx.save();var sg=ctx.createRadialGradient(e.cx,e.cy,Math.min(e.rx,e.ry)*.6,e.cx,e.cy,Math.max(e.rx,e.ry));sg.addColorStop(0,"rgba(60,40,20,0)");sg.addColorStop(1,"rgba(60,40,20,.22)");ctx.globalCompositeOperation="multiply";ctx.fillStyle=sg;ctx.fillRect(x,y,w,h);ctx.restore()}}
+
 
 /* embelezamento */
  var beautyBox=el("div","");
@@ -2471,10 +2482,15 @@ var fCb=el("input"),fSt=el("span","font-size:11px;opacity:.7;display:block",""),
 fCb.type="checkbox";fCb.checked=false;FM.ui={cb:fCb,st:fSt};
 fCb.onchange=function(){if(!fCb.checked){FM.on=false;FM.box=null;fSt.textContent="";return}fSt.textContent="A carregar o rastreio do rosto…";faceLoad().then(function(ok){if(!ok){fCb.checked=false;fSt.textContent="Não foi possível carregar o rastreio do rosto.";return}FM.on=true;FM.box=null;FM.res=[];FM.since=performance.now();fSt.textContent="Ativo. O rosto fica mais suave; o efeito aparece quando o rosto é detetado."})};
 fLb.append(fCb,"Efeitos de rosto (beta)");var faceRow=el("div","");faceRow.append(fLb,fSt);
+var ageNote=el("div","font-size:11px;opacity:.65;width:100%","Precisa de «Efeitos de rosto» ligado. Aplica-se só ao rosto.");
+var ageRow=el("div","display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0;font-size:13px"),ageB=[["n","Normal"],["mae","Mãe/Pai"],["velho","Velho/a"]].map(function(p){var b=el("button",SM+"padding:6px 10px;font-size:12px",p[1]);b.dataset.v=p[0];b.onclick=function(){beauty.age=p[0];paintAge()};return b});
+function paintAge(){ageB.forEach(function(b){var on=b.dataset.v===beauty.age;b.style.background=on?"#f5b400":"rgba(0,0,0,.45)";b.style.color=on?"#14163a":"#fff"})}
+ageRow.append(el("span","width:92px;flex:none","Idade"));ageB.forEach(function(b){ageRow.append(b)});ageRow.append(ageNote);paintAge();
 
- function resetBeauty(){beauty.skin=40;beauty.light=25;beauty.tone=15;beauty.clar=0;beautyBox.replaceChildren(bTop,slider("Pele lisa","skin"),slider("Luminosidade","light"),slider("Tom saudável","tone"),slider("Clareza","clar"),faceRow,beautyNote)}
+
+ function resetBeauty(){beauty.skin=40;beauty.light=25;beauty.tone=15;beauty.clar=0;beauty.age="n";beautyBox.replaceChildren(bTop,slider("Pele lisa","skin"),slider("Luminosidade","light"),slider("Tom saudável","tone"),slider("Clareza","clar"),ageRow,faceRow,beautyNote);paintAge()}
  var beautyNote=el("div","font-size:11px;opacity:.65;margin-top:4px","O embelezamento suaviza a pele e aviva a luz, e fica gravado no vídeo.");
- bReset.onclick=resetBeauty;beautyBox.append(bTop,sSkin,sLight,sTone,sClar,faceRow,beautyNote);
+ bReset.onclick=resetBeauty;beautyBox.append(bTop,sSkin,sLight,sTone,sClar,ageRow,faceRow,beautyNote);
 
  /* filtros */
  var fr=el("div","display:flex;gap:6px;overflow-x:auto;padding:2px 0");

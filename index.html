@@ -2482,9 +2482,10 @@ var fCb=el("input"),fSt=el("span","font-size:11px;opacity:.7;display:block",""),
 fCb.type="checkbox";fCb.checked=false;FM.ui={cb:fCb,st:fSt};
 fCb.onchange=function(){if(!fCb.checked){FM.on=false;FM.box=null;fSt.textContent="";return}fSt.textContent="A carregar o rastreio do rosto…";faceLoad().then(function(ok){if(!ok){fCb.checked=false;fSt.textContent="Não foi possível carregar o rastreio do rosto.";return}FM.on=true;FM.box=null;FM.res=[];FM.since=performance.now();fSt.textContent="Ativo. O rosto fica mais suave; o efeito aparece quando o rosto é detetado."})};
 fLb.append(fCb,"Efeitos de rosto (beta)");var faceRow=el("div","");faceRow.append(fLb,fSt);
+var AGEF=[];
 var ageNote=el("div","font-size:11px;opacity:.65;width:100%","Precisa de «Efeitos de rosto» ligado. Aplica-se só ao rosto.");
 var ageRow=el("div","display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0;font-size:13px"),ageB=[["n","Normal"],["mae","Mãe/Pai"],["velho","Velho/a"]].map(function(p){var b=el("button",SM+"padding:6px 10px;font-size:12px",p[1]);b.dataset.v=p[0];b.onclick=function(){beauty.age=p[0];paintAge()};return b});
-function paintAge(){ageB.forEach(function(b){var on=b.dataset.v===beauty.age;b.style.background=on?"#f5b400":"rgba(0,0,0,.45)";b.style.color=on?"#14163a":"#fff"})}
+function paintAge(){ageB.concat(AGEF).forEach(function(b){var on=b.dataset.v===beauty.age;b.style.background=on?"#f5b400":"rgba(0,0,0,.45)";b.style.color=on?"#14163a":"#fff"})}
 ageRow.append(el("span","width:92px;flex:none","Idade"));ageB.forEach(function(b){ageRow.append(b)});ageRow.append(ageNote);paintAge();
 
 
@@ -2496,6 +2497,10 @@ ageRow.append(el("span","width:92px;flex:none","Idade"));ageB.forEach(function(b
  var fr=el("div","display:flex;gap:6px;overflow-x:auto;padding:2px 0");
  function chip(on){return(on?Y:G)+"white-space:nowrap;padding:7px 11px;font-size:13px;flex:none"}
  FILTERS.forEach(function(f,i){var b=el("button",chip(!i),f[0]);b.onclick=function(){filter=f[1];[].forEach.call(fr.children,function(c){c.style.cssText=chip(false)});b.style.cssText=chip(true)};fr.append(b)});
+ /* idade (efeitos de rosto) também disponível nos filtros */
+ var ageLbl=el("div","font-size:13px;font-weight:700;margin:12px 0 6px","Idade (efeito de rosto)"),ageFr=el("div","display:flex;gap:6px;overflow-x:auto;padding:2px 0"),ageNt=el("div","font-size:11px;opacity:.65;margin-top:6px","Aplica-se só ao rosto. Ao escolher Mãe/Pai ou Velho/a, o rastreio do rosto liga-se sozinho.");
+ [["n","Normal"],["mae","Mãe/Pai"],["velho","Velho/a"]].forEach(function(p){var b=el("button",SM+"padding:7px 11px;font-size:13px",p[1]);b.dataset.v=p[0];AGEF.push(b);b.onclick=function(){beauty.age=p[0];if(p[0]!=="n"&&fCb&&!fCb.checked){fCb.checked=true;fCb.onchange()}paintAge()};ageFr.append(b)});
+ var frW=el("div","");frW.append(fr,ageLbl,ageFr,ageNt);paintAge();
 
  /* música */
  var mus=el("div",""),msel=el("select","width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid #3a4175;background:#0f1233;color:#fff;font-size:14px"),
@@ -2665,7 +2670,7 @@ ageRow.append(el("span","width:92px;flex:none","Idade"));ageB.forEach(function(b
  bgFile.onchange=function(){var f=bgFile.files[0];bgFile.value="";if(!f)return;var im=new Image();im.onload=function(){bgImg=im;setBg("image",bgImgB)};im.onerror=function(){say("Não foi possível abrir a imagem.")};im.src=URL.createObjectURL(f)};
  bgBox.append(bgRow,bgFile,bgNote);
  [bBeauty,bFilter,bMusic,bBg,bMic,flip].forEach(function(b){b.style.width="40px";b.style.height="40px"});bar.style.gap="4px";
- var tabs={beauty:[bBeauty,beautyBox],filter:[bFilter,fr],bg:[bBg,bgBox],music:[bMusic,mus]};
+ var tabs={beauty:[bBeauty,beautyBox],filter:[bFilter,frW],bg:[bBg,bgBox],music:[bMusic,mus]};
  function showTab(k){openTab=openTab===k?"":k;sheet.replaceChildren();sheet.style.maxHeight=openTab==="music"?"55vh":"30vh";Object.keys(tabs).forEach(function(n){tabs[n][0].style.background=openTab===n?"#f5b400":"rgba(0,0,0,.45)";tabs[n][0].style.color=openTab===n?"#14163a":"#fff"});
   if(openTab){var sx=el("button","float:right;border:0;border-radius:50%;width:30px;height:30px;padding:0;margin:0 0 4px 6px;font-size:15px;cursor:pointer;background:#2a2f66;color:#fff","✕");sx.setAttribute("aria-label","Fechar");sx.onclick=function(){showTab(openTab)};sheet.append(sx,tabs[openTab][1]);sheet.style.display="block"}else sheet.style.display="none"}
  bBeauty.onclick=function(){showTab("beauty")};bBg.onclick=function(){showTab("bg")};bFilter.onclick=function(){showTab("filter")};bMusic.onclick=function(){if(recording)return;showTab("music")};

@@ -1976,6 +1976,8 @@ function feed(){var h=document.getElementById("bg-pg-feed");if(!h||h.dataset.bg|
   var w=el("div");rows.forEach(function(r){w.append(feedCard(r,function(){h.dataset.bg="";h.replaceChildren();feed()}))});h.append(w)}).catch(function(){})}
 new MutationObserver(function(){clearTimeout(feedT);feedT=setTimeout(function(){feed();scanPdf()},250)}).observe(document.body,{childList:true,subtree:true});
 window.bengu_pg_open=open;
+window.bengu_pg_fetch=function(){return tok()?rpc("bengu_pg_feed",{p_limit:20}):Promise.resolve([])};
+window.bengu_pg_card=feedCard;
 /* ligações partilhadas: #pagina=ID ou #grupo=ID */
 function deep(){var m=String(location.hash||"").match(/^#(pagina|grupo)=([0-9a-f-]{36})$/i);if(!m||!tok())return;var k=m[1].toLowerCase(),id=m[2];try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}
  open();stack=[];go(home);go(k==="pagina"?function(){pageView(id)}:function(){groupView(id)})}
@@ -5541,6 +5543,43 @@ function K_({ post: e, users: t, mine: mn_, onDeleteItem: dit_ }) {
     ],
   });
 }
+function BgPgSlot({ row, again }) {
+  const ref = B.useRef(null);
+  B.useEffect(() => {
+    const h = ref.current;
+    if (!h || !window.bengu_pg_card) return;
+    h.replaceChildren();
+    try { h.append(window.bengu_pg_card(row, again)); } catch (e) {}
+    return () => { h.replaceChildren(); };
+  }, [row, again]);
+  return u.jsx("div", { ref });
+}
+function BgMergedFeed({ sd, Rr, all, adsOff }) {
+  const [pg, setPg] = B.useState([]);
+  const [tick, setTick] = B.useState(0);
+  const again = B.useCallback(() => setTick((n) => n + 1), []);
+  B.useEffect(() => {
+    if (!all || !window.bengu_pg_fetch) { setPg([]); return; }
+    let on = true;
+    window.bengu_pg_fetch().then((r) => { if (on) setPg(Array.isArray(r) ? r : []); }, () => {});
+    return () => { on = false; };
+  }, [all, sd.length, tick]);
+  const ts = (v) => { const t = Date.parse(v); return isNaN(t) ? 0 : t; };
+  const items = [
+    ...sd.map((p) => ({ k: "a" + p.id, t: ts(p.createdAt), post: p })),
+    ...(all ? pg.map((r) => ({ k: "g" + r.kind + r.id, t: ts(r.created_at), row: r })) : []),
+  ].sort((x, y) => y.t - x.t);
+  return u.jsx(u.Fragment, {
+    children: items.flatMap((it, i) => {
+      const out = [it.post ? u.jsx(es, { ...Rr(it.post) }, it.k) : u.jsx(BgPgSlot, { row: it.row, again }, it.k)];
+      bgAdsOn() &&
+        !adsOff &&
+        (i + 1) % Math.max(2, (window.BENGU_ADS && window.BENGU_ADS.every) || 5) === 0 &&
+        out.push(u.jsx(BgAd, {}, "ad" + it.k));
+      return out;
+    }),
+  });
+}
 function es({
   post: e,
   user: t,
@@ -7040,7 +7079,6 @@ function J_() {
                   }),
                   Y !== "users" && u.jsx(BgPinned, {}),
                   Y === "following" && O.length > 0 && u.jsx(BgFolder, { ids: O.filter((id) => E[id]), users: E, onOpen: td }),
-                  Y === "all" && u.jsx("div", { id: "bg-pg-feed" }),
                   Y === "users"
                     ? u.jsx(BenguUsers, {
                         me: h,
@@ -7066,14 +7104,7 @@ function J_() {
                                 : "emptyAll",
                           ),
                         }),
-                      sd.flatMap((I, bgI) => {
-                        const bgR = [u.jsx(es, { ...Rr(I) }, I.id)];
-                        bgAdsOn() &&
-                          !Bo &&
-                          (bgI + 1) % Math.max(2, (window.BENGU_ADS && window.BENGU_ADS.every) || 5) === 0 &&
-                          bgR.push(u.jsx(BgAd, {}, "ad" + I.id));
-                        return bgR;
-                      }),
+                      u.jsx(BgMergedFeed, { sd, Rr, all: Y === "all", adsOff: !!Bo }),
                     ],
                   }),
                 ],

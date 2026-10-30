@@ -8060,7 +8060,7 @@ function X_({
                       onClick: (ev) => { ev.stopPropagation(); sendRx(em); },
                       className: "relative flex items-center justify-center rounded-full",
                       style: { width: 50, height: 50, fontSize: 28, background: "rgba(0,0,0,.4)", border: "1px solid rgba(255,255,255,.35)", opacity: stMine >= 10 ? 0.45 : 1 },
-                      children: [em, (stRx[em] || 0) > 0 && u.jsx("span", { className: "absolute text-white font-bold rounded-full", style: { bottom: -4, right: -4, minWidth: 18, height: 18, fontSize: 11, lineHeight: "18px", textAlign: "center", background: "#E53935", padding: "0 4px" }, children: stRx[em] })],
+                      children: [em, e && y.userId === e.id && (stRx[em] || 0) > 0 && u.jsx("span", { className: "absolute text-white font-bold rounded-full", style: { bottom: -4, right: -4, minWidth: 18, height: 18, fontSize: 11, lineHeight: "18px", textAlign: "center", background: "#E53935", padding: "0 4px" }, children: stRx[em] })],
                     }),
                   ),
                   u.jsx("div", { className: "text-white font-bold", style: { fontSize: 11, textShadow: "0 1px 3px #000" }, children: stMine + "/10" }),

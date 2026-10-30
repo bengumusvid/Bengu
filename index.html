@@ -2447,8 +2447,11 @@ var FM={on:false,fm:null,busy:false,box:null,since:0,res:[],cv:null,p:null,ui:nu
 var FACE_CDN="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/";
 function faceLoad(){if(FM.fm)return Promise.resolve(true);if(FM.p)return FM.p;FM.p=new Promise(function(ok){var s=document.createElement("script");s.src=FACE_CDN+"face_mesh.js";s.onerror=function(){ok(false)};s.onload=function(){try{var f=new window.FaceMesh({locateFile:function(n){return FACE_CDN+n}});f.setOptions({maxNumFaces:1,refineLandmarks:false,minDetectionConfidence:.5,minTrackingConfidence:.5});f.onResults(function(r){FM.res.push(performance.now());if(FM.res.length>200)FM.res.splice(0,100);FM.box=r.multiFaceLandmarks&&r.multiFaceLandmarks[0]?faceBox(r.multiFaceLandmarks[0]):null});FM.fm=f;ok(true)}catch(e){ok(false)}};document.head.appendChild(s)});return FM.p}
 function faceBox(lm){var x0=1,y0=1,x1=0,y1=0;for(var i=0;i<lm.length;i++){var p=lm[i];if(p.x<x0)x0=p.x;if(p.x>x1)x1=p.x;if(p.y<y0)y0=p.y;if(p.y>y1)y1=p.y}return{x0:x0,y0:y0,x1:x1,y1:y1}}
-function faceSend(){FM.busy=true;var t=performance.now();Promise.resolve(FM.fm.send({image:vid})).then(function(){FM.busy=false}).catch(function(){FM.busy=false});
- if(FM.since&&t-FM.since>4000){FM.res=FM.res.filter(function(x){return t-x<2000});if(FM.res.length<30){FM.on=false;FM.box=null;if(FM.ui){FM.ui.cb.checked=false;FM.ui.st.textContent="Desligado automaticamente: o telemóvel não consegue manter 15 fps com o rosto."}}}}
+function faceSend(){FM.busy=true;Promise.resolve(FM.fm.send({image:vid})).then(function(){FM.busy=false}).catch(function(){FM.busy=false});
+ var t=performance.now();if(!FM.res.length)return;/* o modelo ainda está a carregar */
+ var fps=FM.res.filter(function(x){return t-x<3000}).length/3;
+ /* não desliga o efeito: só informa quando o telemóvel está lento */
+ if(FM.ui)FM.ui.st.textContent="Ativo · "+fps.toFixed(0)+" fps"+(fps<8?" (telemóvel lento: o rosto atualiza-se mais devagar)":"")}
 /* elipse do rosto em coordenadas do ecrã (com espelho quando a câmara é a frontal) */
 function faceEllipse(){if(!FM.box)return null;var vw=vid.videoWidth,vh=vid.videoHeight;if(!vw||!vh)return null;var s2=Math.max(W/vw,H/vh),dw=vw*s2,dh=vh*s2,ox=(W-dw)/2,oy=(H-dh)/2,b=FM.box,x0=ox+b.x0*dw,x1=ox+b.x1*dw,y0=oy+b.y0*dh,y1=oy+b.y1*dh;if(facing==="user"){var t=W-x1;x1=W-x0;x0=t}return{cx:(x0+x1)/2,cy:(y0+y1)/2,rx:(x1-x0)/2*1.15,ry:(y1-y0)/2*1.25}}
 /* suaviza só dentro do rosto: desfoca num recorte e mistura com máscara radial */
@@ -2480,7 +2483,7 @@ function faceAge(e){var m=beauty.age;if(!m||m==="n")return;var x=Math.max(0,Math
  var sSkin=slider("Pele lisa","skin"),sLight=slider("Luminosidade","light"),sTone=slider("Tom saudável","tone"),sClar=slider("Clareza","clar");
 var fCb=el("input"),fSt=el("span","font-size:11px;opacity:.7;display:block",""),fLb=el("label","display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;margin:8px 0");
 fCb.type="checkbox";fCb.checked=false;FM.ui={cb:fCb,st:fSt};
-fCb.onchange=function(){if(!fCb.checked){FM.on=false;FM.box=null;fSt.textContent="";return}fSt.textContent="A carregar o rastreio do rosto…";faceLoad().then(function(ok){if(!ok){fCb.checked=false;fSt.textContent="Não foi possível carregar o rastreio do rosto.";return}FM.on=true;FM.box=null;FM.res=[];FM.since=performance.now();fSt.textContent="Ativo. O rosto fica mais suave; o efeito aparece quando o rosto é detetado."})};
+fCb.onchange=function(){if(!fCb.checked){FM.on=false;FM.box=null;fSt.textContent="";return}fSt.textContent="A carregar o rastreio do rosto…";faceLoad().then(function(ok){if(!ok){fCb.checked=false;fSt.textContent="Não foi possível carregar o rastreio do rosto.";return}FM.on=true;FM.box=null;FM.res=[];FM.first=0;FM.low=0;fSt.textContent="A carregar o modelo do rosto…"})};
 fLb.append(fCb,"Efeitos de rosto (beta)");var faceRow=el("div","");faceRow.append(fLb,fSt);
 var AGEF=[];
 var ageNote=el("div","font-size:11px;opacity:.65;width:100%","Precisa de «Efeitos de rosto» ligado. Aplica-se só ao rosto.");

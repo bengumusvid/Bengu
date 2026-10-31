@@ -2,6 +2,52 @@
 <html lang="en">
   <head>
 <script>
+/* BENGU LITE — modo economia de dados.
+   Liga sozinho com "Economizar dados" do telemóvel ou rede lenta; ou pelo botão ⚡ / ?lite=1 (desliga com ?lite=0). */
+(function(){
+var q=(location.search.match(/[?&]lite=(\d)/)||[])[1],st=null;
+try{if(q!=null)localStorage.setItem("bg_lite",q);st=localStorage.getItem("bg_lite")}catch(e){}
+var c=navigator.connection||{},auto=!!c.saveData||/^(slow-2g|2g|3g)$/.test(c.effectiveType||"");
+var LITE=st!=null?st==="1":auto;window.BENGU_LITE=LITE;
+if(!LITE){addBtn(false);return}
+/* 1) Polling: pausa com a app em segundo plano e abranda os de 3-5 s */
+var SI=window.setInterval.bind(window);
+window.setInterval=function(fn,ms){
+ var a=[].slice.call(arguments,2);
+ if(typeof fn==="function"&&ms>=3000){
+  if(ms<=5000)ms=15000;
+  return SI(function(){if(document.visibilityState==="hidden")return;return fn.apply(this,a)},ms)
+ }
+ return SI.apply(window,arguments)
+};
+/* 2) Vídeo sem pré-carregamento; imagens e iframes só quando aparecem */
+function tune(n){
+ if(!n||n.nodeType!==1)return;
+ var l=n.matches?n:null,all=[];
+ if(l&&/^(VIDEO|AUDIO|IMG|IFRAME)$/.test(n.tagName))all.push(n);
+ if(n.querySelectorAll)[].push.apply(all,n.querySelectorAll("video,audio,img,iframe"));
+ all.forEach(function(e){
+  var t=e.tagName;
+  if(t==="VIDEO"||t==="AUDIO"){if(e.preload!=="none")e.preload="none"}
+  else{if(e.loading!=="lazy")e.loading="lazy";if(t==="IMG")e.decoding="async"}
+ })
+}
+new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(tune)})}).observe(document.documentElement,{childList:true,subtree:true});
+document.addEventListener("DOMContentLoaded",function(){tune(document.body)});
+addBtn(true);
+function addBtn(on){
+ document.addEventListener("DOMContentLoaded",function(){
+  var b=document.createElement("button");
+  b.textContent=on?"⚡ Lite":"⚡";b.title=on?"Modo Lite ligado (toque para desligar)":"Ligar Modo Lite (poupa dados)";
+  b.style.cssText="position:fixed;right:6px;top:calc(env(safe-area-inset-top,0px) + 4px);z-index:2147483000;font:600 11px system-ui,sans-serif;padding:3px 8px;border-radius:12px;border:0;color:#fff;background:"+(on?"#1a9e5c":"rgba(18,24,58,.55)")+";opacity:.8";
+  b.onclick=function(){try{localStorage.setItem("bg_lite",on?"0":"1")}catch(e){}location.reload()};
+  document.body.appendChild(b)
+ })
+}
+})();
+</script>
+
+<script>
 /* BENGU 4.26 — uploads para o Cloudflare R2 (via função r2-sign do Supabase) */
 (function(){
 var SB="https://cnpkgauzhoyzlhtcexiv.supabase.co",R2="https://pub-bfc0fef4db69483bbb763a7c282a456c.r2.dev",KEY="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ";

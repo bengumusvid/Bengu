@@ -2121,14 +2121,14 @@ function poll(){
 }
 function live(){
  try{var sb=window.__sb;if(!sb||live.on)return;live.on=1;
-  sb.channel("bg-adm-newuser").on("postgres_changes",{event:"INSERT",schema:"public",table:"bengu_notifications"},function(m){var n=m&&m.new;if(n&&n.kind==="new_user")alertNew(n)}).subscribe()}catch(e){}
+  sb.channel("bg-adm-newuser").on("postgres_changes",{event:"INSERT",schema:"public",table:"bengu_notifications"},function(m){var n=m&&m.new;if(n&&n.kind==="new_user"&&document.visibilityState==="visible")alertNew(n)}).subscribe()}catch(e){}
 }
 function askPerm(){if(asked||!window.BENGU_ADMIN||chans().indexOf("push")<0||!("Notification" in window)||Notification.permission!=="default")return;asked=true;try{Notification.requestPermission()}catch(e){}}
-document.addEventListener("click",askPerm,true);
+document.addEventListener("click",askPerm,true);document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")last(new Date().toISOString())});
 function start(){
- if(started||!tok())return;
+ if(started||!tok()||document.visibilityState!=="visible")return;
  fetch(U+"/rest/v1/rpc/is_admin",{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/json"},body:"{}"}).then(function(r){return r.ok?r.json():null}).then(function(a){
-  if(a===true){started=true;window.BENGU_ADMIN=true;live();poll();setInterval(poll,90000)}else if(a===false)started=true}).catch(function(){})
+  if(a===true){started=true;window.BENGU_ADMIN=true;last(new Date().toISOString());live();setInterval(poll,90000)}else if(a===false)started=true}).catch(function(){})
 }
 setTimeout(start,3000);var t=setInterval(function(){if(started)clearInterval(t);else start()},20000);
 })();

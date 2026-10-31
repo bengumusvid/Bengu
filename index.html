@@ -36,13 +36,26 @@ new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(tu
 document.addEventListener("DOMContentLoaded",function(){tune(document.body)});
 addBtn(true);
 function addBtn(on){
- document.addEventListener("DOMContentLoaded",function(){
-  var b=document.createElement("button");
-  b.textContent=on?"⚡ Lite":"⚡";b.title=on?"Modo Lite ligado (toque para desligar)":"Ligar Modo Lite (poupa dados)";
-  b.style.cssText="position:fixed;right:6px;top:calc(env(safe-area-inset-top,0px) + 4px);z-index:2147483000;font:600 11px system-ui,sans-serif;padding:3px 8px;border-radius:12px;border:0;color:#fff;background:"+(on?"#1a9e5c":"rgba(18,24,58,.55)")+";opacity:.8";
-  b.onclick=function(){try{localStorage.setItem("bg_lite",on?"0":"1")}catch(e){}location.reload()};
-  document.body.appendChild(b)
- })
+ /* O botão vive dentro do menu (⋮), na linha "Perfil / Editar perfil", à direita — nunca sobre os três pontos */
+ var tm;
+ function row(){
+  var r=document.evaluate('//*[not(*)][normalize-space(text())="Editar perfil" or normalize-space(text())="Edit profile"]',document,null,9,null).singleNodeValue;
+  if(!r)return null;
+  var p=r.parentElement;
+  while(p&&!/Páginas|Pages|Modo de ecrã|Screen mode/.test(p.textContent)){r=p;p=p.parentElement}
+  return r
+ }
+ function put(){
+  var r=row();if(!r||r.querySelector("[data-bglite]"))return;
+  if(getComputedStyle(r).position==="static")r.style.position="relative";
+  var b=document.createElement("span");b.setAttribute("data-bglite","1");b.setAttribute("role","button");
+  b.textContent=on?"⚡ Lite: ON":"⚡ Lite: OFF";b.title=on?"Modo Lite ligado (toque para desligar)":"Ligar Modo Lite (poupa dados)";
+  b.style.cssText="position:absolute;right:12px;top:50%;transform:translateY(-50%);z-index:5;font:600 12px system-ui,sans-serif;padding:6px 10px;border-radius:14px;color:#fff;cursor:pointer;white-space:nowrap;background:"+(on?"#1a9e5c":"#3a4170");
+  function go(e){e.preventDefault();e.stopPropagation();try{localStorage.setItem("bg_lite",on?"0":"1")}catch(x){}location.reload()}
+  b.addEventListener("click",go);b.addEventListener("pointerdown",function(e){e.stopPropagation()});
+  r.appendChild(b)
+ }
+ new MutationObserver(function(){clearTimeout(tm);tm=setTimeout(put,300)}).observe(document.documentElement,{childList:true,subtree:true})
 }
 })();
 </script>

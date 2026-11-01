@@ -13317,6 +13317,7 @@ u.jsxs("div", {
                 }),
                 z && u.jsxs("div", { children: [
                   u.jsx("input", { value: ctc, onChange: (X) => sctc(a === "email" ? X.target.value.trim() : X.target.value.replace(/[^\d+\s\-()]/g, "")), placeholder: a === "email" ? BG_L("name@email.com","nome@email.com") : "+258 86 0289 885", "aria-label": a === "email" ? "Email" : "Telefone", type: a === "email" ? "email" : "tel", inputMode: a === "email" ? "email" : "tel", autoComplete: a === "email" ? "email" : "tel", className: te, style: be }),
+                  a === "email" && u.jsx("div", { className: "text-[11px] mt-1", style: { color: k.mute }, children: BG_L("Register with a real email.","Regista com email verdadeiro.") }),
                   a === "phone" && u.jsx("div", { className: "text-[11px] mt-1", style: { color: k.mute }, children: "Escreva o número com o indicativo do país, começando por +. Exemplo: +258 86 0289 885 (+258 = Moçambique). Vai receber um código por SMS." }),
                 ] }),
                 z && u.jsx(Pg, { lang: e, value: cty, onChange: scty, className: te, style: be }),

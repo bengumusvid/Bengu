@@ -111,7 +111,7 @@ XMLHttpRequest.prototype.send=function(body){
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.41.4_01.11.2026" />
+    <meta name="bengu-build" content="4.41.5_01.11.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -9681,6 +9681,7 @@ function Ad_({ onBack: e, say: t }) {
   const [a, o] = B.useState(null),
     [allU, setAllU] = B.useState(!1),
     [posts, setPosts] = B.useState(null),
+    [rev, setRev] = B.useState({}),
     [l, c] = B.useState([]),
     [d, p] = B.useState([]),
     w = async () => {
@@ -9750,6 +9751,12 @@ function Ad_({ onBack: e, say: t }) {
       }
       setPosts(rows.map((x) => ({ ...x, author_name: nm[x.user_id] })));
     },
+    review = async (pid) => {
+      if (rev[pid]) return setRev((o) => { const n = { ...o }; delete n[pid]; return n; });
+      setRev((o) => ({ ...o, [pid]: "loading" }));
+      const r = await me.from("posts").select("id,type,body,media").eq("id", pid).maybeSingle();
+      setRev((o) => ({ ...o, [pid]: r.data || "none" }));
+    },
     openStat = async (n) => {
       if (n === "Utilizadores") {
         const r = await me.rpc("admin_top_accounts", { lim: 1000 });
@@ -9793,7 +9800,7 @@ function Ad_({ onBack: e, say: t }) {
                 className: "rounded-xl p-3 text-center",
                 role: "button",
                 onClick: () => openStat(n),
-                style: { ...card, cursor: "pointer" },
+                style: { ...card, cursor: "pointer", border: n === "Denúncias" && v > 0 ? "1px solid #e5484d" : "none" },
                 children: [
                   u.jsx("div", {
                     className: "text-xl font-extrabold",
@@ -9945,9 +9952,33 @@ function Ad_({ onBack: e, say: t }) {
                     style: { color: k.ink },
                     children: (r.body || "(sem texto)").slice(0, 200),
                   }),
+                  rev[r.post_id] &&
+                    u.jsx("div", {
+                      className: "mb-2",
+                      children:
+                        rev[r.post_id] === "loading"
+                          ? u.jsx("p", { className: "text-xs", style: { color: k.mute }, children: "A carregar…" })
+                          : rev[r.post_id] === "none"
+                            ? u.jsx("p", { className: "text-xs", style: { color: k.mute }, children: "Conteúdo não encontrado (pode já ter sido apagado)." })
+                            : [
+                                u.jsx("div", { key: "t", className: "text-sm mb-2 break-words", style: { color: k.ink, whiteSpace: "pre-wrap" }, children: rev[r.post_id].body || "(sem texto)" }),
+                                ...(Array.isArray(rev[r.post_id].media) ? rev[r.post_id].media : []).map((m, i) =>
+                                  m && m.url
+                                    ? m.kind === "image"
+                                      ? u.jsx("img", { key: i, src: m.url, loading: "lazy", className: "w-full rounded-lg mb-2", style: { maxHeight: 420, objectFit: "contain", background: k.paper } })
+                                      : m.kind === "video"
+                                        ? u.jsx("video", { key: i, src: m.url, controls: !0, playsInline: !0, preload: "metadata", className: "w-full rounded-lg mb-2", style: { maxHeight: 420, background: "#000" } })
+                                        : m.kind === "audio"
+                                          ? u.jsx("audio", { key: i, src: m.url, controls: !0, preload: "none", className: "w-full mb-2" })
+                                          : u.jsx("a", { key: i, href: m.url, target: "_blank", rel: "noreferrer", className: "text-xs underline block mb-2", style: { color: k.ink }, children: m.name || m.url })
+                                    : null,
+                                ),
+                              ],
+                    }),
                   u.jsxs("div", {
                     className: "flex gap-2 flex-wrap",
                     children: [
+                      u.jsx("button", { onClick: () => review(r.post_id), className: btn, style: { background: k.paper, color: k.ink }, children: rev[r.post_id] ? "Fechar revisão" : "👁 Rever conteúdo" }),
                       u.jsx("button", { onClick: () => window.bengu_creator_panel && window.bengu_creator_panel(r.author_id, r.author_name), className: btn, style: { background: k.saffron, color: k.onAccent }, children: "📊 Painel do autor" }),
                     u.jsx("button", {
                         onClick: () => del(r.post_id),

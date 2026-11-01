@@ -111,7 +111,7 @@ XMLHttpRequest.prototype.send=function(body){
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.41.3_31.10.2026" />
+    <meta name="bengu-build" content="4.41.4_01.11.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -9679,15 +9679,18 @@ function Pw_({ email: e }) {
 }
 function Ad_({ onBack: e, say: t }) {
   const [a, o] = B.useState(null),
+    [allU, setAllU] = B.useState(!1),
+    [posts, setPosts] = B.useState(null),
     [l, c] = B.useState([]),
     [d, p] = B.useState([]),
     w = async () => {
       const r1 = await me.rpc("admin_overview"),
-        r2 = await me.rpc("admin_top_accounts", { lim: 20 }),
+        r2 = await me.rpc("admin_top_accounts", { lim: allU ? 1000 : 20 }),
         r3 = await me.rpc("admin_reports");
       r1.data && o(r1.data);
       Array.isArray(r2.data) && c(r2.data);
       Array.isArray(r3.data) && p(r3.data);
+      posts && loadPosts();
       (r1.error || r2.error || r3.error) &&
         t("Falta correr o SQL 2.0.2 na base de dados.");
     };
@@ -9730,6 +9733,33 @@ function Ad_({ onBack: e, say: t }) {
       w();
     },
     card = { background: k.card, color: k.ink },
+    sc = (id) =>
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        el && el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 200),
+    loadPosts = async () => {
+      const r = await me.from("posts").select("id,user_id,type,body,created_at").order("created_at", { ascending: !1 }).limit(50);
+      if (r.error) return t("Não foi possível carregar as publicações.");
+      const rows = r.data || [],
+        ids = [...new Set(rows.map((x) => x.user_id))],
+        nm = {};
+      if (ids.length) {
+        const q = await me.from("profiles").select("id,name").in("id", ids);
+        (q.data || []).forEach((x) => (nm[x.id] = x.name));
+      }
+      setPosts(rows.map((x) => ({ ...x, author_name: nm[x.user_id] })));
+    },
+    openStat = async (n) => {
+      if (n === "Utilizadores") {
+        const r = await me.rpc("admin_top_accounts", { lim: 1000 });
+        Array.isArray(r.data) && (c(r.data), setAllU(!0));
+        sc("bg-adm-users");
+      } else if (n === "Publicações") {
+        await loadPosts();
+        sc("bg-adm-posts");
+      } else sc("bg-adm-rep");
+    },
     btn = "px-3 py-1.5 rounded-full text-xs font-bold";
   return u.jsxs("div", {
     children: [
@@ -9761,7 +9791,9 @@ function Ad_({ onBack: e, say: t }) {
               "div",
               {
                 className: "rounded-xl p-3 text-center",
-                style: card,
+                role: "button",
+                onClick: () => openStat(n),
+                style: { ...card, cursor: "pointer" },
                 children: [
                   u.jsx("div", {
                     className: "text-xl font-extrabold",
@@ -9781,9 +9813,10 @@ function Ad_({ onBack: e, say: t }) {
       }),
       u.jsx("div", { className: "px-4 pb-2", children: u.jsx("button", { onClick: () => window.bengu_admin_earnings && window.bengu_admin_earnings(), className: "w-full rounded-xl py-3 text-sm font-bold", style: { background: k.saffron, color: k.onAccent }, children: "💰 Comissão e levantamentos" }) }),
       u.jsx("h2", {
+        id: "bg-adm-users",
         className: "px-4 pt-3 pb-2 text-sm font-bold",
         style: { color: k.mute },
-        children: "Contas mais seguidas",
+        children: allU ? "Todos os utilizadores (" + l.length + ")" : "Contas mais seguidas",
       }),
       u.jsx("div", {
         style: { background: k.card },
@@ -9840,7 +9873,43 @@ function Ad_({ onBack: e, say: t }) {
           ),
         ),
       }),
+      posts &&
+        u.jsxs("div", {
+          id: "bg-adm-posts",
+          children: [
+            u.jsx("h2", { className: "px-4 pt-4 pb-2 text-sm font-bold", style: { color: k.mute }, children: "Últimas publicações (" + posts.length + ")" }),
+            u.jsx("div", {
+              style: { background: k.card },
+              children:
+                posts.length === 0
+                  ? u.jsx("p", { className: "text-center text-sm py-8", style: { color: k.mute }, children: "Sem publicações." })
+                  : posts.map((r) =>
+                      u.jsxs(
+                        "div",
+                        {
+                          className: "px-4 py-3",
+                          style: { borderBottom: `1px solid ${k.line}` },
+                          children: [
+                            u.jsx("div", { className: "text-xs mb-1", style: { color: k.mute }, children: (r.author_name || "?") + " · " + r.type + " · " + String(r.created_at || "").slice(0, 16).replace("T", " ") }),
+                            u.jsx("div", { className: "text-sm mb-2 break-words", style: { color: k.ink }, children: (r.body || "(sem texto)").slice(0, 200) }),
+                            u.jsxs("div", {
+                              className: "flex gap-2 flex-wrap",
+                              children: [
+                                u.jsx("button", { onClick: () => del(r.id), className: btn, style: { background: k.like, color: "#fff" }, children: "Apagar publicação" }),
+                                u.jsx("button", { onClick: () => blockPost(r.id, !0), className: btn, style: { background: k.paper, color: k.like }, children: "Bloquear conteúdo" }),
+                                u.jsx("button", { onClick: () => warn(r.user_id, r.id), className: btn, style: { background: k.saffron, color: k.onAccent }, children: "Avisar autor" }),
+                              ],
+                            }),
+                          ],
+                        },
+                        r.id,
+                      ),
+                    ),
+            }),
+          ],
+        }),
       u.jsx("h2", {
+        id: "bg-adm-rep",
         className: "px-4 pt-4 pb-2 text-sm font-bold",
         style: { color: k.mute },
         children: "Conteúdo denunciado",

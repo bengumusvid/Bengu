@@ -111,7 +111,7 @@ XMLHttpRequest.prototype.send=function(body){
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.41.5_01.11.2026" />
+    <meta name="bengu-build" content="4.41.7_02.11.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -5719,6 +5719,77 @@ function BgMergedFeed({ sd, Rr, all, adsOff }) {
     }),
   });
 }
+/* BENGU 4.41.7: causa da denúncia + ponto de exclamação vermelho para o autor (sem mostrar o denunciante) */
+var __bgRepP = null, __bgRepT = 0;
+function bgRepGet(force) {
+  if (!force && __bgRepP && Date.now() - __bgRepT < 60000) return __bgRepP;
+  __bgRepT = Date.now();
+  __bgRepP = me.rpc("my_reported_posts").then(
+    (r) => { const m = {}; (Array.isArray(r.data) ? r.data : []).forEach((x) => { m[String(x.post_id)] = x; }); return m; },
+    () => ({}),
+  );
+  return __bgRepP;
+}
+function bgOverlay(build) {
+  const old = document.getElementById("bg-rep-modal");
+  old && old.remove();
+  const o = document.createElement("div");
+  o.id = "bg-rep-modal";
+  o.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:20px";
+  const c = document.createElement("div");
+  c.style.cssText = "max-width:420px;width:100%;max-height:85vh;overflow:auto;background:#1b2250;color:#e8ebff;border-radius:16px;padding:18px;font:15px/1.5 system-ui,sans-serif";
+  o.appendChild(c);
+  o.addEventListener("click", (ev) => { ev.target === o && o.remove(); });
+  build(c, () => o.remove());
+  document.body.appendChild(o);
+}
+function bgBtn(txt, bg, color, fn) {
+  const b = document.createElement("button");
+  b.textContent = txt;
+  b.style.cssText = "display:block;width:100%;margin-top:8px;padding:11px 14px;border-radius:999px;border:0;font-weight:700;font-size:14px;background:" + bg + ";color:" + color;
+  b.addEventListener("click", fn);
+  return b;
+}
+function bgAskReason() {
+  return new Promise((res) => {
+    const L = ["Conteúdo ofensivo ou de ódio", "Nudez ou conteúdo sexual", "Violência", "Spam ou enganoso", "Direitos de autor", "Outro motivo"];
+    let done = false;
+    bgOverlay((c, close) => {
+      const h = document.createElement("div");
+      h.style.cssText = "font-weight:800;font-size:17px;margin-bottom:4px";
+      h.textContent = "Qual é a causa da denúncia?";
+      c.appendChild(h);
+      L.forEach((t) => c.appendChild(bgBtn(t, "#ffb454", "#12183A", () => { done = true; close(); res(t); })));
+      c.appendChild(bgBtn("Cancelar", "#2a3270", "#e8ebff", () => close()));
+      const ob = document.getElementById("bg-rep-modal");
+      new MutationObserver((_m, ob2) => { if (!document.getElementById("bg-rep-modal")) { ob2.disconnect(); done || res(null); } }).observe(document.body, { childList: true });
+    });
+  });
+}
+function bgShowRep(rp) {
+  bgOverlay((c, close) => {
+    const h = document.createElement("div");
+    h.style.cssText = "font-weight:800;font-size:17px;margin-bottom:8px;color:#ff6b6b";
+    h.textContent = "❗ Publicação denunciada";
+    c.appendChild(h);
+    const p = document.createElement("div");
+    p.textContent = "Esta publicação recebeu " + (rp.total || 1) + " denúncia(s). Causa:";
+    c.appendChild(p);
+    const ul = document.createElement("ul");
+    ul.style.cssText = "margin:8px 0 8px 18px;list-style:disc";
+    (Array.isArray(rp.reasons) ? rp.reasons : []).forEach((x) => {
+      const li = document.createElement("li");
+      li.textContent = (x.reason || "Motivo não indicado") + (x.n > 1 ? " (" + x.n + ")" : "");
+      ul.appendChild(li);
+    });
+    c.appendChild(ul);
+    const n = document.createElement("div");
+    n.style.cssText = "font-size:13px;opacity:.8";
+    n.textContent = "A equipa do Bengu está a rever. Enquanto estiver denunciada, as visualizações não são contadas; se a denúncia for retirada, voltam a contar.";
+    c.appendChild(n);
+    c.appendChild(bgBtn("Fechar", "#ffb454", "#12183A", () => close()));
+  });
+}
 function es({
   post: e,
   user: t,
@@ -5738,6 +5809,16 @@ function es({
   onDeleteItem: delIt,
 }) {
   const g = B.useRef(null);
+  const [rp_, setRp_] = B.useState(null);
+  B.useEffect(() => {
+    if (!n) return;
+    let on = !0;
+    const f = (fr) => bgRepGet(fr).then((m) => on && setRp_(m[String(e.id)] || null));
+    f(!1);
+    const l = () => f(!0);
+    window.addEventListener("bengu-reports", l);
+    return () => { on = !1; window.removeEventListener("bengu-reports", l); };
+  }, [e.id, n]);
   B.useEffect(() => {
     if (n || si.has(e.id) || !g.current) return;
     const y = new IntersectionObserver(
@@ -5808,6 +5889,14 @@ function es({
           n
             ? u.jsxs(u.Fragment, {
                 children: [
+                  rp_ &&
+                    u.jsx("button", {
+                      onClick: () => bgShowRep(rp_),
+                      "aria-label": "Publicação denunciada",
+                      title: "Publicação denunciada",
+                      className: "p-2",
+                      children: u.jsx("span", { style: { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: "50%", background: "#e53935", color: "#fff", fontWeight: 900, fontSize: 13, lineHeight: 1 }, children: "!" }),
+                    }),
                   u.jsx("button", {
                     onClick: () => p(e.id),
                     "aria-label": x("editPost"),
@@ -6509,10 +6598,15 @@ function J_() {
         : _e(x(V ? "unbookmarked" : "bookmarked"));
     },
     Mg = async (I) => {
-      if (!window.confirm(x("confirmReport"))) return;
-      const { error: V } = await me
+      const why = await bgAskReason();
+      if (!why) return;
+      let { error: V } = await me
         .from("reports")
-        .insert({ post_id: I, reporter_id: h.id });
+        .insert({ post_id: I, reporter_id: h.id, reason: why });
+      if (V) {
+        const r2 = await me.from("reports").insert({ post_id: I, reporter_id: h.id });
+        V = r2.error;
+      }
       _e(V ? Ze(V) : x("reported"));
     },
     Ug = async (I, V) => {
@@ -9717,6 +9811,12 @@ function Ad_({ onBack: e, say: t }) {
       t(r.error ? "Erro: falta correr o SQL 4.9.1" : flag ? "Conteúdo bloqueado" : "Conteúdo desbloqueado");
       w();
     },
+    dismissRep = async (pid) => {
+      if (!window.confirm("Retirar a denúncia deste conteúdo? As denúncias são apagadas e as visualizações voltam a contar.")) return;
+      const r = await me.rpc("admin_dismiss_reports", { pid: String(pid) });
+      t(r.error ? "Erro: falta correr o SQL 4.41.6" : "Denúncia retirada");
+      w();
+    },
     delUser = async (uid) => {
       if (!window.confirm("Apagar este perfil e todas as suas publicações? Não pode ser desfeito.")) return;
       const r = await me.rpc("admin_delete_user", { uid });
@@ -9981,6 +10081,7 @@ function Ad_({ onBack: e, say: t }) {
                     children: [
                       u.jsx("button", { onClick: () => review(r.post_id), className: btn, style: { background: k.paper, color: k.ink }, children: rev[r.post_id] ? "Fechar revisão" : "👁 Rever conteúdo" }),
                       u.jsx("button", { onClick: () => window.bengu_creator_panel && window.bengu_creator_panel(r.author_id, r.author_name), className: btn, style: { background: k.saffron, color: k.onAccent }, children: "📊 Painel do autor" }),
+                      u.jsx("button", { onClick: () => dismissRep(r.post_id), className: btn, style: { background: k.paper, color: k.ink }, children: "✅ Retirar denúncia" }),
                     u.jsx("button", {
                         onClick: () => del(r.post_id),
                         className: btn,

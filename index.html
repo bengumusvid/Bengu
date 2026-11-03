@@ -39,11 +39,10 @@ function addBtn(on){
  /* O botão vive dentro do menu (⋮), na linha "Perfil / Editar perfil", à direita — nunca sobre os três pontos */
  var tm;
  function row(){
-  var r=document.evaluate('//*[not(*)][normalize-space(text())="Editar perfil" or normalize-space(text())="Edit profile"]',document,null,9,null).singleNodeValue;
-  if(!r)return null;
-  var p=r.parentElement;
-  while(p&&!/Páginas|Pages|Modo de ecrã|Screen mode/.test(p.textContent)){r=p;p=p.parentElement}
-  return r
+  var m=document.querySelector("[data-bg-edit]");
+  if(!m){m=document.evaluate('//*[not(*)][normalize-space(text())="Editar perfil" or normalize-space(text())="Edit profile"]',document,null,9,null).singleNodeValue}
+  if(!m)return null;
+  return m.closest("button,[role=menuitem],li,a")||(m.parentElement&&m.parentElement.parentElement)
  }
  function put(){
   var r=row();if(!r||r.querySelector("[data-bglite]"))return;
@@ -60,6 +59,136 @@ function addBtn(on){
 })();
 </script>
 
+<script>
+window.bgIsAdm=function(){try{return window.__bgAdm===true||localStorage.getItem("bg_adm")==="1"}catch(e){return window.__bgAdm===true}};
+</script>
+<script>
+/* BENGU OFFLINE — memória do que já foi visto.
+   1) Respostas GET da base de dados (feed, perfis, comentários, estados…) ficam guardadas no aparelho (IndexedDB) e são usadas quando não há internet.
+   2) Fotos já vistas ficam na cache "bengu-seen" e são mostradas sem internet.
+   3) Sem internet os vídeos mostram só a imagem (capa ou 1.º fotograma já visto) e NÃO tocam. */
+(function(){
+if(window.__bgOff)return;window.__bgOff=1;
+var DB="bengu_offline",SEEN="bengu-seen",MAXREST=300,MAXIMG=500,OF=window.fetch.bind(window),dbp=null,netDown=false,puts=0,ptr=0;
+function offline(){return navigator.onLine===false||netDown}
+window.bgOffline=offline;
+function uid(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).user.id}catch(e){return""}}
+function idb(){
+ if(dbp)return dbp;
+ dbp=new Promise(function(res,rej){
+  try{var q=indexedDB.open(DB,1);
+   q.onupgradeneeded=function(){var d=q.result;d.createObjectStore("rest",{keyPath:"k"});d.createObjectStore("thumbs",{keyPath:"k"})};
+   q.onsuccess=function(){res(q.result)};q.onerror=function(){rej(q.error)}}catch(e){rej(e)}});
+ dbp.catch(function(){dbp=null});return dbp}
+function get(st,k){return idb().then(function(d){return new Promise(function(res,rej){var r=d.transaction(st).objectStore(st).get(k);r.onsuccess=function(){res(r.result)};r.onerror=function(){rej(r.error)}})})}
+function put(st,o){return idb().then(function(d){return new Promise(function(res){var t=d.transaction(st,"readwrite");t.objectStore(st).put(o);t.oncomplete=function(){res()};t.onerror=function(){res()};t.onabort=function(){res()}})}).catch(function(){})}
+function prune(){
+ idb().then(function(d){var s=d.transaction("rest","readwrite").objectStore("rest"),all=[];
+  s.openCursor().onsuccess=function(e){var c=e.target.result;if(c){all.push({k:c.value.k,t:c.value.t});c.continue()}else if(all.length>MAXREST){all.sort(function(a,b){return a.t-b.t});all.slice(0,all.length-MAXREST).forEach(function(x){s.delete(x.k)})}}}).catch(function(){})}
+function clearRest(){idb().then(function(d){d.transaction("rest","readwrite").objectStore("rest").clear()}).catch(function(){})}
+
+/* ---------- 1) dados ---------- */
+window.fetch=function(input,init){
+ var url=typeof input==="string"?input:(input&&input.url)||"",
+     method=((init&&init.method)||(input&&typeof input!=="string"&&input.method)||"GET").toUpperCase();
+ if(method!=="GET"||url.indexOf("/rest/v1/")<0)return OF(input,init);
+ var key=url,me=uid();
+ function fromCache(){
+  return get("rest",key).then(function(r){
+   if(!r||r.u!==me)throw new TypeError("offline");
+   var h={"Content-Type":r.ct||"application/json","x-bengu-offline":"1"};if(r.cr)h["Content-Range"]=r.cr;
+   return new Response(r.body,{status:200,headers:h})})}
+ if(navigator.onLine===false){setUi();return fromCache()}
+ return OF(input,init).then(function(res){
+  if(netDown){netDown=false;setUi()}
+  if(res.ok){res.clone().text().then(function(t){if(t.length<3e6){put("rest",{k:key,u:me,t:Date.now(),body:t,ct:res.headers.get("content-type"),cr:res.headers.get("content-range")||""});if(++puts%30===0)prune()}}).catch(function(){})}
+  return res},function(err){
+  netDown=true;setUi();
+  return fromCache().catch(function(){throw err})})
+};
+
+/* ---------- 2) fotos ---------- */
+function mine(s){var R=window.BG_R2||"";return s&&s.indexOf("http")===0&&((R&&s.indexOf(R)===0)||s.indexOf(".supabase.co/storage/")>0)}
+function cacheUrl(s){
+ if(!window.caches||!mine(s)||offline())return;
+ caches.open(SEEN).then(function(c){return c.match(s).then(function(m){
+  if(m)return;
+  return OF(s,{mode:"cors",credentials:"omit"}).then(function(r){
+   var n=+r.headers.get("content-length")||0;
+   if(r.ok&&n<4e6&&/image/i.test(r.headers.get("content-type")||"image")){
+    return c.put(s,r).then(function(){if(++ptr%40===0)c.keys().then(function(k){if(k.length>MAXIMG)k.slice(0,k.length-MAXIMG).forEach(function(q){c.delete(q)})})})}})})}).catch(function(){})}
+function restoreImg(img){
+ var s=img.getAttribute("src");
+ if(!window.caches||!s||img.__bgr||!/^https?:/.test(s))return;
+ caches.open(SEEN).then(function(c){return c.match(s)}).then(function(m){return m&&m.blob()}).then(function(b){if(b){img.__bgr=1;img.src=URL.createObjectURL(b)}}).catch(function(){})}
+document.addEventListener("load",function(e){var t=e.target;if(t&&t.tagName==="IMG")cacheUrl(t.currentSrc||t.src)},true);
+document.addEventListener("error",function(e){var t=e.target;if(t&&t.tagName==="IMG")restoreImg(t)},true);
+
+/* ---------- 3) vídeos ---------- */
+var P0=HTMLMediaElement.prototype.play;
+function blocked(v){return v&&v.tagName==="VIDEO"&&offline()&&!/^(blob|data):/.test(v.currentSrc||v.src||"")}
+HTMLMediaElement.prototype.play=function(){
+ if(blocked(this)){lock(this);try{this.pause()}catch(e){}return Promise.reject(new DOMException("Sem ligação","NotAllowedError"))}
+ return P0.apply(this,arguments)};
+document.addEventListener("play",function(e){var v=e.target;if(blocked(v)){try{v.pause()}catch(x){}lock(v)}},true);
+
+function snap(v){
+ try{
+  if(v.__bgSnap||!v.videoWidth||v.poster)return;v.__bgSnap=1;
+  var k=v.currentSrc||v.src;if(!k||/^(blob|data):/.test(k))return;
+  var w=Math.min(480,v.videoWidth),h=Math.round(w*v.videoHeight/v.videoWidth),c=document.createElement("canvas");c.width=w;c.height=h;
+  c.getContext("2d").drawImage(v,0,0,w,h);
+  var d=c.toDataURL("image/jpeg",.6);if(d&&d.length>500)put("thumbs",{k:k,t:Date.now(),d:d})
+ }catch(e){}}
+document.addEventListener("loadeddata",function(e){var v=e.target;if(v&&v.tagName==="VIDEO"&&!offline())snap(v)},true);
+document.addEventListener("seeked",function(e){var v=e.target;if(v&&v.tagName==="VIDEO"&&!offline())snap(v)},true);
+
+function picture(v,cb){
+ var p=v.getAttribute("poster");
+ if(p){
+  if(window.caches)return caches.open(SEEN).then(function(c){return c.match(p)}).then(function(m){return m?m.blob().then(function(b){cb(URL.createObjectURL(b))}):cb(p)}).catch(function(){cb(p)});
+  return cb(p)}
+ var k=v.currentSrc||v.src;
+ get("thumbs",k).then(function(r){cb(r&&r.d||null)}).catch(function(){cb(null)})}
+function lock(v){
+ if(v.__bgLock||!v.parentElement)return;
+ var o=document.createElement("div");v.__bgLock=o;
+ v.__bgCtl=v.controls;try{v.controls=false;v.pause();v.preload="none"}catch(e){}
+ var p=v.parentElement;if(getComputedStyle(p).position==="static"){p.style.position="relative";p.__bgRel=1}
+ o.setAttribute("data-bg-offvid","1");
+ o.style.cssText="position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:#0b0e1f center/cover no-repeat;color:#fff;font:600 13px system-ui,sans-serif;text-align:center;padding:12px";
+ var b=document.createElement("span");b.textContent="📴 Vídeo só com internet";
+ b.style.cssText="background:rgba(0,0,0,.6);padding:7px 12px;border-radius:16px";
+ o.append(b);
+ ["click","pointerdown","touchstart"].forEach(function(n){o.addEventListener(n,function(e){e.preventDefault();e.stopPropagation()},true)});
+ p.append(o);
+ picture(v,function(u){if(u)o.style.backgroundImage="url("+JSON.stringify(u)+")"})}
+function unlock(v){
+ var o=v.__bgLock;if(!o)return;o.remove();v.__bgLock=null;
+ try{v.controls=v.__bgCtl!==false;v.preload="metadata"}catch(e){}}
+function sweep(root){
+ [].forEach.call((root||document).querySelectorAll("video"),function(v){
+  if(blocked(v))lock(v);else if(v.__bgLock&&!offline())unlock(v)})}
+
+/* ---------- aviso e estado ---------- */
+var bar=null;
+function setUi(){
+ if(!document.body)return;
+ if(offline()){
+  if(!bar){bar=document.createElement("div");bar.textContent="📴 Sem internet — a mostrar o que já viu";
+   bar.style.cssText="position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 6px);z-index:2147482500;background:#3a4170;color:#fff;font:600 12px system-ui,sans-serif;padding:6px 12px;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.4);pointer-events:none";
+   document.body.append(bar)}
+ }else if(bar){bar.remove();bar=null}
+ sweep(document)}
+window.addEventListener("offline",function(){netDown=true;setUi()});
+window.addEventListener("online",function(){netDown=false;setUi()});
+document.addEventListener("DOMContentLoaded",function(){
+ setUi();
+ new MutationObserver(function(ms){if(!offline())return;ms.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType===1){if(n.tagName==="VIDEO")blocked(n)&&lock(n);else if(n.querySelector)sweep(n)}})})}).observe(document.body,{childList:true,subtree:true})});
+/* se a pessoa sair da conta, esquece os dados guardados */
+window.addEventListener("storage",function(e){if(e.key==="sb-cnpkgauzhoyzlhtcexiv-auth-token"&&!e.newValue)clearRest()});
+})();
+</script>
 <script>
 /* BENGU 4.26 — uploads para o Cloudflare R2 (via função r2-sign do Supabase) */
 (function(){
@@ -2100,7 +2229,7 @@ var tries=0;(function wait(){if(!tok()){if(++tries<150){setTimeout(wait,1000)}re
   <script>/* BENGU 4.3: actualização automática (cache / service worker) */
 (function(){
 var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.37.0_25.10.2026",KEY="bg_build",TRY="bg_build_try";
-function wipe(){var p=[];try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(n){return caches.delete(n)}))}))}catch(e){}
+function wipe(){var p=[];try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.filter(function(n){return n!=="bengu-seen"}).map(function(n){return caches.delete(n)}))}))}catch(e){}
  try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}))}catch(e){}
  return Promise.all(p).catch(function(){})}
 function reloadFor(v){try{if(sessionStorage.getItem(TRY)===v)return;sessionStorage.setItem(TRY,v)}catch(e){}wipe().then(function(){try{localStorage.setItem(KEY,v)}catch(e){}location.reload()})}
@@ -5807,6 +5936,7 @@ function es({
   onReport: f,
   onLikers: v,
   onDeleteItem: delIt,
+  onPin: bgPinFn,
 }) {
   const g = B.useRef(null);
   const [rp_, setRp_] = B.useState(null);
@@ -5873,6 +6003,7 @@ function es({
                   n ? t.handle : null,
                   n ? " · " : null,
                   sg(e.createdAt),
+                  e.pinnedAt && u.jsx("span", { className: "ml-1", title: "Fixada", "aria-label": "Fixada", children: "📌" }),
                   e.visibility === "private" &&
                     u.jsx(pg, { size: 12, "aria-label": x("private") }),
                   e.visibility === "followers" &&
@@ -5886,6 +6017,17 @@ function es({
               }),
             ],
           }),
+          bgPinFn &&
+            window.bgIsAdm &&
+            window.bgIsAdm() &&
+            u.jsx("button", {
+              onClick: () => bgPinFn(e.id),
+              "aria-label": e.pinnedAt ? "Desafixar" : "Fixar no topo",
+              title: e.pinnedAt ? "Desafixar" : "Fixar no topo",
+              className: "p-2",
+              style: { opacity: e.pinnedAt ? 1 : 0.55, fontSize: 16, lineHeight: 1 },
+              children: "📌",
+            }),
           n
             ? u.jsxs(u.Fragment, {
                 children: [
@@ -6210,13 +6352,27 @@ function J_() {
         if (he.error) throw he.error;
         if (Ce.error) throw Ce.error;
         if (De.error) throw De.error;
+        let bgPins = [];
+        try {
+          const pq = await me.from("posts").select(bl + ",pinned_at").not("pinned_at", "is", null);
+          if (!pq.error && Array.isArray(pq.data)) bgPins = pq.data;
+        } catch {}
         if (!he.data) throw new Error(x("profileMissing"));
         const Ir = { [Z]: Xr(he.data) },
           Lr = Ce.data.map((Oe) => xl(Oe, Z, Ir));
         if (
           (y(Xr(he.data)),
           C((Oe) => ({ ...Oe, ...Ir })),
-          P(Lr),
+          P(
+            (() => {
+              if (!bgPins.length) return Lr;
+              const pm = {};
+              bgPins.forEach((o) => {
+                pm[o.id] = { ...xl(o, Z, Ir), pinnedAt: o.pinned_at };
+              });
+              return [...Object.values(pm), ...Lr.filter((o) => !pm[o.id])];
+            })(),
+          ),
           R(De.data.map((Oe) => Oe.following_id)),
           re(Ne.error ? [] : Ne.data.map((Oe) => Oe.post_id)),
           M(Or.error ? [] : Or.data.map((Oe) => Oe.blocked_id)),
@@ -6915,6 +7071,20 @@ function J_() {
         } catch {}
       _e(x("deleted"));
     },
+    bgPin = async (I) => {
+      const V = A.find((he) => he.id === I);
+      if (!V) return;
+      const pin = !V.pinnedAt,
+        { error: Z } = await me.rpc("admin_pin_post", { pid: String(I), pin });
+      if (Z)
+        return _e(
+          /does not exist|schema cache|could not find/i.test(Z.message || "")
+            ? "Falta executar o ficheiro bengu-fixar-publicacoes.sql no Supabase."
+            : Ze(Z),
+        );
+      P((le) => le.map((he) => (he.id === I ? { ...he, pinnedAt: pin ? new Date().toISOString() : null } : he)));
+      _e(pin ? "📌 Publicação fixada no topo" : "Publicação desafixada");
+    },
     Wg = async (I) => {
       if (!window.confirm(x("confirmDelete"))) return;
       const V = A.find((he) => he.id === I),
@@ -7074,7 +7244,10 @@ function J_() {
         onVerify: zg,
       }),
     );
-  const In = (I, V) => V.createdAt.localeCompare(I.createdAt),
+  const In = (I, V) =>
+      (V.pinnedAt ? 1 : 0) - (I.pinnedAt ? 1 : 0) ||
+      (I.pinnedAt && V.pinnedAt ? String(V.pinnedAt).localeCompare(String(I.pinnedAt)) : 0) ||
+      V.createdAt.localeCompare(I.createdAt),
     ln = A.filter((I) => !j.includes(I.userId)),
     sd = [...ln]
       .filter((I) =>
@@ -7097,6 +7270,7 @@ function J_() {
       onProfile: td,
       onDelete: Wg,
       onDeleteItem: bgDelItem,
+      onPin: bgPin,
       onSave: Bg,
       onReport: Mg,
       onLikers: ie,
@@ -7754,6 +7928,7 @@ function J_() {
                     x("profile"),
                     u.jsx("span", {
                       className: "block text-xs font-normal",
+                      "data-bg-edit": "1",
                       style: { color: k.mute },
                       children: x("editProfile"),
                     }),

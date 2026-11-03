@@ -441,7 +441,21 @@ img,video,canvas,iframe,svg{max-width:100%}
 input,select,textarea{max-width:100%;font-size:16px}
 @media (max-width:820px){.max-w-md{max-width:100%!important}}
 @media (max-width:360px){nav.fixed button{min-width:0}}
-</style></head>
+</style><style id="bg-range">
+input[type=range]{-webkit-appearance:none;appearance:none;background:transparent;height:30px;accent-color:#f5b400;--p:0%}
+input[type=range]:focus{outline:none}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:999px;background:linear-gradient(to right,#f5b400 0,#f5b400 var(--p),#dcdee6 var(--p),#dcdee6 100%)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;margin-top:-8px;border-radius:50%;background:#f5b400;border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.4)}
+input[type=range]::-moz-range-track{height:8px;border-radius:999px;background:#dcdee6}
+input[type=range]::-moz-range-progress{height:8px;border-radius:999px;background:#f5b400}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#f5b400;border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.4)}
+input[type=range].bg-amp::-webkit-slider-runnable-track{background:linear-gradient(to right,transparent var(--p),rgba(255,255,255,.65) var(--p)),linear-gradient(to right,#f5b400 0,#f5b400 50%,#e53935 50%,#e53935 100%)}
+input[type=range].bg-amp::-moz-range-track{background:linear-gradient(to right,#f5b400 0,#f5b400 50%,#e53935 50%,#e53935 100%);opacity:.9}
+input[type=range].bg-amp::-moz-range-progress{background:transparent}
+input[type=range].bg-amp.hot::-webkit-slider-thumb{background:#e53935}
+input[type=range].bg-amp.hot::-moz-range-thumb{background:#e53935}
+</style>
+</head>
   <body style="margin:0">
     <div id="root" role="main"><div id="bg-fb" lang="pt" style="position:fixed;top:0;left:0;right:0;bottom:0;overflow:hidden;box-sizing:border-box;padding:32px 20px;background:#12183A;color:#fff;font-family:var(--bg-font)">
       <div id="bg-fb-user" style="display:none;align-items:center;gap:12px;margin:0 0 16px"><span id="bg-fb-av" style="width:48px;height:48px;border-radius:50%;background:#1E4DB7 center/cover no-repeat;color:#fff;display:flex;align-items:center;justify-content:center;font:700 20px var(--bg-font);flex:none"></span><b id="bg-fb-nm" style="font:700 18px var(--bg-font)"></b></div>
@@ -4272,7 +4286,7 @@ function bgEqBuild(a, st) {
 function bgEqApply(g, st) {
   const on = st.on !== false;
   g.filters.forEach((f, q) => { f.gain.value = on ? st.g[q] || 0 : 0; });
-  const ampv = Math.max(1, Math.min(2, (st.amp || 100) / 100));
+  const ampv = Math.max(0, Math.min(2, (st.amp == null ? 100 : st.amp) / 100));
   g.master.gain.value = ampv;
   try {
     const c = g.comp;
@@ -4289,7 +4303,7 @@ function bgEqLoad() {
     const o = JSON.parse(localStorage.getItem("bg_eq") || "null");
     if (o && Array.isArray(o.g)) {
       const g = o.g.length === 20 ? o.g.map(Number) : bgMk(o.g.map(Number));
-      return { g, fx: o.fx || "none", pr: o.pr || "Personalizado", on: o.on !== false, bal: Number(o.bal) || 0, amp: Math.min(200, Math.max(100, Number(o.amp) || 100)), err: "" };
+      return { g, fx: o.fx || "none", pr: o.pr || "Personalizado", on: o.on !== false, bal: Number(o.bal) || 0, amp: Math.min(200, Math.max(0, o.amp == null || isNaN(Number(o.amp)) ? 100 : Number(o.amp))), err: "" };
     }
   } catch (e) {}
   return d;
@@ -4392,13 +4406,14 @@ function BgEqPanel({ e, onClose }) {
       u.jsx("span", { children: "D" }),
       u.jsx("span", { style: { width: 92, textAlign: "right" }, children: balTxt }),
     ] }),
-    title("Amplificar o som (100% = normal · 200% = máximo)"),
+    title("Amplificar o som (0–100% normal · 100–200% forte)"),
     u.jsxs("div", { className: "flex items-center gap-3 text-xs", children: [
-      u.jsx("span", { children: "100" }),
-      u.jsx("input", { type: "range", min: 100, max: 200, step: 5, value: q.amp, onChange: (ev) => e.eqAmp(Number(ev.target.value)), className: "flex-1", style: { accentColor: k.saffron }, "aria-label": "Amplificar o som" }),
+      u.jsx("span", { children: "0" }),
+      u.jsx("input", { type: "range", min: 0, max: 200, step: 5, value: q.amp, onChange: (ev) => e.eqAmp(Number(ev.target.value)), className: "flex-1 bg-amp" + (q.amp > 100 ? " hot" : ""), "aria-label": "Amplificar o som" }),
       u.jsx("span", { children: "200" }),
-      u.jsx("span", { style: { width: 44, textAlign: "right", fontWeight: 700 }, children: q.amp + "%" }),
+      u.jsx("span", { style: { width: 44, textAlign: "right", fontWeight: 700, color: q.amp > 100 ? "#E53935" : "#C98F00" }, children: q.amp + "%" }),
     ] }),
+    u.jsx("div", { role: q.amp > 100 ? "alert" : void 0, className: "text-[12px] mt-2 rounded-lg px-3 py-2", style: q.amp > 100 ? { background: "rgba(229,57,53,.12)", color: "#B71C1C", border: "1px solid #E53935", fontWeight: 700 } : { color: k.mute }, children: q.amp > 100 ? "⚠️ Atenção: acima de 100% (zona vermelha) o som fica muito forte e pode estragar o tímpano, sobretudo com auriculares. Baixe o volume antes de pôr os auriculares." : "Amarelo: 0 a 100% (seguro). Vermelho: 100 a 200% — pode estragar o tímpano se estiver a usar auriculares." }),
     title("Efeitos"),
     u.jsx("div", { className: "flex flex-wrap gap-2 mb-4", children: BG_FX.map(([id, nm]) => u.jsx("button", { onClick: () => e.eqFx(id), style: chip(q.fx === id), children: nm }, id)) }),
     u.jsx("button", { onClick: () => e.eqReset(), className: "w-full py-2.5 rounded-full text-sm font-bold", style: { background: k.paper, color: k.ink }, children: "Repor tudo" }),
@@ -14370,6 +14385,12 @@ function run(){var sb=window.__sb;if(!sb||busy||done)return;busy=true;
     if(w&&w.error&&Object.keys(u).length)return sb.from("profiles").update(u).eq("id",s.user.id);return w}).then(function(){busy=false;done=true})})
  }).catch(function(){busy=false})}
 setInterval(run,4000);setTimeout(run,1500)})();
+</script>
+<script>
+/* BENGU: barra de preenchimento amarela nos sliders */
+(function(){function up(e){if(!e||e.type!=="range")return;var mn=+e.min||0,mx=e.max===""?100:+e.max,v=+e.value,p=mx>mn?(v-mn)/(mx-mn)*100:0;e.style.setProperty("--p",p+"%")}
+function all(){var a=document.querySelectorAll("input[type=range]");for(var i=0;i<a.length;i++)up(a[i])}
+document.addEventListener("input",function(e){up(e.target)},true);setInterval(all,250);all()})();
 </script>
 </body>
 </html>

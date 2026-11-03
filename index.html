@@ -111,7 +111,7 @@ XMLHttpRequest.prototype.send=function(body){
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.41.8_02.11.2026" />
+    <meta name="bengu-build" content="4.41.9_03.11.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -6864,7 +6864,7 @@ function J_() {
       const V = { current: !1 };
       const bgC = window.__bgDlChoice || {};
       Dt({
-        label: bgC.fmt === "mp3" ? "A converter para MP3…" : x("signing"),
+        label: bgC.fmt === "mp3" ? "A converter para MP3…" : window.BG_WM_URL ? "A pôr o logo no vídeo…" : x("signing"),
         pct: 0,
         cancel: () => {
           V.current = !0;
@@ -6872,6 +6872,15 @@ function J_() {
       });
       try {
         if (bgC.fmt === "mp3") return await bgVideoToMp3(I.url, bgC.kbps || 128, Di, V);
+        if (window.BG_WM_URL) {
+          try {
+            return await bgServerWm(I.url, bgC, Di, V);
+          } catch (e0) {
+            if (e0 && e0.message === "cancel") throw e0;
+            console.warn("Servidor do logo indisponível, a usar o telemóvel:", e0 && e0.message);
+            Di(0);
+          }
+        }
         return await U_(I.url, I.name, Di, V, bgC);
       } catch (Z) {
         if (Z && Z.message === "cancel") throw Z;
@@ -7935,6 +7944,49 @@ const BG_DL_MP3 = [
   { kbps: 192, label: "192 kbps", sub: "Alta" },
   { kbps: 320, label: "320 kbps", sub: "Máxima" },
 ];
+/* BENGU 4.41.9: servidor do logo (ffmpeg). Ponha o endereço do servidor entre as aspas, ex.: "https://bengu-logo.fly.dev".
+   Vazio = o telemóvel grava o vídeo em tempo real (mais lento). Se o servidor falhar, a app volta sozinha a esse método. */
+window.BG_WM_URL = window.BG_WM_URL || "";
+function bgTO(ms) { return typeof AbortSignal !== "undefined" && AbortSignal.timeout ? AbortSignal.timeout(ms) : void 0; }
+async function bgServerWm(url, ch, onProgress, cancelRef) {
+  const base = String(window.BG_WM_URL || "").replace(/\/$/, "");
+  if (!base) throw new Error("nosrv");
+  const { data } = await me.auth.getSession();
+  const tok = data && data.session && data.session.access_token;
+  if (!tok) throw new Error("noauth");
+  const r = await fetch(base + "/wm", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + tok },
+    body: JSON.stringify({ url, short: ch.short || 720 }),
+    signal: bgTO(30000),
+  });
+  if (!r.ok) throw new Error("srv" + r.status);
+  const { id } = await r.json();
+  let bad = 0;
+  for (;;) {
+    if (cancelRef.current) {
+      fetch(base + "/wm/" + id, { method: "DELETE" }).catch(() => {});
+      throw new Error("cancel");
+    }
+    await new Promise((ok) => setTimeout(ok, 1000));
+    let st = null;
+    try {
+      const q = await fetch(base + "/wm/" + id, { signal: bgTO(10000) });
+      if (q.ok) st = await q.json();
+    } catch (e) {}
+    if (!st) { if (++bad > 6) throw new Error("srvlost"); continue; }
+    bad = 0;
+    if (st.state === "error") throw new Error("srv:" + (st.error || ""));
+    onProgress(Math.min(0.95, st.pct || 0));
+    if (st.state === "done") break;
+  }
+  const f = await fetch(base + "/wm/" + id + "/file");
+  if (!f.ok) throw new Error("srvfile");
+  const blob = await f.blob();
+  fetch(base + "/wm/" + id, { method: "DELETE" }).catch(() => {});
+  onProgress(1);
+  return new Blob([blob], { type: "video/mp4" });
+}
 /* BENGU 4.41.8: tamanho estimado (MB) em cada qualidade + motivo quando o logo não pode ser posto */
 function bgVidDur(url) {
   return new Promise((res) => {
@@ -8020,7 +8072,7 @@ function bgPickDownload(urls) {
       });
       const note = document.createElement("div");
       note.textContent = fmt === "mp4"
-        ? "A qualidade não passa da do vídeo original. O vídeo é preparado em tempo real: demora cerca da duração do vídeo. Tamanhos estimados."
+        ? "A qualidade não passa da do vídeo original. " + (window.BG_WM_URL ? "O vídeo é preparado no servidor: demora alguns segundos." : "O vídeo é preparado em tempo real: demora cerca da duração do vídeo.") + " Tamanhos estimados."
         : "Só o som do vídeo, em ficheiro MP3. Tamanhos estimados.";
       note.style.cssText = `font-size:12px;color:${k.mute};margin:6px 0 12px;line-height:1.4`;
       c.append(note);

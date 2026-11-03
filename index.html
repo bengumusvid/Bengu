@@ -275,14 +275,8 @@ function sweep(root){
   if(blocked(v))lock(v);else if(v.__bgLock&&!offline())unlock(v)})}
 
 /* ---------- aviso e estado ---------- */
-var bar=null;
 function setUi(){
  if(!document.body)return;
- if(offline()){
-  if(!bar){bar=document.createElement("div");bar.textContent="📴 Sem internet — a mostrar o que já viu";
-   bar.style.cssText="position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 6px);z-index:2147482500;background:#3a4170;color:#fff;font:600 12px system-ui,sans-serif;padding:6px 12px;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.4);pointer-events:none";
-   document.body.append(bar)}
- }else if(bar){bar.remove();bar=null}
  sweep(document)}
 window.addEventListener("offline",function(){netDown=true;setUi()});
 window.addEventListener("online",function(){netDown=false;setUi()});

@@ -4334,7 +4334,10 @@ function BgEqSlider({ v, on, label, onChange }) {
 function BgEqPanel({ e, onClose }) {
   const q = e.eq, on = q.on !== false;
   const [favs, setFavs] = B.useState(bgEqFavs);
-  const [pOpen, setPOpen] = B.useState(false);
+  const list = [
+    ...Object.keys(BG_EQP).map((n) => ({ n, fav: null, i: -1 })),
+    ...favs.map((f, i) => ({ n: f.name, fav: f, i })),
+  ].sort((a, b) => a.n.localeCompare(b.n, "pt", { sensitivity: "base" }));
   const saveFavs = (a) => { setFavs(a); try { localStorage.setItem("bg_eq_favs", JSON.stringify(a)); } catch (x) {} };
   const chip = (act) => ({ padding: "6px 12px", borderRadius: 999, fontSize: 13, fontWeight: 700, background: act ? k.saffron : k.paper, color: act ? k.onAccent : k.ink });
   const small = { padding: "4px 8px", borderRadius: 999, fontSize: 12, background: k.paper, color: k.ink };
@@ -4360,19 +4363,17 @@ function BgEqPanel({ e, onClose }) {
   return u.jsx("div", { className: "fixed inset-0 flex items-end justify-center", style: { background: "rgba(0,0,0,.55)", zIndex: 70 }, onClick: onClose, children: u.jsxs("div", { onClick: (ev) => ev.stopPropagation(), className: "w-full rounded-t-2xl px-5 py-4", style: { background: k.card, color: k.ink, maxWidth: 560, maxHeight: "88vh", overflowY: "auto" }, children: [
     u.jsxs("div", { className: "flex items-center justify-between mb-3", children: [u.jsx("b", { className: "text-base", children: "🎚 Equalizador" }), u.jsx("button", { onClick: onClose, "aria-label": "Fechar", className: "text-lg px-2", children: "✕" })] }),
     q.err && u.jsx("div", { className: "text-xs mb-3 p-2 rounded-lg", style: { background: k.paper, color: k.like }, children: q.err }),
-    u.jsx("button", { onClick: () => e.eqOn(!on), "aria-pressed": on, className: "w-full py-2.5 rounded-full text-sm font-bold mb-1", style: { background: on ? k.saffron : k.paper, color: on ? k.onAccent : k.ink }, children: on ? "Equalizador: LIGADO (toque para desligar)" : "Equalizador: DESLIGADO (toque para ligar)" }),
-    title("Predefinições"),
-    u.jsxs("button", { onClick: () => setPOpen(!pOpen), "aria-expanded": pOpen, className: "w-full flex items-center justify-between py-2.5 px-4 rounded-full text-sm font-bold", style: { background: k.paper, color: k.ink }, children: [u.jsx("span", { children: q.pr || "Normal" }), u.jsx("span", { children: pOpen ? "▲" : "▼" })] }),
-    pOpen && u.jsx("div", { className: "flex flex-wrap gap-2 mt-2", children: Object.keys(BG_EQP).map((n) => u.jsx("button", { onClick: () => { e.eqPreset(n); setPOpen(false); }, style: chip(q.pr === n), children: n }, n)) }),
-    title("As minhas equalizações (com nome)"),
-    u.jsxs("div", { className: "flex flex-wrap gap-2", children: [
-      favs.map((f, i) => u.jsxs("span", { className: "inline-flex items-center gap-1", children: [
-        u.jsx("button", { onClick: () => e.eqFav(f), style: chip(q.pr === f.name), children: "⭐ " + f.name }),
-        u.jsx("button", { onClick: () => renFav(i), "aria-label": "Mudar o nome", style: small, children: "✏️" }),
-        u.jsx("button", { onClick: () => delFav(i), "aria-label": "Apagar", style: small, children: "🗑" }),
-      ] }, f.name)),
-      u.jsx("button", { onClick: addFav, style: { ...chip(!1), border: "1px dashed " + k.mute }, children: "💾 Guardar a atual com nome" }),
-    ] }),
+    u.jsx("button", { onClick: () => e.eqOn(!on), "aria-pressed": on, className: "w-full py-2.5 rounded-full text-base font-bold mb-1", style: { background: on ? k.saffron : k.paper, color: on ? k.onAccent : k.ink }, children: on ? "ON" : "OFF" }),
+    title("Predefinições · atual: " + (q.pr || "Normal")),
+    u.jsx("div", { role: "list", style: { maxHeight: 260, overflowY: "auto", overscrollBehavior: "contain", background: k.paper, borderRadius: 16, padding: 4 }, children: list.map((it) => {
+      const act = q.pr === it.n;
+      return u.jsxs("div", { role: "listitem", style: { display: "flex", alignItems: "center", gap: 6 }, children: [
+        u.jsx("button", { onClick: () => (it.fav ? e.eqFav(it.fav) : e.eqPreset(it.n)), "aria-pressed": act, style: { flex: 1, minWidth: 0, textAlign: "left", padding: "11px 14px", borderRadius: 12, fontSize: 15, fontWeight: act ? 800 : 600, background: act ? k.saffron : "transparent", color: act ? k.onAccent : k.ink }, children: (it.fav ? "⭐ " : "") + it.n }),
+        it.fav && u.jsx("button", { onClick: () => renFav(it.i), "aria-label": "Mudar o nome", style: { ...small, background: k.card }, children: "✏️" }),
+        it.fav && u.jsx("button", { onClick: () => delFav(it.i), "aria-label": "Apagar", style: { ...small, background: k.card }, children: "🗑" }),
+      ] }, (it.fav ? "f:" : "p:") + it.n);
+    }) }),
+    u.jsx("button", { onClick: addFav, className: "mt-2", style: { ...chip(!1), border: "1px dashed " + k.mute }, children: "💾 Guardar a atual com nome" }),
     title("Manual"),
     u.jsx("div", { style: { display: "flex", overflowX: "auto", opacity: on ? 1 : 0.4, paddingBottom: 4 }, children: BG_EQF.map((f, i) => u.jsxs("div", { style: { width: 26, flex: "0 0 26px", textAlign: "center" }, children: [
       u.jsx("div", { style: { fontSize: 10, color: k.mute, height: 16, lineHeight: "16px" }, children: (q.g[i] > 0 ? "+" : "") + q.g[i] }),

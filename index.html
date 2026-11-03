@@ -1125,7 +1125,8 @@ function toast(t){var d=h("div",{style:"position:fixed;left:12px;right:12px;bott
 /* BENGU 4.22: visualizações de notícias e jornais publicados na Bengu (contam como as das publicações) */
 var __bgSeenV={};
 function bgCountView(kind,n){try{if(!n||n.id==null)return;var k=kind+":"+n.id;if(__bgSeenV[k])return;var me=uid();if(me&&n.author_id==me)return;__bgSeenV[k]=1;fetch(U+"/rest/v1/rpc/bengu_bump_content_view",{method:"POST",headers:{apikey:K,Authorization:"Bearer "+(tok()||K),"Content-Type":"application/json"},body:JSON.stringify({p_kind:kind,p_id:String(n.id)}),keepalive:true}).catch(function(){})}catch(e){}}
-function bgNV(kind,n,el){try{if(!("IntersectionObserver" in window)){bgCountView(kind,n);return}var io=new IntersectionObserver(function(es){if(es[0]&&es[0].isIntersecting){io.disconnect();bgCountView(kind,n)}},{threshold:.5});io.observe(el)}catch(e){}}
+function bgCountDl(kind,n){try{if(!n||n.id==null)return;var me=uid();if(me&&n.author_id==me)return;fetch(U+"/rest/v1/rpc/bengu_bump_content_download",{method:"POST",headers:{apikey:K,Authorization:"Bearer "+(tok()||K),"Content-Type":"application/json"},body:JSON.stringify({p_kind:kind,p_id:String(n.id)}),keepalive:true}).catch(function(){})}catch(e){}}
+function bgNV(kind,n,el){try{if(kind=="journal")return;if(kind=="music"){var a=el.querySelector&&el.querySelector("audio");if(a){a.addEventListener("play",function(){bgCountView(kind,n)},{once:true});return}var f=el.querySelector&&el.querySelector("iframe");if(f){var fn=function(){setTimeout(function(){if(document.activeElement===f){bgCountView(kind,n);window.removeEventListener("blur",fn)}},0)};window.addEventListener("blur",fn)}return}el.addEventListener("click",function(){bgCountView(kind,n)},{once:true})}catch(e){}}
 
 /* BENGU 4.24: gostar, comentar, partilhar, descarregar e usar áudio em músicas, jornais e notícias */
 var __bgQ={};
@@ -1341,7 +1342,7 @@ function openPdf(n){bgCountView("journal",n);var b=sheet("📰 "+n.title);b.pare
   pages=h("div",{style:"display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;background:#d6d2c5;border-radius:10px"}),
   thumbs=h("div",{style:"display:flex;gap:6px;overflow-x:auto;padding:8px 0"}),
   dl=h("a",{href:n.pdf_url,target:"_blank",rel:"noopener",style:"display:inline-block;margin:6px 0 10px;font-weight:700;color:#1E88E5"},BG_L("⬇ Open / download PDF","⬇ Abrir / descarregar PDF"));
- b.append(info,bar,pages,thumbs,dl,jAd());
+ var dlc=h("span",{style:"font-size:12px;opacity:.7;margin-left:8px"},n.downloads!=null?"⬇ "+n.downloads:"");dl.addEventListener("click",function(){bgCountDl("journal",n);if(n.downloads!=null){n.downloads++;dlc.textContent="⬇ "+n.downloads}});b.append(info,bar,pages,thumbs,dl,dlc,jAd());
  share.addEventListener("click",function(){var u=n.pdf_url;if(navigator.share){navigator.share({title:n.title,url:u}).catch(function(){})}else if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(u).then(function(){alert(BG_L("Link copied.","Ligação copiada."))}).catch(function(){})}else{prompt(BG_L("Copy the link:","Copie a ligação:"),u)}});
  loadPdfJs().then(function(L){return L.getDocument({url:n.pdf_url}).promise}).then(function(pdf){
   var N=pdf.numPages,cur=0,W=Math.min(pages.clientWidth||b.clientWidth||360,900),dpr=Math.min(2,window.devicePixelRatio||1),tiles=[];
@@ -1367,7 +1368,7 @@ function openPdf(n){bgCountView("journal",n);var b=sheet("📰 "+n.title);b.pare
   });
  }).catch(function(){info.style.display="block";info.textContent=BG_L("Could not show the PDF here. Use the link below to open it.","Não foi possível mostrar o PDF aqui. Use a ligação abaixo para o abrir.")})}
 
-var ED_BC=[["Verde Bengu","#43A047"],["Azul Bengu","#1E88E5"],["Vermelho Bengu","#E53935"],["Laranja Bengu","#FB8C00"],["Amarelo Bengu","#FDD835"],["Azul-escuro Bengu","#12183A"],["Verde jornal","#1B8A3A"]];
+var ED_BC=[["Verde Bengu","#43A047"],["Azul Bengu","#1E88E5"],["Vermelho Bengu","#E53935"],["Laranja Bengu","#FB8C00"],["Amarelo Bengu","#FDD835"],["Azul-escuro Bengu","#12183A"],["Verde jornal","#1B8A3A"],["Verde-escuro","#1B5E20"],["Esmeralda","#00A86B"],["Verde-água","#26A69A"],["Verde-lima","#9CCC65"],["Oliva","#827717"],["Turquesa","#00ACC1"],["Ciano","#00E5FF"],["Azul-céu","#29B6F6"],["Azul-marinho","#0D2B5C"],["Índigo","#3949AB"],["Violeta","#5E35B1"],["Roxo","#8E24AA"],["Magenta","#D81B60"],["Rosa","#EC407A"],["Salmão","#EF9A9A"],["Coral","#FF7043"],["Vermelho-escuro","#B71C1C"],["Vinho","#880E4F"],["Bordô","#7B1E3A"],["Dourado","#F9A825"],["Cobre","#B87333"],["Castanho","#6D4C41"],["Cinza-azulado","#546E7A"],["Cinza","#9E9E9E"],["Preto","#212121"]];
 
 /* ---------- BENGU 4.39: taxa 2 USD (África/Mundo), anúncio no fim, jornais por secção ---------- */
 function jFee(sec){if(!sec||!BG_GATE.on())return null;var pm=document.createElement("input");pm.placeholder="Meio de pagamento da taxa (ex.: M-Pesa, PayPal)";pm.style.cssText="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cfd4e3;border-radius:10px;margin:6px 0;font:inherit";
@@ -2513,7 +2514,7 @@ window.bengu_creator_panel=function(id,name){
    function pb(l,v,mx){var r=el("div","margin:6px 0"),t2=el("div","display:flex;justify-content:space-between;font-size:13px");t2.append(el("span","",l),el("span","",fmt(v)+" / "+fmt(mx)));var tr=el("div","height:8px;border-radius:6px;background:#0f1130;margin-top:3px;overflow:hidden");tr.append(el("div","height:100%;background:#f5b400;width:"+Math.min(100,v/mx*100)+"%"));r.append(t2,tr);return r}
    ek.append(el("div","font-weight:800","💳 "+BG_L("Withdrawal eligibility and estimated earnings","Elegibilidade para levantar e ganhos estimados")),pb(BG_L("Followers","Seguidores"),fol,mf),pb(BG_L("Post views in 30 days","Visualizações das publicações em 30 dias"),v30,mvw),el("div","font-size:13px;font-weight:700;margin-top:6px",ok2?BG_L("Eligible.","Elegível."):BG_L("Not eligible yet.","Ainda não elegível.")),el("div","font-size:12px;opacity:.85;margin-top:6px",BG_L("Estimated earnings: 30 days ","Ganhos estimados: 30 dias ")+us(ok2?v30*rp*pc/100000:0)+" · 12 "+BG_L("months ","meses ")+us(ok2?v365*rp*pc/100000:0)+" · Total "+us(ok2?views*rp*pc/100000:0)),el("div","font-size:11px;opacity:.65;margin-top:4px",BG_L("Estimate: views × ","Estimativa: visualizações × ")+us(rp)+BG_L(" per 1000 × "," por 1000 × ")+pc+"% "+BG_L("to the creator. Real value depends on ads. Admin only.","para o criador. O valor real depende dos anúncios. Só o administrador vê isto.")));body.append(ek);
    (function(){var cv=el("div","background:#1b1f48;border-radius:10px;padding:10px;margin-top:8px");body.append(cv);cv.append(el("div","font-size:12px;opacity:.7","A carregar visualizações de músicas, jornais e notícias…"));
-    Promise.all([["music_tracks","Músicas"],["bengu_journals","Jornais"],["bengu_news","Notícias"]].map(function(t){return get(t[0]+"?select=views&author_id=eq."+id+"&limit=500").then(function(r){return r.json()}).then(function(r){var v=0;(r||[]).forEach(function(i){v+=i.views||0});return t[1]+": "+fmt(v)}).catch(function(){return t[1]+": —"})})).then(function(z2){cv.replaceChildren(el("div","font-weight:800;margin-bottom:4px","👀 Músicas, jornais e notícias"),el("div","font-size:13px",z2.join(" · ")))})})();
+    var xtra=0;Promise.all([["music_tracks","Músicas"],["bengu_journals","Jornais"],["bengu_news","Notícias"]].map(function(t){return get(t[0]+"?select=views&author_id=eq."+id+"&limit=500").then(function(r){return r.json()}).then(function(r){var v=0;(r||[]).forEach(function(i){v+=i.views||0});if(t[0]!="music_tracks")xtra+=v;return t[1]+": "+fmt(v)}).catch(function(){return t[1]+": —"})})).then(function(z2){cv.replaceChildren(el("div","font-weight:800;margin-bottom:4px","👀 Músicas, jornais e notícias"),el("div","font-size:13px",z2.join(" · ")),el("div","font-size:13px;font-weight:800;margin-top:4px","👀 Total geral (publicações + jornais + notícias): "+fmt(views+xtra)))})})();
    body.append(el("div","margin:14px 0 6px;font-weight:800","Publicações recentes"));
   if(!posts.length)body.append(el("p","opacity:.7","Sem publicações."));
   posts.slice(0,30).forEach(function(p){var d=el("div","padding:10px;margin:6px 0;border-radius:10px;background:"+(rep[p.id]?"#6b2330":"#1b1f48"));
@@ -4200,8 +4201,30 @@ ${e.text}
   ]),
   Sg = B.createContext(null),
   Do = () => B.useContext(Sg);
-const BG_EQF = [60, 230, 910, 3600, 14000];
-const BG_EQP = { Normal: [0, 0, 0, 0, 0], "Graves fortes": [9, 6, 1, 0, 0], Voz: [-3, -1, 4, 5, 1], Pop: [-1, 2, 4, 2, -1], Rock: [5, 3, -1, 3, 5], "Clássica": [4, 2, -1, 2, 4], Dance: [7, 4, 0, 2, 4], Agudos: [-2, -1, 0, 5, 8] };
+const BG_EQF = [32, 45, 63, 90, 125, 180, 250, 355, 500, 710, 1000, 1400, 2000, 2800, 4000, 5600, 8000, 11200, 14000, 18000];
+const bgMk = (p) => Array.from({ length: 20 }, (_, i) => { const x = (i / 19) * (p.length - 1), a = Math.floor(x), b = Math.min(p.length - 1, a + 1); return Math.max(-12, Math.min(12, Math.round(p[a] + (p[b] - p[a]) * (x - a)))); });
+const BG_EQP = {
+  Normal: bgMk([0]),
+  "Graves fortes": bgMk([9, 8, 5, 1, 0, 0, 0]),
+  "Graves suaves": bgMk([4, 3, 2, 0, 0, 0]),
+  Voz: bgMk([-4, -2, 2, 5, 4, 1, -2]),
+  Pop: bgMk([-1, 2, 4, 2, -1]),
+  Rock: bgMk([6, 4, -1, -2, 2, 5, 6]),
+  "Clássica": bgMk([4, 3, 0, -1, 0, 3, 4]),
+  Dance: bgMk([8, 6, 2, 0, 2, 4, 5]),
+  Agudos: bgMk([-3, -2, 0, 3, 6, 8]),
+  Jazz: bgMk([3, 2, 1, 2, -2, 0, 3]),
+  "Hip-Hop": bgMk([8, 6, 2, 3, -1, 1, 3]),
+  "Eletrónica": bgMk([7, 5, 0, -3, 2, 5, 7]),
+  "Acústico": bgMk([4, 3, 3, 1, 2, 3, 2]),
+  Lounge: bgMk([-3, -1, 2, 3, 1, -1, -2]),
+  "Podcast / Fala": bgMk([-8, -5, 1, 5, 5, 2, -3]),
+  Cinema: bgMk([6, 3, -1, 0, 2, 4, 6]),
+  Reggae: bgMk([5, 3, 0, -4, 0, 3, 5]),
+  Latino: bgMk([4, 3, 1, 0, 3, 4, 3]),
+  "Volume baixo": bgMk([5, 3, 0, 0, 0, -2, -4]),
+  "Palco ao vivo": bgMk([3, 1, -1, 1, 3, 4, 2]),
+};
 const BG_FX = [["none", "Nenhum"], ["sala", "Sala"], ["salao", "Salão"], ["telefone", "Telefone"], ["abafado", "Abafado"]];
 function bgIR(ctx, secs, decay) {
   const n = Math.floor(ctx.sampleRate * secs), b = ctx.createBuffer(2, n, ctx.sampleRate);
@@ -4226,34 +4249,123 @@ function bgEqFx(g, fx) {
     fxIn.connect(lp); lp.connect(master); g.extra.push(lp);
   } else fxIn.connect(master);
 }
-function bgEqBuild(a, gains, fx) {
+function bgEqBuild(a, st) {
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
   const src = ctx.createMediaElementSource(a);
-  const filters = BG_EQF.map((f, q) => { const bq = ctx.createBiquadFilter(); bq.type = q === 0 ? "lowshelf" : q === 4 ? "highshelf" : "peaking"; bq.frequency.value = f; bq.Q.value = 1; bq.gain.value = gains[q]; return bq; });
+  const N = BG_EQF.length;
+  const filters = BG_EQF.map((f, q) => { const bq = ctx.createBiquadFilter(); bq.type = q === 0 ? "lowshelf" : q === N - 1 ? "highshelf" : "peaking"; bq.frequency.value = f; bq.Q.value = 2; bq.gain.value = 0; return bq; });
   src.connect(filters[0]);
-  for (let q = 0; q < 4; q++) filters[q].connect(filters[q + 1]);
+  for (let q = 0; q < N - 1; q++) filters[q].connect(filters[q + 1]);
   const fxIn = ctx.createGain(), master = ctx.createGain(), comp = ctx.createDynamicsCompressor();
-  filters[4].connect(fxIn); master.connect(comp); comp.connect(ctx.destination);
-  const g = { ctx, filters, fxIn, master, extra: [] };
-  bgEqFx(g, fx);
+  filters[N - 1].connect(fxIn); master.connect(comp);
+  let pan = null;
+  try { pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null; } catch (e) { pan = null; }
+  if (pan) { comp.connect(pan); pan.connect(ctx.destination); } else comp.connect(ctx.destination);
+  const g = { ctx, filters, fxIn, master, comp, pan, extra: [], fx: "__init" };
+  bgEqApply(g, st);
   return g;
 }
+function bgEqApply(g, st) {
+  const on = st.on !== false;
+  g.filters.forEach((f, q) => { f.gain.value = on ? st.g[q] || 0 : 0; });
+  g.master.gain.value = Math.max(1, Math.min(2, (st.amp || 100) / 100));
+  if (g.pan) g.pan.pan.value = Math.max(-1, Math.min(1, (st.bal || 0) / 100));
+  const fx = on ? st.fx || "none" : "none";
+  if (g.fx !== fx) { g.fx = fx; bgEqFx(g, fx); }
+}
+function bgEqLoad() {
+  const d = { g: new Array(20).fill(0), fx: "none", pr: "Normal", on: true, bal: 0, amp: 100, err: "" };
+  try {
+    const o = JSON.parse(localStorage.getItem("bg_eq") || "null");
+    if (o && Array.isArray(o.g)) {
+      const g = o.g.length === 20 ? o.g.map(Number) : bgMk(o.g.map(Number));
+      return { g, fx: o.fx || "none", pr: o.pr || "Personalizado", on: o.on !== false, bal: Number(o.bal) || 0, amp: Math.min(200, Math.max(100, Number(o.amp) || 100)), err: "" };
+    }
+  } catch (e) {}
+  return d;
+}
+function bgEqFavs() {
+  try { const a = JSON.parse(localStorage.getItem("bg_eq_favs") || "[]"); return Array.isArray(a) ? a.filter((f) => f && f.name && Array.isArray(f.g) && f.g.length === 20) : []; } catch (e) { return []; }
+}
+function bgFmtLeft(ms) { const s = Math.max(0, Math.ceil(ms / 1000)), m = Math.floor(s / 60), x = s % 60; return m + ":" + (x < 10 ? "0" : "") + x; }
 function BgEqPanel({ e, onClose }) {
-  const q = e.eq, chip = (on) => ({ padding: "6px 12px", borderRadius: 999, fontSize: 13, fontWeight: 700, background: on ? k.saffron : k.paper, color: on ? k.onAccent : k.ink });
-  return u.jsx("div", { className: "fixed inset-0 flex items-end justify-center", style: { background: "rgba(0,0,0,.55)", zIndex: 70 }, onClick: onClose, children: u.jsxs("div", { onClick: (ev) => ev.stopPropagation(), className: "w-full rounded-t-2xl px-5 py-4", style: { background: k.card, color: k.ink, maxWidth: 560, maxHeight: "86vh", overflowY: "auto" }, children: [
+  const q = e.eq, on = q.on !== false;
+  const [favs, setFavs] = B.useState(bgEqFavs);
+  const saveFavs = (a) => { setFavs(a); try { localStorage.setItem("bg_eq_favs", JSON.stringify(a)); } catch (x) {} };
+  const chip = (act) => ({ padding: "6px 12px", borderRadius: 999, fontSize: 13, fontWeight: 700, background: act ? k.saffron : k.paper, color: act ? k.onAccent : k.ink });
+  const small = { padding: "4px 8px", borderRadius: 999, fontSize: 12, background: k.paper, color: k.ink };
+  const lbl = (f) => (f < 1000 ? String(f) : String(f / 1000).replace(".", ",") + "k");
+  const title = (t) => u.jsx("div", { className: "text-xs font-bold mt-4 mb-2", style: { color: k.mute }, children: t });
+  const addFav = () => {
+    const nm = (window.prompt("Dê um nome a esta equalização:", "") || "").trim().slice(0, 30);
+    if (!nm) return;
+    const a = favs.filter((f) => f.name.toLowerCase() !== nm.toLowerCase());
+    a.push({ name: nm, g: q.g.slice(), fx: q.fx });
+    saveFavs(a);
+    e.eqFav({ name: nm, g: q.g, fx: q.fx });
+  };
+  const renFav = (i) => {
+    const nm = (window.prompt("Novo nome:", favs[i].name) || "").trim().slice(0, 30);
+    if (!nm) return;
+    const a = favs.slice();
+    a[i] = { ...a[i], name: nm };
+    saveFavs(a);
+  };
+  const delFav = (i) => { if (window.confirm("Apagar a equalização “" + favs[i].name + "”?")) saveFavs(favs.filter((_, j) => j !== i)); };
+  const balTxt = q.bal === 0 ? "Centro" : q.bal < 0 ? "Esquerda " + -q.bal + "%" : "Direita " + q.bal + "%";
+  return u.jsx("div", { className: "fixed inset-0 flex items-end justify-center", style: { background: "rgba(0,0,0,.55)", zIndex: 70 }, onClick: onClose, children: u.jsxs("div", { onClick: (ev) => ev.stopPropagation(), className: "w-full rounded-t-2xl px-5 py-4", style: { background: k.card, color: k.ink, maxWidth: 560, maxHeight: "88vh", overflowY: "auto" }, children: [
     u.jsxs("div", { className: "flex items-center justify-between mb-3", children: [u.jsx("b", { className: "text-base", children: "🎚 Equalizador" }), u.jsx("button", { onClick: onClose, "aria-label": "Fechar", className: "text-lg px-2", children: "✕" })] }),
     q.err && u.jsx("div", { className: "text-xs mb-3 p-2 rounded-lg", style: { background: k.paper, color: k.like }, children: q.err }),
-    u.jsx("div", { className: "text-xs font-bold mb-2", style: { color: k.mute }, children: "Predefinições" }),
-    u.jsx("div", { className: "flex flex-wrap gap-2 mb-4", children: Object.keys(BG_EQP).map((n) => u.jsx("button", { onClick: () => e.eqPreset(n), style: chip(q.pr === n), children: n }, n)) }),
-    u.jsx("div", { className: "text-xs font-bold mb-1", style: { color: k.mute }, children: "Manual" }),
-    BG_EQF.map((f, i) => u.jsxs("div", { className: "flex items-center gap-3 py-1 text-xs", children: [
-      u.jsx("span", { style: { width: 54 }, children: f < 1000 ? f + " Hz" : f / 1000 + " kHz" }),
-      u.jsx("input", { type: "range", min: -12, max: 12, step: 1, value: q.g[i], onChange: (ev) => e.eqGain(i, Number(ev.target.value)), className: "flex-1", style: { accentColor: k.saffron } }),
-      u.jsx("span", { style: { width: 38, textAlign: "right" }, children: (q.g[i] > 0 ? "+" : "") + q.g[i] + " dB" }),
-    ] }, f)),
-    u.jsx("div", { className: "text-xs font-bold mt-4 mb-2", style: { color: k.mute }, children: "Efeitos" }),
+    u.jsx("button", { onClick: () => e.eqOn(!on), "aria-pressed": on, className: "w-full py-2.5 rounded-full text-sm font-bold mb-1", style: { background: on ? k.saffron : k.paper, color: on ? k.onAccent : k.ink }, children: on ? "Equalizador: LIGADO (toque para desligar)" : "Equalizador: DESLIGADO (toque para ligar)" }),
+    title("Predefinições"),
+    u.jsx("div", { className: "flex flex-wrap gap-2", children: Object.keys(BG_EQP).map((n) => u.jsx("button", { onClick: () => e.eqPreset(n), style: chip(q.pr === n), children: n }, n)) }),
+    title("As minhas equalizações (com nome)"),
+    u.jsxs("div", { className: "flex flex-wrap gap-2", children: [
+      favs.map((f, i) => u.jsxs("span", { className: "inline-flex items-center gap-1", children: [
+        u.jsx("button", { onClick: () => e.eqFav(f), style: chip(q.pr === f.name), children: "⭐ " + f.name }),
+        u.jsx("button", { onClick: () => renFav(i), "aria-label": "Mudar o nome", style: small, children: "✏️" }),
+        u.jsx("button", { onClick: () => delFav(i), "aria-label": "Apagar", style: small, children: "🗑" }),
+      ] }, f.name)),
+      u.jsx("button", { onClick: addFav, style: { ...chip(!1), border: "1px dashed " + k.mute }, children: "💾 Guardar a atual com nome" }),
+    ] }),
+    title("Manual (20 faixas)"),
+    u.jsx("div", { style: { display: "flex", overflowX: "auto", opacity: on ? 1 : 0.4, paddingBottom: 4 }, children: BG_EQF.map((f, i) => u.jsxs("div", { style: { width: 26, flex: "0 0 26px", textAlign: "center" }, children: [
+      u.jsx("div", { style: { fontSize: 9, color: k.mute, height: 12 }, children: (q.g[i] > 0 ? "+" : "") + q.g[i] }),
+      u.jsx("div", { style: { position: "relative", height: 130 }, children: u.jsx("input", { type: "range", min: -12, max: 12, step: 1, value: q.g[i], disabled: !on, onChange: (ev) => e.eqGain(i, Number(ev.target.value)), "aria-label": f + " Hz", style: { position: "absolute", left: "50%", top: "50%", width: 120, margin: 0, transform: "translate(-50%,-50%) rotate(-90deg)", accentColor: k.saffron, touchAction: "none" } }) }),
+      u.jsx("div", { style: { fontSize: 9, color: k.mute }, children: lbl(f) }),
+    ] }, f)) }),
+    u.jsx("div", { className: "text-[11px]", style: { color: k.mute }, children: "Frequências em Hz · ganho em dB (−12 a +12)" }),
+    title("Balanço (esquerda / direita)"),
+    u.jsxs("div", { className: "flex items-center gap-3 text-xs", children: [
+      u.jsx("span", { children: "E" }),
+      u.jsx("input", { type: "range", min: -100, max: 100, step: 5, value: q.bal, onChange: (ev) => e.eqBal(Number(ev.target.value)), className: "flex-1", style: { accentColor: k.saffron }, "aria-label": "Balanço" }),
+      u.jsx("span", { children: "D" }),
+      u.jsx("span", { style: { width: 92, textAlign: "right" }, children: balTxt }),
+    ] }),
+    title("Amplificar o som (100% = normal · 200% = máximo)"),
+    u.jsxs("div", { className: "flex items-center gap-3 text-xs", children: [
+      u.jsx("span", { children: "100" }),
+      u.jsx("input", { type: "range", min: 100, max: 200, step: 5, value: q.amp, onChange: (ev) => e.eqAmp(Number(ev.target.value)), className: "flex-1", style: { accentColor: k.saffron }, "aria-label": "Amplificar o som" }),
+      u.jsx("span", { children: "200" }),
+      u.jsx("span", { style: { width: 44, textAlign: "right", fontWeight: 700 }, children: q.amp + "%" }),
+    ] }),
+    title("Efeitos"),
     u.jsx("div", { className: "flex flex-wrap gap-2 mb-4", children: BG_FX.map(([id, nm]) => u.jsx("button", { onClick: () => e.eqFx(id), style: chip(q.fx === id), children: nm }, id)) }),
-    u.jsx("button", { onClick: () => { e.eqPreset("Normal"); e.eqFx("none"); }, className: "w-full py-2.5 rounded-full text-sm font-bold", style: { background: k.paper, color: k.ink }, children: "Repor" }),
+    u.jsx("button", { onClick: () => e.eqReset(), className: "w-full py-2.5 rounded-full text-sm font-bold", style: { background: k.paper, color: k.ink }, children: "Repor tudo" }),
+  ] }) });
+}
+function BgSleepPanel({ e, onClose }) {
+  const act = e.sleepLeft > 0 || e.sleepEnd;
+  const chip = (on) => ({ padding: "10px 14px", borderRadius: 999, fontSize: 14, fontWeight: 700, background: on ? k.saffron : k.paper, color: on ? k.onAccent : k.ink });
+  const pick = (m) => { e.sleepSet(m); onClose(); };
+  return u.jsx("div", { className: "fixed inset-0 flex items-end justify-center", style: { background: "rgba(0,0,0,.55)", zIndex: 70 }, onClick: onClose, children: u.jsxs("div", { onClick: (ev) => ev.stopPropagation(), className: "w-full rounded-t-2xl px-5 py-4", style: { background: k.card, color: k.ink, maxWidth: 560 }, children: [
+    u.jsxs("div", { className: "flex items-center justify-between mb-2", children: [u.jsx("b", { className: "text-base", children: "⏲ Cronómetro para desligar" }), u.jsx("button", { onClick: onClose, "aria-label": "Fechar", className: "text-lg px-2", children: "✕" })] }),
+    u.jsx("div", { className: "text-sm mb-3", style: { color: k.mute }, children: e.sleepLeft > 0 ? "A música desliga em " + bgFmtLeft(e.sleepLeft) : e.sleepEnd ? "A música desliga no fim desta faixa" : "A música pára sozinha quando o tempo acabar." }),
+    u.jsxs("div", { className: "flex flex-wrap gap-2 mb-3", children: [
+      [15, 30, 45, 60, 90, 120].map((m) => u.jsx("button", { onClick: () => pick(m), style: chip(!1), children: m + " min" }, m)),
+      u.jsx("button", { onClick: () => pick("end"), style: chip(e.sleepEnd), children: "No fim da música" }),
+    ] }),
+    act && u.jsx("button", { onClick: () => pick(0), className: "w-full py-2.5 rounded-full text-sm font-bold", style: { background: k.paper, color: k.ink }, children: "Desligar o cronómetro" }),
   ] }) });
 }
 function L_({ children: e }) {
@@ -4266,11 +4378,12 @@ function L_({ children: e }) {
     [w, f] = B.useState(0),
     [v, g] = B.useState(!1),
     [sh, ssh] = B.useState(!1),
-    [eqs, seqs] = B.useState(() => {
-      try { const o = JSON.parse(localStorage.getItem("bg_eq") || "null"); if (o && Array.isArray(o.g) && o.g.length === 5) return { g: o.g, fx: o.fx || "none", pr: o.pr || "Personalizado", err: "" }; } catch (e) {}
-      return { g: [0, 0, 0, 0, 0], fx: "none", pr: "Normal", err: "" };
-    }),
+    [eqs, seqs] = B.useState(bgEqLoad),
     shR = B.useRef(!1),
+    sleepR = B.useRef(0),
+    sleepEndR = B.useRef(!1),
+    [sleepLeft, setSleepLeft] = B.useState(0),
+    [sleepEnd, setSleepEnd] = B.useState(!1),
     playedR = B.useRef(new Set()),
     histR = B.useRef([]),
     eqR = B.useRef(null),
@@ -4325,7 +4438,7 @@ function L_({ children: e }) {
       ((shR.current = nv), ssh(nv), (playedR.current = new Set(s >= 0 ? [s] : [])), (histR.current = []));
     },
     eqSave = (n) => {
-      try { localStorage.setItem("bg_eq", JSON.stringify({ g: n.g, fx: n.fx, pr: n.pr })); } catch (e) {}
+      try { localStorage.setItem("bg_eq", JSON.stringify({ g: n.g, fx: n.fx, pr: n.pr, on: n.on, bal: n.bal, amp: n.amp })); } catch (e) {}
       return n;
     },
     eqEnable = async () => {
@@ -4345,34 +4458,39 @@ function L_({ children: e }) {
           a.currentTime = ct;
           was && a.play().catch(() => {});
         }
-        eqR.current = bgEqBuild(a, eqs.g, eqs.fx);
+        eqR.current = bgEqBuild(a, eqs);
+        seqs((o_) => { eqR.current && bgEqApply(eqR.current, o_); return o_; });
         try { await eqR.current.ctx.resume(); } catch (e) {}
         return !0;
       } catch (err) {
         a.removeAttribute("crossorigin");
         if (src0) { a.src = src0; a.currentTime = ct; was && a.play().catch(() => {}); }
-        seqs((o_) => ({ ...o_, err: "O equalizador não está disponível para esta música neste navegador." }));
+        seqs((o_) => ({ ...o_, err: "O equalizador, o balanço e a amplificação não estão disponíveis para esta música neste navegador." }));
         return !1;
       }
     },
-    eqGain = (i_, v_) => {
-      seqs((o_) => { const g_ = o_.g.slice(); g_[i_] = v_; return eqSave({ ...o_, g: g_, pr: "Personalizado" }); });
-      eqR.current && (eqR.current.filters[i_].gain.value = v_);
-    },
-    eqPreset = (name) => {
-      const g_ = BG_EQP[name].slice();
-      seqs((o_) => eqSave({ ...o_, g: g_, pr: name }));
-      eqR.current && eqR.current.filters.forEach((f_, q_) => (f_.gain.value = g_[q_]));
-    },
-    eqFx = (fx) => {
-      seqs((o_) => eqSave({ ...o_, fx }));
-      eqR.current && bgEqFx(eqR.current, fx);
+    eqUp = (fn) => seqs((o_) => { const n_ = eqSave({ ...o_, ...fn(o_) }); eqR.current && bgEqApply(eqR.current, n_); return n_; }),
+    eqGain = (i_, v_) => eqUp((o_) => { const g_ = o_.g.slice(); g_[i_] = v_; return { g: g_, pr: "Personalizado" }; }),
+    eqPreset = (name) => eqUp(() => ({ g: BG_EQP[name].slice(), pr: name })),
+    eqFx = (fx) => eqUp(() => ({ fx })),
+    eqOn = (v) => { eqUp(() => ({ on: v })); v && eqEnable(); },
+    eqBal = (v) => eqUp(() => ({ bal: v })),
+    eqAmp = (v) => eqUp(() => ({ amp: v })),
+    eqFav = (f) => eqUp(() => ({ g: f.g.slice(), fx: f.fx || "none", pr: f.name })),
+    eqReset = () => eqUp(() => ({ g: BG_EQP.Normal.slice(), fx: "none", pr: "Normal", bal: 0, amp: 100 })),
+    sleepStop = () => { sleepR.current = 0; sleepEndR.current = !1; setSleepLeft(0); setSleepEnd(!1); const j = t.current; j && j.pause(); },
+    sleepCheck = () => { const end = sleepR.current; if (!end) return; const left = end - Date.now(); if (left <= 0) sleepStop(); else setSleepLeft(left); },
+    sleepSet = (m) => {
+      if (m === "end") { sleepR.current = 0; sleepEndR.current = !0; setSleepEnd(!0); setSleepLeft(0); }
+      else if (!m) { sleepR.current = 0; sleepEndR.current = !1; setSleepEnd(!1); setSleepLeft(0); }
+      else { sleepEndR.current = !1; setSleepEnd(!1); sleepR.current = Date.now() + m * 60000; setSleepLeft(m * 60000); }
     };
-  (B.useEffect(() => {
+  (B.useEffect(() => { const iv = setInterval(sleepCheck, 1000); return () => clearInterval(iv); }, []),
+    B.useEffect(() => {
     const j = t.current;
     j &&
       (b
-        ? ((j.src = b.url), j.play().catch(() => {}))
+        ? ((j.src = b.url), j.play().catch(() => {}), b.post && window.bgCountPost && window.bgCountPost(b.post))
         : j.removeAttribute("src"));
   }, [b == null ? void 0 : b.key]),
     B.useEffect(() => {
@@ -4400,6 +4518,7 @@ function L_({ children: e }) {
         } catch {}
     }));
   const U = () => {
+      if (sleepEndR.current) { sleepStop(); return; }
       l === "one"
         ? ((t.current.currentTime = 0), t.current.play().catch(() => {}))
         : (shR.current && r.length > 1) || s < r.length - 1 || l === "all"
@@ -4431,6 +4550,14 @@ function L_({ children: e }) {
       eqGain,
       eqPreset,
       eqFx,
+      eqOn,
+      eqBal,
+      eqAmp,
+      eqFav,
+      eqReset,
+      sleepLeft,
+      sleepEnd,
+      sleepSet,
     };
   return u.jsxs(Sg.Provider, {
     value: re,
@@ -4441,7 +4568,7 @@ function L_({ children: e }) {
         preload: "auto",
         onPlay: () => (o(!0), eqR.current && eqR.current.ctx.resume().catch(() => {})),
         onPause: () => o(!1),
-        onTimeUpdate: (j) => p(j.target.currentTime),
+        onTimeUpdate: (j) => { p(j.target.currentTime); sleepR.current && sleepCheck(); },
         onLoadedMetadata: (j) => f(j.target.duration),
         onEnded: U,
       }),
@@ -4544,6 +4671,7 @@ function z_() {
 function D_() {
   const e = Do();
   const [eqOpen, seqOpen] = B.useState(!1);
+  const [slOpen, sslOpen] = B.useState(!1);
   if (!e.open || !e.cur) return null;
   const t = e.repeat === "one" ? A_ : N_;
   return u.jsx("div", {
@@ -4676,14 +4804,16 @@ function D_() {
                 }),
               ],
             }),
-            u.jsxs("div", { className: "flex items-center justify-center gap-3", children: [
+            u.jsxs("div", { className: "flex flex-wrap items-center justify-center gap-3", children: [
               u.jsx("button", { onClick: e.toggleShuffle, "aria-pressed": e.shuffle, className: "px-4 py-2 rounded-full text-sm font-bold", style: { background: e.shuffle ? k.saffron : k.card, color: e.shuffle ? k.onAccent : k.ink }, children: "🔀 Baralhar" }),
               u.jsx("button", { onClick: () => { seqOpen(!0); e.eqEnable(); }, className: "px-4 py-2 rounded-full text-sm font-bold", style: { background: k.card, color: k.ink }, children: "🎚 Equalizador" }),
+              u.jsx("button", { onClick: () => sslOpen(!0), className: "px-4 py-2 rounded-full text-sm font-bold", style: { background: e.sleepLeft > 0 || e.sleepEnd ? k.saffron : k.card, color: e.sleepLeft > 0 || e.sleepEnd ? k.onAccent : k.ink }, children: e.sleepLeft > 0 ? "⏲ " + bgFmtLeft(e.sleepLeft) : e.sleepEnd ? "⏲ Fim da música" : "⏲ Cronómetro" }),
             ] }),
             ] }),
           ],
         }),
         eqOpen && u.jsx(BgEqPanel, { e, onClose: () => seqOpen(!1) }),
+        slOpen && u.jsx(BgSleepPanel, { e, onClose: () => sslOpen(!1) }),
       ],
     }),
   });
@@ -5010,6 +5140,51 @@ function xl(e, t, r) {
     comments: n,
   };
 }
+function bgMeId() {
+  try {
+    const t = JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token") || "null");
+    return (t && t.user && t.user.id) || (t && t.currentSession && t.currentSession.user && t.currentSession.user.id) || null;
+  } catch (e) { return null; }
+}
+/* BENGU 4.42: visualização só conta com interacção real (vídeo visto até ao fim, foto aberta, música tocada, texto/PDF aberto) */
+function bgCountPost(p) {
+  try {
+    if (!p || p.id == null || si.has(p.id)) return;
+    const mid = bgMeId();
+    if (mid && p.userId === mid) return;
+    si.add(p.id);
+    me.rpc("bump_view", { pid: p.id }).then(() => {}, () => {});
+  } catch (e) {}
+}
+window.bgCountPost = bgCountPost;
+let __bgDlQ = null, __bgDlC = {};
+function bgDlGet(id) {
+  if (id in __bgDlC) return Promise.resolve(__bgDlC[id]);
+  if (!__bgDlQ) {
+    const q = { ids: [] };
+    q.p = new Promise((res) => setTimeout(() => {
+      __bgDlQ = null;
+      const fail = () => { q.ids.forEach((i) => { if (!(i in __bgDlC)) __bgDlC[i] = null; }); res(); };
+      me.from("posts").select("id,downloads").in("id", q.ids).then((r) => {
+        (r.error ? [] : r.data || []).forEach((x) => { __bgDlC[x.id] = x.downloads || 0; });
+        fail();
+      }, fail);
+    }, 60));
+    __bgDlQ = q;
+  }
+  const q2 = __bgDlQ;
+  q2.ids.push(id);
+  return q2.p.then(() => __bgDlC[id]);
+}
+function bgBumpDl(pid) {
+  try {
+    const p = (window.__bgPosts || []).find((q) => q.id === pid);
+    if (p && p.userId === bgMeId()) return;
+    me.rpc("bump_download", { pid }).then(() => {}, () => {});
+    if (pid in __bgDlC && __bgDlC[pid] != null) __bgDlC[pid]++;
+    window.dispatchEvent(new CustomEvent("bengu-dl", { detail: pid }));
+  } catch (e) {}
+}
 const Ag = (e, t) =>
     e.flatMap((r) =>
       r.items
@@ -5310,11 +5485,30 @@ function Ws({ on: e, onChange: t, label: r }) {
     }),
   });
 }
-function q_({ src: e, className: t, style: r }) {
+function q_({ src: e, className: t, style: r, post: ps, mp3: mp3u, owner: own }) {
   const n = B.useRef(null),
     [pv, setPv] = B.useState(false),
-    { autoplay: s } = Tg();
-  return (
+    { autoplay: s } = Tg(),
+    pl = Do(),
+    wr = B.useRef({ last: -1, acc: 0, done: false });
+  B.useEffect(() => { wr.current = { last: -1, acc: 0, done: false }; }, [e]);
+  const tick = (v) => {
+    const w = wr.current;
+    if (!ps || w.done || !v.duration || !isFinite(v.duration)) return;
+    const c = v.currentTime;
+    if (w.last >= 0) { const dd = c - w.last; if (dd > 0 && dd < 1.6) w.acc += dd; }
+    w.last = c;
+    if (v.duration > 1 && w.acc >= Math.min(v.duration * 0.95, v.duration - 0.7)) { w.done = true; window.bgCountPost && window.bgCountPost(ps); }
+  };
+  const goMp3 = () => {
+    const v = n.current;
+    if (!pl || !pl.play) return;
+    const t0 = v ? v.currentTime : 0;
+    v && v.pause();
+    pl.play([{ key: "mp3-" + (ps ? ps.id : e), url: mp3u || e, title: ((ps && ps.text) || "").split("\n")[0].slice(0, 70) || "Vídeo Bengu", artist: own || "Bengu", credits: mp3u ? "Modo MP3 · poupa dados" : "Modo MP3", cover: null, postId: ps ? ps.id : null, post: null, item: {} }], 0);
+    t0 > 1 && setTimeout(() => { try { pl.seek(t0); } catch (x) {} }, 700);
+  };
+  const vid = (
     B.useEffect(() => {
       const i = n.current;
       if (!i || !s) return;
@@ -5333,6 +5527,8 @@ function q_({ src: e, className: t, style: r }) {
       src: e,
       controls: !0,
       onVolumeChange: (g) => { const t = g.currentTarget; if (t.__bgAuto && Date.now() - t.__bgAuto < 800) return; window.__bgSetSound && window.__bgSetSound(!t.muted && t.volume > 0); },
+      onTimeUpdate: (g) => tick(g.currentTarget),
+      onSeeking: () => { wr.current.last = -1; },
       playsInline: !0,
       loop: s,
       preload: "metadata",
@@ -5344,6 +5540,23 @@ function q_({ src: e, className: t, style: r }) {
       style: pv ? { ...r, maxHeight: "82vh", objectFit: "cover" } : r,
     })
   );
+  if (!ps || !pl) return vid;
+  return u.jsxs(u.Fragment, {
+    children: [
+      vid,
+      u.jsx("div", {
+        className: "flex items-center gap-2 px-4 py-1.5",
+        children: u.jsx("button", {
+          onClick: goMp3,
+          title: "Ouvir só o áudio: toca com o ecrã apagado ou bloqueado e gasta menos dados",
+          "aria-label": "Modo MP3",
+          className: "px-3 py-1 rounded-full text-xs font-bold",
+          style: { background: k.paper, color: k.ink },
+          children: "🎧 Modo MP3",
+        }),
+      }),
+    ],
+  });
 }
 
 function bgAdsOn() {
@@ -5727,13 +5940,14 @@ function BgGrid({ items: i, RT, lim, post: e, mine: mine, onDel: onDel }) {
           return u.jsxs("div", {
             onClick: () => {
               if (last) { setOpen(true); setSel(-1); return; }
+              if (l.kind === "image") bgCountPost(e);
               if (l.kind === "image" && window.bengu_full) { const g = i.filter((q) => q.kind === "image").map((q) => q.url); window.bengu_full(l.url, g, g.indexOf(l.url)); }
             },
             style: { position: "relative", breakInside: "avoid", marginBottom: 6, borderRadius: 10, overflow: "hidden", cursor: "pointer", outline: sel === c ? "3px solid " + k.saffron : "none", outlineOffset: -3 },
             children: [
               l.kind === "image"
                 ? u.jsx("img", { src: l.url, alt: "", loading: "lazy", className: "w-full block", style: { width: "100%", aspectRatio: RT[c % RT.length], objectFit: "cover", background: k.paper } })
-                : u.jsx(q_, { src: l.url, className: "w-full block bg-black", style: { maxHeight: 460 } }),
+                : u.jsx(q_, { src: l.url, post: e, mp3: l.audio || null, className: "w-full block bg-black", style: { maxHeight: 460 } }),
               canDel && !last && u.jsx("button", { onClick: (ev) => { ev.stopPropagation(); setSel(sel === c ? -1 : c); }, "aria-label": "Apagar só esta", style: { position: "absolute", top: 6, right: 6, width: 32, height: 32, borderRadius: 999, background: "rgba(8,10,24,.65)", color: "#fff", fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center" }, children: "🗑" }),
               last && u.jsx("div", { style: { position: "absolute", inset: 0, background: "rgba(8,10,24,.62)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34, fontWeight: 800 }, children: "+" + (rest + 1) }),
             ],
@@ -5822,7 +6036,7 @@ function K_({ post: e, users: t, mine: mn_, onDeleteItem: dit_ }) {
                         alt: "",
                         loading: "lazy",
                         className: "w-full block",
-                        onClick: () => { const g = i.filter((q) => q.kind === "image").map((q) => q.url); window.bengu_full && window.bengu_full(l.url, g, g.indexOf(l.url)); },
+                        onClick: () => { bgCountPost(e); const g = i.filter((q) => q.kind === "image").map((q) => q.url); window.bengu_full && window.bengu_full(l.url, g, g.indexOf(l.url)); },
                         style: RT && l.kind === "image"
                           ? { width: "100%", aspectRatio: RT[c % RT.length], objectFit: "cover", background: k.paper, cursor: "zoom-in" }
                           : { maxHeight: 640, objectFit: "contain", background: k.paper, cursor: "zoom-in" },
@@ -5830,6 +6044,9 @@ function K_({ post: e, users: t, mine: mn_, onDeleteItem: dit_ }) {
                     : u.jsx(q_, {
                         key: "m",
                         src: l.url,
+                        post: e,
+                        mp3: l.audio || null,
+                        owner: (t[e.userId] || {}).name,
                         className: "w-full block bg-black",
                         style: { maxHeight: 460 },
                       }),
@@ -5873,6 +6090,7 @@ function K_({ post: e, users: t, mine: mn_, onDeleteItem: dit_ }) {
             href: l.url,
             target: "_blank",
             rel: "noopener noreferrer",
+            onClick: () => bgCountPost(e),
             className: "flex items-center gap-3 mx-4 mb-2 px-4 py-3 rounded-lg",
             style: { background: k.paper },
             children: [
@@ -6047,23 +6265,14 @@ function es({
     window.addEventListener("bengu-reports", l);
     return () => { on = !1; window.removeEventListener("bengu-reports", l); };
   }, [e.id, n]);
+  const [dlN, setDlN] = B.useState(null);
   B.useEffect(() => {
-    if (n || si.has(e.id) || !g.current) return;
-    const y = new IntersectionObserver(
-      ([E]) => {
-        E.isIntersecting &&
-          !si.has(e.id) &&
-          (si.add(e.id),
-          me.rpc("bump_view", { pid: e.id }).then(
-            () => {},
-            () => {},
-          ),
-          y.disconnect());
-      },
-      { threshold: 0.5 },
-    );
-    return (y.observe(g.current), () => y.disconnect());
-  }, [e.id, n]);
+    let on = !0;
+    bgDlGet(e.id).then((v) => on && setDlN(v));
+    const l = (ev) => { ev.detail === e.id && on && setDlN((v) => (v == null ? v : v + 1)); };
+    window.addEventListener("bengu-dl", l);
+    return () => { on = !1; window.removeEventListener("bengu-dl", l); };
+  }, [e.id]);
   const b = e.items.filter((y) => lg.includes(y.kind)),
     m =
       e.allowDownload &&
@@ -6109,7 +6318,7 @@ function es({
                   h &&
                     u.jsxs("span", {
                       className: "ml-1",
-                      children: ["👀 ", Mt(e.views)],
+                      children: ["👀 ", Mt(e.views), dlN != null && " · ⏬ " + Mt(dlN)],
                     }),
                 ],
               }),
@@ -6159,11 +6368,12 @@ function es({
               }),
         ],
       }),
-      e.text && e.type === "text" && Iu(e) && !Iu(e).plain && u.jsx(Ng, { post: e }),
+      e.text && e.type === "text" && Iu(e) && !Iu(e).plain && u.jsx("div", { onClick: () => bgCountPost(e), children: u.jsx(Ng, { post: e }) }),
       e.text &&
         e.type !== "live" &&
         !(e.type === "text" && Iu(e) && !Iu(e).plain) &&
         u.jsx("p", {
+          onClick: () => { e.type === "text" && bgCountPost(e); },
           className: `px-4 pb-3 text-left whitespace-pre-wrap ${e.type === "text" ? "text-lg leading-snug" : "text-[15px] leading-snug"}`,
           style: { color: k.ink, fontFamily: e.type === "text" && Iu(e) && Iu(e).font ? bgFontCss(Iu(e).font) : void 0 },
           children: Tg_(e.text),
@@ -6404,8 +6614,31 @@ function J_() {
     me.auth.getSession().then(({ data: V }) => {
       (m(V.session), g(!0));
     });
-    const { data: I } = me.auth.onAuthStateChange((V, Z) => m(Z));
-    return () => I.subscription.unsubscribe();
+    const { data: I } = me.auth.onAuthStateChange((V, Z) => {
+      if (Z) {
+        window.__bgUserOut = !1;
+        try { localStorage.setItem("bg_sess_bk", JSON.stringify({ a: Z.access_token, r: Z.refresh_token })); } catch (e) {}
+        m(Z);
+        return;
+      }
+      if (window.__bgUserOut) { try { localStorage.removeItem("bg_sess_bk"); } catch (e) {} m(Z); return; }
+      if (V !== "SIGNED_OUT") return;
+      let bk = null;
+      try { bk = JSON.parse(localStorage.getItem("bg_sess_bk") || "null"); } catch (e) {}
+      if (bk && bk.r) {
+        me.auth.setSession({ access_token: bk.a, refresh_token: bk.r }).then(
+          (rr) => {
+            if (rr && rr.data && rr.data.session) m(rr.data.session);
+            else if (rr && rr.error && /invalid|revoked|not found|already used|expired/i.test(String(rr.error.message || ""))) m(null);
+          },
+          () => {},
+        );
+      } else m(Z);
+    });
+    const bgKeep = () => { if (document.visibilityState === "visible") me.auth.getSession().then(() => {}, () => {}); };
+    document.addEventListener("visibilitychange", bgKeep);
+    window.addEventListener("online", bgKeep);
+    return () => { I.subscription.unsubscribe(); document.removeEventListener("visibilitychange", bgKeep); window.removeEventListener("online", bgKeep); };
   }, []);
   const fr = async () => {
     var I, V;
@@ -6808,7 +7041,7 @@ function J_() {
       return Z ? { error: pa(Z) } : {};
     },
     zi = async () => {
-      (await me.auth.signOut(), D(null), ee(null), se(!1), hr.stop());
+      (window.__bgUserOut = !0, await me.auth.signOut(), D(null), ee(null), se(!1), hr.stop());
     },
     Kc = async (I) => {
       if (!I) return _e(x("errBirth"));
@@ -7388,6 +7621,7 @@ function J_() {
             E[I.userId] || mt,
             Jc,
           ),
+            bgBumpDl(V),
             _e(window.__bgNoLogo ? "Descarregado SEM logo: " + window.__bgNoLogo : x("downloaded")));
         } catch (Z) {
           (Z && Z.message === "cancel") || _e(Ze(Z));
@@ -7402,7 +7636,7 @@ function J_() {
           window.__bgDlChoice = bgCh;
         }
         try {
-          (await Ou(V, Z, Jc), _e(window.__bgNoLogo ? "Descarregado SEM logo: " + window.__bgNoLogo : x("downloaded")));
+          (await Ou(V, Z, Jc), bgBumpDl(Z), _e(window.__bgNoLogo ? "Descarregado SEM logo: " + window.__bgNoLogo : x("downloaded")));
         } catch {}
       },
     }),
@@ -7717,7 +7951,6 @@ function J_() {
                         return u.jsxs(
                           "div",
                           {
-                            ref: (el_) => { if (el_ && I.post && I.post.userId !== h.id && !si.has(I.post.id) && "IntersectionObserver" in window) { const io_ = new IntersectionObserver(([en]) => { if (en.isIntersecting && !si.has(I.post.id)) { si.add(I.post.id); me.rpc("bump_view", { pid: I.post.id }).then(() => {}, () => {}); io_.disconnect(); } }, { threshold: 0.5 }); io_.observe(el_); } },
                             children: [
                               u.jsx(Wc, { song: I, queue: Bi, index: V }),
                               u.jsxs("div", {
@@ -8882,6 +9115,7 @@ function ex({ r: e, cardProps: t }) {
     o = (bgV) => { window.__bgSetSound && window.__bgSetSound(!bgV); bgSetM(bgV); },
     [l, c] = B.useState(!s),
     [hz, setHz] = B.useState(!1),
+    bgPl = Do(),
     d = t(e.post);
   B.useEffect(() => {
     const g = n.current,
@@ -8890,20 +9124,29 @@ function ex({ r: e, cardProps: t }) {
     const m = new IntersectionObserver(
       ([h]) => {
         h.isIntersecting
-          ? (s && b.play().catch(() => {}),
-            !d.isMine &&
-              !si.has(e.post.id) &&
-              (si.add(e.post.id),
-              me.rpc("bump_view", { pid: e.post.id }).then(
-                () => {},
-                () => {},
-              )))
-          : b.pause();
+          ? (s && b.play().catch(() => {}))
+                    : b.pause();
       },
       { threshold: 0.7 },
     );
     return (m.observe(g), () => m.disconnect());
   }, [s]);
+  B.useEffect(() => {
+    const b = r.current;
+    if (!b) return;
+    const w = { last: -1, acc: 0, done: !1 };
+    const tk = () => {
+      if (w.done || !b.duration || !isFinite(b.duration)) return;
+      const c = b.currentTime;
+      if (w.last >= 0) { const dd = c - w.last; if (dd > 0 && dd < 1.6) w.acc += dd; }
+      w.last = c;
+      if (b.duration > 1 && w.acc >= Math.min(b.duration * 0.95, b.duration - 0.7)) { w.done = !0; d.isMine || bgCountPost(e.post); }
+    };
+    const sk = () => { w.last = -1; };
+    b.addEventListener("timeupdate", tk);
+    b.addEventListener("seeking", sk);
+    return () => { b.removeEventListener("timeupdate", tk); b.removeEventListener("seeking", sk); };
+  }, [e.post.id]);
   const p = () => {
       const g = r.current;
       g && (g.paused ? (g.play().catch(() => {}), c(!1)) : (g.pause(), c(!0)));
@@ -9024,6 +9267,13 @@ function ex({ r: e, cardProps: t }) {
             className: f,
             "aria-label": x("bookmark"),
             children: u.jsx(Oo, { size: 28, fill: d.saved ? "#fff" : "none" }),
+          }),
+          u.jsx("button", {
+            onClick: () => { const v_ = r.current; v_ && v_.pause(); c(!0); bgPl && bgPl.play && bgPl.play([{ key: "mp3-" + e.post.id, url: e.item.audio || e.item.url, title: (e.post.text || "").split("\n")[0].slice(0, 70) || "Reel Bengu", artist: (d.user && d.user.name) || "Bengu", credits: e.item.audio ? "Modo MP3 · poupa dados" : "Modo MP3", cover: null, postId: e.post.id, post: null, item: {} }], 0); },
+            className: f,
+            "aria-label": "Modo MP3",
+            title: "Modo MP3: ouvir só o áudio (ecrã apagado, menos dados)",
+            children: u.jsx("span", { style: { fontSize: 26, lineHeight: "28px" }, children: "🎧" }),
           }),
           u.jsx("button", {
             onClick: () => window.bengu_use_audio && window.bengu_use_audio(e.item.url, "Som de " + ((d.user && d.user.name) || "vídeo"), e.item.audio, true),
@@ -9393,6 +9643,14 @@ function rx({
 }
 function nx({ me: e, posts: t, followers: r, onBack: n }) {
   const [s, i] = B.useState(null);
+  const [bgXv, setBgXv] = B.useState(0);
+  B.useEffect(() => {
+    let on = !0;
+    const uid_ = (e && e.id) || bgMeId();
+    if (!uid_) return;
+    Promise.all(["bengu_journals", "bengu_news"].map((tb) => me.from(tb).select("views").eq("author_id", uid_).limit(1000).then((r_) => (r_.error ? 0 : (r_.data || []).reduce((a_, x_) => a_ + (x_.views || 0), 0)), () => 0))).then((v_) => on && setBgXv(v_[0] + v_[1]));
+    return () => { on = !1; };
+  }, [e && e.id]);
   B.useEffect(() => {
     const y = t.map((E) => E.id);
     if (!y.length) {
@@ -9449,7 +9707,7 @@ function nx({ me: e, posts: t, followers: r, onBack: n }) {
   const w = Object.fromEntries(
       l.map(([y]) => [y, Math.max(1, ...o.map(([E]) => d[E][y]))]),
     ),
-    f = t.reduce((y, E) => y + E.views, 0),
+    f = t.reduce((y, E) => y + E.views, 0) + bgXv,
     v = t.reduce((y, E) => y + E.likes, 0),
     g = t.reduce((y, E) => y + E.comments.length, 0),
     mv = o.reduce((q, [y]) => q + d[y].month, 0),

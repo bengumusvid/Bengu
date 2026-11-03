@@ -2,6 +2,54 @@
 <html lang="en">
   <head>
 <script>
+/* BENGU: aviso "Adicionar à tela inicial" — aparece a partir da 2.ª visita, no máx. 1x a cada 14 dias */
+(function(){
+var KV="bg_visits",KD="bg_pwa_off",KI="bg_pwa_done",dp=null,shown=false;
+function get(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function set(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+var standalone=(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true;
+if(standalone){set(KI,"1");return}
+/* conta uma visita por sessão */
+try{if(!sessionStorage.getItem("bg_v_s")){sessionStorage.setItem("bg_v_s","1");set(KV,String((parseInt(get(KV),10)||0)+1))}}catch(e){}
+var ua=navigator.userAgent||"",ios=/iPad|iPhone|iPod/.test(ua)&&!window.MSStream,
+    safari=ios&&/Safari/.test(ua)&&!/CriOS|FxiOS|EdgiOS|OPiOS|Instagram|FBAN|FBAV/.test(ua);
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();dp=e;go()});
+window.addEventListener("appinstalled",function(){set(KI,"1");hide()});
+var lang=(get("bengu_lang")||navigator.language||"pt").slice(0,2).toLowerCase(),pt=lang!=="en";
+var T=pt?{t:"Instale o Bengu",d:"Abre mais depressa e gasta menos dados.",b:"Instalar",x:"Agora não",
+ i:"Toque em Partilhar e depois em «Adicionar ao ecrã principal».",ok:"Percebi"}
+:{t:"Install Bengu",d:"Opens faster and uses less data.",b:"Install",x:"Not now",
+ i:"Tap Share, then “Add to Home Screen”.",ok:"Got it"};
+function ready(){
+ if(shown||get(KI)==="1")return false;
+ if((parseInt(get(KV),10)||0)<2)return false;
+ var off=parseInt(get(KD),10)||0;if(off&&Date.now()-off<14*864e5)return false;
+ return !!dp||safari}
+function hide(){var n=document.getElementById("bg-pwa");if(n)n.remove()}
+function dismiss(){set(KD,String(Date.now()));hide()}
+function go(){
+ if(!ready())return;
+ if(!document.body){document.addEventListener("DOMContentLoaded",go);return}
+ shown=true;
+ var d=document.createElement("div");d.id="bg-pwa";d.setAttribute("role","dialog");d.setAttribute("aria-label",T.t);
+ d.innerHTML='<style>#bg-pwa{position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:70;max-width:440px;margin:0 auto;background:#12183A;color:#fff;border-radius:16px;padding:14px 14px 12px;box-shadow:0 8px 28px rgba(0,0,0,.35);font:14px/1.35 system-ui,-apple-system,sans-serif}#bg-pwa b{display:block;font-size:15px;margin-bottom:2px}#bg-pwa p{margin:0;color:#d5d9f0}#bg-pwa .r{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}#bg-pwa button{font:600 14px system-ui,sans-serif;border:0;border-radius:12px;padding:9px 14px;cursor:pointer;min-height:40px}#bg-pwa .y{background:#FFB020;color:#12183A}#bg-pwa .n{background:transparent;color:#d5d9f0}</style>'
+ +'<b></b><p></p><div class="r"><button class="n" type="button"></button><button class="y" type="button"></button></div>';
+ d.querySelector("b").textContent=T.t;
+ d.querySelector("p").textContent=dp?T.d:T.i;
+ var n=d.querySelector(".n"),y=d.querySelector(".y");
+ n.textContent=T.x;y.textContent=dp?T.b:T.ok;
+ n.onclick=dismiss;
+ y.onclick=function(){
+  if(!dp){dismiss();return}
+  var p=dp;dp=null;
+  try{p.prompt();p.userChoice.then(function(c){if(c&&c.outcome==="accepted")set(KI,"1");else set(KD,String(Date.now()));hide()}).catch(hide)}catch(e){hide()}
+ };
+ document.body.appendChild(d)}
+/* espera 8 s após carregar, para não competir com o arranque da app */
+window.addEventListener("load",function(){setTimeout(go,8000)});
+})();
+</script>
+<script>
 /* BENGU LITE — modo economia de dados.
    Liga sozinho com "Economizar dados" do telemóvel ou rede lenta; ou pelo botão ⚡ / ?lite=1 (desliga com ?lite=0). */
 (function(){
@@ -12240,11 +12288,11 @@ function cx({ post: e, me: t, onClose: r }) {
   );
 }
 function dx({ post: e, me: t, users: us, onClose: r, say: n }) {
-  const [s] = B.useState(() => `${Rc()}#${og()}`);
+  const [s] = B.useState(() => `${window.location.origin}/s/${og()}`);
   const [uq, setUq] = B.useState(""),
     [sentTo, setSentTo] = B.useState({});
   B.useEffect(() => {
-    const p = s.split("#")[1];
+    const p = s.split("/s/")[1];
     me.from("share_links")
       .insert({ code: p, post_id: e.id, created_by: t.id })
       .then(

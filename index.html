@@ -4373,7 +4373,7 @@ function BgEqPanel({ e, onClose }) {
       ] }, f.name)),
       u.jsx("button", { onClick: addFav, style: { ...chip(!1), border: "1px dashed " + k.mute }, children: "💾 Guardar a atual com nome" }),
     ] }),
-    title("Manual (20 faixas)"),
+    title("Manual"),
     u.jsx("div", { style: { display: "flex", overflowX: "auto", opacity: on ? 1 : 0.4, paddingBottom: 4 }, children: BG_EQF.map((f, i) => u.jsxs("div", { style: { width: 26, flex: "0 0 26px", textAlign: "center" }, children: [
       u.jsx("div", { style: { fontSize: 10, color: k.mute, height: 16, lineHeight: "16px" }, children: (q.g[i] > 0 ? "+" : "") + q.g[i] }),
       u.jsx(BgEqSlider, { v: q.g[i], on, label: f + " Hz", onChange: (val) => e.eqGain(i, val) }),
@@ -4403,6 +4403,11 @@ function BgSleepPanel({ e, onClose }) {
   const act = e.sleepLeft > 0 || e.sleepEnd;
   const chip = (on) => ({ padding: "10px 14px", borderRadius: 999, fontSize: 14, fontWeight: 700, background: on ? k.saffron : k.paper, color: on ? k.onAccent : k.ink });
   const pick = (m) => { e.sleepSet(m); onClose(); };
+  const [cm, setCm] = B.useState("");
+  const cn = Math.floor(Number(cm));
+  const okc = cm !== "" && Number.isFinite(cn) && cn >= 1 && cn <= 1440;
+  const fmtMin = (n) => (n >= 60 ? Math.floor(n / 60) + " h" + (n % 60 ? " " + (n % 60) + " min" : "") : n + " min");
+  const go = () => { if (okc) pick(cn); };
   return u.jsx("div", { className: "fixed inset-0 flex items-end justify-center", style: { background: "rgba(0,0,0,.55)", zIndex: 70 }, onClick: onClose, children: u.jsxs("div", { onClick: (ev) => ev.stopPropagation(), className: "w-full rounded-t-2xl px-5 py-4", style: { background: k.card, color: k.ink, maxWidth: 560 }, children: [
     u.jsxs("div", { className: "flex items-center justify-between mb-2", children: [u.jsx("b", { className: "text-base", children: "⏲ Cronómetro para desligar" }), u.jsx("button", { onClick: onClose, "aria-label": "Fechar", className: "text-lg px-2", children: "✕" })] }),
     u.jsx("div", { className: "text-sm mb-3", style: { color: k.mute }, children: e.sleepLeft > 0 ? "A música desliga em " + bgFmtLeft(e.sleepLeft) : e.sleepEnd ? "A música desliga no fim desta faixa" : "A música pára sozinha quando o tempo acabar." }),
@@ -4410,7 +4415,13 @@ function BgSleepPanel({ e, onClose }) {
       [15, 30, 45, 60, 90, 120].map((m) => u.jsx("button", { onClick: () => pick(m), style: chip(!1), children: m + " min" }, m)),
       u.jsx("button", { onClick: () => pick("end"), style: chip(e.sleepEnd), children: "No fim da música" }),
     ] }),
-    act && u.jsx("button", { onClick: () => pick(0), className: "w-full py-2.5 rounded-full text-sm font-bold", style: { background: k.paper, color: k.ink }, children: "Desligar o cronómetro" }),
+    u.jsx("div", { className: "text-xs font-bold mb-2", style: { color: k.mute }, children: "Outro tempo (em minutos)" }),
+    u.jsxs("div", { className: "flex items-center gap-2 mb-1", children: [
+      u.jsx("input", { type: "text", inputMode: "numeric", placeholder: "Ex.: 25", value: cm, onChange: (ev) => setCm(ev.target.value.replace(/[^0-9]/g, "").slice(0, 4)), onKeyDown: (ev) => { if (ev.key === "Enter") go(); }, "aria-label": "Minutos para desligar", style: { flex: 1, minWidth: 0, padding: "10px 16px", borderRadius: 999, fontSize: 16, fontWeight: 700, background: k.paper, color: k.ink, border: "1px solid " + k.mute, outline: "none" } }),
+      u.jsx("button", { onClick: go, disabled: !okc, style: { ...chip(okc), opacity: okc ? 1 : 0.5 }, children: "Iniciar" }),
+    ] }),
+    u.jsx("div", { className: "text-xs mb-3", style: { color: k.mute, minHeight: 16 }, children: cm === "" ? "" : okc ? "= " + fmtMin(cn) : "Escreva entre 1 e 1440 minutos (24 h)" }),
+    act &&u.jsx("button", { onClick: () => pick(0), className: "w-full py-2.5 rounded-full text-sm font-bold", style: { background: k.paper, color: k.ink }, children: "Desligar o cronómetro" }),
   ] }) });
 }
 function L_({ children: e }) {

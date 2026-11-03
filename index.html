@@ -483,7 +483,7 @@ function note(){var o=document.createElement("div");o.style.cssText="position:fi
  var p=document.createElement("p");p.style.cssText="font-size:16px;line-height:1.4;margin:0 0 14px";p.textContent=BG_L("🎤 Competitions are not open yet. They will open when Bengu reaches 100,000 users.","🎤 As competições ainda não estão abertas. Abrem quando o Bengu chegar a 100 000 utilizadores.");
  var b=document.createElement("button");b.textContent="OK";b.style.cssText="padding:10px 28px;border:0;border-radius:10px;background:#f5b301;color:#12183A;font-weight:800;font-size:15px";b.onclick=function(){o.remove()};
  o.onclick=function(e){if(e.target===o)o.remove()};c.append(p,b);o.append(c);document.body.append(o)}
-window.BG_GATE={th:TH,on:on,adm:adm,users:function(){return n},refresh:refresh,note:note,
+window.BG_GATE={th:TH,on:on,adm:adm,users:function(){return n},refresh:refresh,note:function(){},
  feeMsg:function(){return on()?"Pague a taxa de publicação para publicar.":BG_L("Publishing is not available right now.","A publicação não está disponível neste momento.")}};
 refresh();setInterval(function(){refresh()},36e5);
 })();

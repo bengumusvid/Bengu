@@ -4463,6 +4463,7 @@ function L_({ children: e }) {
     playedR = B.useRef(new Set()),
     histR = B.useRef([]),
     eqR = B.useRef(null),
+    wantR = B.useRef(!1),
     b = s >= 0 ? r[s] : null,
     m = (j, M = r) => {
       if (!M.length) return;
@@ -4475,7 +4476,7 @@ function L_({ children: e }) {
     },
     y = () => {
       const j = t.current;
-      !j || !b || (j.paused ? j.play().catch(() => {}) : j.pause());
+      !j || !b || (j.paused ? j.play().catch(() => {}) : ((wantR.current = !1), j.pause()));
     },
     E = (auto) => {
       if (shR.current && r.length > 1) {
@@ -4507,7 +4508,7 @@ function L_({ children: e }) {
     O = () => c((j) => (j === "off" ? "all" : j === "all" ? "one" : "off")),
     R = () => {
       const j = t.current;
-      (j && j.pause(), i(-1), n([]), g(!1));
+      ((wantR.current = !1), j && j.pause(), i(-1), n([]), g(!1));
     },
     SH = () => {
       const nv = !shR.current;
@@ -4535,6 +4536,7 @@ function L_({ children: e }) {
           was && a.play().catch(() => {});
         }
         eqR.current = bgEqBuild(a, eqs);
+        try { const c_ = eqR.current.ctx; c_.onstatechange = () => { if (c_.state !== "running" && t.current && !t.current.paused) c_.resume().catch(() => {}); }; } catch (e) {}
         seqs((o_) => { eqR.current && bgEqApply(eqR.current, o_); return o_; });
         try { await eqR.current.ctx.resume(); } catch (e) {}
         return !0;
@@ -4554,7 +4556,7 @@ function L_({ children: e }) {
     eqAmp = (v) => eqUp(() => ({ amp: v })),
     eqFav = (f) => eqUp(() => ({ g: f.g.slice(), fx: f.fx || "none", pr: f.name })),
     eqReset = () => eqUp(() => ({ g: BG_EQP.Normal.slice(), fx: "none", pr: "Normal", bal: 0, amp: 100 })),
-    sleepStop = () => { sleepR.current = 0; sleepEndR.current = !1; setSleepLeft(0); setSleepEnd(!1); const j = t.current; j && j.pause(); },
+    sleepStop = () => { wantR.current = !1; sleepR.current = 0; sleepEndR.current = !1; setSleepLeft(0); setSleepEnd(!1); const j = t.current; j && j.pause(); },
     sleepCheck = () => { const end = sleepR.current; if (!end) return; const left = end - Date.now(); if (left <= 0) sleepStop(); else setSleepLeft(left); },
     sleepSet = (m) => {
       if (m === "end") { sleepR.current = 0; sleepEndR.current = !0; setSleepEnd(!0); setSleepLeft(0); }
@@ -4562,6 +4564,18 @@ function L_({ children: e }) {
       else { sleepEndR.current = !1; setSleepEnd(!1); sleepR.current = Date.now() + m * 60000; setSleepLeft(m * 60000); }
     };
   (B.useEffect(() => { const iv = setInterval(sleepCheck, 1000); return () => clearInterval(iv); }, []),
+    B.useEffect(() => {
+      /* Modo MP3 com ecrã apagado: se a música devia estar a tocar mas foi pausada pelo sistema, retoma */
+      const keep = () => {
+        const a_ = t.current;
+        if (!a_ || !wantR.current) return;
+        try { if (eqR.current && eqR.current.ctx.state !== "running") eqR.current.ctx.resume().catch(() => {}); } catch (e) {}
+        if (a_.paused && !a_.ended && a_.src && document.visibilityState === "hidden") a_.play().catch(() => {});
+      };
+      const iv = setInterval(keep, 2000);
+      document.addEventListener("visibilitychange", keep);
+      return () => { clearInterval(iv); document.removeEventListener("visibilitychange", keep); };
+    }, []),
     B.useEffect(() => {
     const j = t.current;
     j &&
@@ -4585,6 +4599,7 @@ function L_({ children: e }) {
           }),
             j.setActionHandler("pause", () => {
               var M;
+              wantR.current = !1;
               return (M = t.current) == null ? void 0 : M.pause();
             }),
             j.setActionHandler("previoustrack", C),
@@ -4642,11 +4657,19 @@ function L_({ children: e }) {
       u.jsx("audio", {
         ref: t,
         preload: "auto",
-        onPlay: () => (o(!0), eqR.current && eqR.current.ctx.resume().catch(() => {})),
-        onPause: () => o(!1),
+        onPlay: () => { o(!0); wantR.current = !0; try { if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing"; } catch (e) {} eqR.current && eqR.current.ctx.resume().catch(() => {}); },
+        onPause: (ev) => {
+          o(!1);
+          const a_ = ev.target;
+          try { if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused"; } catch (e) {}
+          /* ecrã apagado: o sistema pode pausar sem o utilizador pedir; retomar */
+          if (wantR.current && document.visibilityState === "hidden" && !a_.ended) {
+            setTimeout(() => { if (wantR.current && a_.paused && !a_.ended) { try { eqR.current && eqR.current.ctx.resume(); } catch (e) {} a_.play().catch(() => {}); } }, 250);
+          }
+        },
         onTimeUpdate: (j) => { p(j.target.currentTime); sleepR.current && sleepCheck(); },
         onLoadedMetadata: (j) => f(j.target.duration),
-        onEnded: U,
+        onEnded: () => { wantR.current = !1; U(); },
       }),
     ],
   });

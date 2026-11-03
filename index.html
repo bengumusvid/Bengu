@@ -1699,7 +1699,7 @@ function addJournal(done,sec){var fee=jFee(sec),me=uid();if(!me){alert(BG_L("Log
 window.bengu_news_open=function(){var b=sheet(BG_L("📰 News","📰 Notícias")),o=b.parentNode,admin=false,cur=0,sub=0,spt="Soccer";o.classList.add("bgnews-open");o.style.background="#FBF6E9";
  var mast=h("div",{class:"bgn-mast",style:"position:sticky;top:56px;z-index:5;margin:8px 0 0;padding:5px 0;border-radius:8px;overflow:hidden;white-space:nowrap;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.45);font:900 15px Georgia,serif;letter-spacing:2px;background:linear-gradient(90deg,#E53935,#FB8C00,#FDD835 50%,#43A047,#1E88E5)"},h("span",{},"BENGU NOTÍCIAS  \u2605  BENGU NOTÍCIAS  \u2605  BENGU NOTÍCIAS  \u2605")),
  tabs=h("div",{style:"display:flex;gap:8px;overflow-x:auto;padding:12px 0"}),list=h("div");b.append(mast,tabs,list);var hd0=b.parentNode.firstChild;if(hd0&&hd0.offsetHeight)mast.style.top=hd0.offsetHeight+"px";
- function drawTabs(){tabs.replaceChildren.apply(tabs,FEEDS.map(function(f,i){var on=i==cur,bt=h("button",{style:"flex:none;position:relative;padding:8px 16px;border:2px solid #12183A;border-radius:999px;font-weight:800;background:"+(on?"#12183A":"#fff")+";color:"+(on?"#fff":"#12183A")},f.n);if(!on&&isNew(f))bt.append(h("span",{style:"position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:#E53935;border:2px solid #FBF6E9"}));bt.addEventListener("click",function(){show(i)});return bt}))}
+ function drawTabs(){tabs.replaceChildren.apply(tabs,FEEDS.map(function(f,i){var on=i==cur,bt=h("button",{style:"flex:none;position:relative;padding:8px 16px;border:2px solid #12183A;border-radius:999px;font-family:var(--bg-font);font-weight:700;font-size:17px;letter-spacing:.4px;background:"+(on?"#12183A":"#fff")+";color:"+(on?"#fff":"#12183A")},f.n);if(!on&&isNew(f))bt.append(h("span",{style:"position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:#E53935;border:2px solid #FBF6E9"}));bt.addEventListener("click",function(){show(i)});return bt}))}
  function card(n,f){var mine=uid()&&n.author_id==uid(),rep=n.reports||0,c=h("div",{style:"background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;border-left:5px solid "+(rep?"#E53935":"#1E88E5")});
   if(n.photo_url&&String(n.photo_url).indexOf(U+"/storage/")==0)c.append(h("img",{src:n.photo_url,style:"width:100%;border-radius:10px;margin-bottom:8px",loading:"lazy"}));
   c.append(h("div",{style:"font-weight:800;line-height:1.3"},n.title));if(n.body)c.append(h("p",{style:"margin:6px 0;white-space:pre-wrap"},n.body));
@@ -1790,7 +1790,7 @@ function jPrev(cd,n){var w=h("div",{style:"background:#fff;border:1px solid #e3e
    cv.width=Math.floor(vp.width);cv.height=Math.floor(vp.height);cv.style.cssText="width:100%;display:block;max-height:420px;object-fit:cover;object-position:top";w.replaceChildren(cv);w.style.display="block";w.style.minHeight="0";
    return pg.render({canvasContext:cv.getContext("2d"),viewport:vp}).promise.then(function(){w.append(h("div",{style:"position:absolute;left:0;right:0;bottom:0;padding:6px 10px;background:rgba(0,0,0,.6);color:#fff;font-size:12px"},BG_L("📄 Page 1 of ","📄 Página 1 de ")+pdf.numPages+BG_L(" · tap to read"," · toque para ler")))})})}).catch(function(){w.textContent=BG_L("📄 Preview unavailable · tap to read","📄 Pré-visualização indisponível · toque para ler")})}
  if("IntersectionObserver" in window){var io=new IntersectionObserver(function(es){if(es[0].isIntersecting){io.disconnect();go()}},{rootMargin:"300px 0px"});io.observe(w)}else go()}
-function jView(c,f,emb){var out=[],ad=h("button",{style:"width:100%;padding:12px;border:0;border-radius:12px;background:#43A047;color:#fff;font-weight:800;font-size:16px;margin-bottom:10px"},emb&&BG_GATE.on()?"➕ Adicionar jornal (taxa 2 USD)":BG_L("➕ Add newspaper (PDF)","➕ Adicionar jornal (PDF)"));
+function jView(c,f,emb){var out=[],ad=h("button",{style:"width:100%;padding:12px;border:0;border-radius:12px;background:#43A047;color:#fff;font-family:var(--bg-font);font-weight:700;font-size:17px;letter-spacing:.4px;margin-bottom:10px"},emb&&BG_GATE.on()?"➕ Adicionar jornal (taxa 2 USD)":BG_L("➕ Add newspaper (PDF)","➕ Adicionar jornal (PDF)"));
   ad.addEventListener("click",function(){addJournal(function(){delete NC[f.k];show(cur)},emb?f.k:null)});out.push(ad);
   (c.com||[]).forEach(function(n){var mine=uid()&&n.author_id==uid(),cd=h("div",{style:"background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;border-left:5px solid #FB8C00"}),
    au=h("div",{style:"font-size:12px;opacity:.65;margin-top:2px"},"Por membro · "+when(n.created_at)),bar=h("div",{style:"display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"}),
@@ -1809,10 +1809,10 @@ function jView(c,f,emb){var out=[],ad=h("button",{style:"width:100%;padding:12px
  function newsErr(){var b=h("button",{style:"padding:10px 18px;border:0;border-radius:10px;background:#12183A;color:#fff;font-weight:800;font-size:15px;margin-top:6px"},BG_L("Try again","Tentar de novo"));b.addEventListener("click",function(){show(cur)});return h("div",{},[h("p",{},BG_L("Could not load news right now. Please try again.","Não foi possível carregar as notícias agora. Tente de novo.")),b])}
  function show(i){cur=i;drawTabs();var f=FEEDS[i];if(f.k=="desporto"&&sub>0){games();return}list.replaceChildren(h("p",{},"A carregar…"));
   loadTab(f,true).then(function(c){seenSet(f.k,c.latest||Date.now());dotState();drawTabs();if(f.j){jView(c,f);return}var out=f.k=="desporto"?[subBar()]:[];
-   if(f.c){var ad=h("button",{style:"width:100%;padding:12px;border:0;border-radius:12px;background:#43A047;color:#fff;font-weight:800;font-size:16px;margin-bottom:10px"},BG_L("➕ Add news","➕ Adicionar notícia"));ad.addEventListener("click",function(){addNews(f,function(){show(cur)})});out.push(ad);
+   if(f.c){var ad=h("button",{style:"width:100%;padding:12px;border:0;border-radius:12px;background:#43A047;color:#fff;font-family:var(--bg-font);font-weight:700;font-size:17px;letter-spacing:.4px;margin-bottom:10px"},BG_L("➕ Add news","➕ Adicionar notícia"));ad.addEventListener("click",function(){addNews(f,function(){show(cur)})});out.push(ad);
     c.com.forEach(function(n){out.push(card(n,f))});if(!c.com.length)out.push(h("p",{style:"opacity:.7"},BG_L("No news has been published by members yet.","Ainda não há notícias publicadas por membros.")));
-    out.push(h("div",{style:"font-weight:800;margin:14px 0 8px"},BG_L("Other news","Outras notícias")))}
-   if(f.k=="africa"||f.k=="mundo"){jView(c,f,1).forEach(function(x){out.push(x)});out.push(h("div",{style:"font-weight:800;margin:14px 0 8px"},BG_L("Other news","Outras notícias")))}
+    out.push(h("div",{style:"font-family:var(--bg-font);font-style:italic;font-weight:700;font-size:21px;letter-spacing:.3px;margin:14px 0 8px"},BG_L("Other news","Outras notícias")))}
+   if(f.k=="africa"||f.k=="mundo"){jView(c,f,1).forEach(function(x){out.push(x)});out.push(h("div",{style:"font-family:var(--bg-font);font-style:italic;font-weight:700;font-size:21px;letter-spacing:.3px;margin:14px 0 8px"},BG_L("Other news","Outras notícias")))}
    c.rss.forEach(function(it){var sh=h("button",{style:"margin-top:6px;padding:5px 12px;border:0;border-radius:8px;font-weight:700;background:#eef0f6;color:#12183A"},BG_L("📤 Share","📤 Partilhar"));sh.addEventListener("click",function(){shareNews(it.title,"",it.link)});out.push(h("div",{style:"background:#fff;border-radius:12px;padding:12px;margin-bottom:8px"},[h("div",{style:"display:block;color:#12183A;cursor:pointer",on:{click:function(){openArticle(it)}}},[h("div",{style:"font-weight:700;line-height:1.3"},it.title),h("div",{style:"font-size:12px;opacity:.65;margin-top:4px"},it.t?when(it.t):"")]),sh]))});
    if(!c.rss.length)out.push(newsErr());
    list.replaceChildren.apply(list,out)}).catch(function(){list.replaceChildren(newsErr())})}
@@ -7043,8 +7043,11 @@ function J_() {
   const qc = async (I) =>
       !(await me.from("profiles").select("id").eq("handle", I).maybeSingle())
         .data,
-    Og = async ({ firstName: I, lastName: V, otherNames: onm, base: Z, password: le, email: em, country: cty }) => {
+    Og = async ({ firstName: I, lastName: V, otherNames: onm, base: Z, password: le, email: em, country: cty, gender: gdr, birthDate: bdt, nameMode: nmm, geo: gg }) => {
       const he = (Ce) => em || `${Ce}@users.bengu.app`;
+      let cnm = null;
+      try { cnm = new Intl.DisplayNames(["pt-PT"], { type: "region" }).of(cty); } catch (e) {}
+      gg = gg || {};
       for (let Ce = 0; Ce < 4; Ce++) {
         const { data: De, error: Ne } = await me.rpc("next_username", {
           p_base: Z,
@@ -7055,7 +7058,15 @@ function J_() {
           password: le,
           options: {
             data: {
-              name: `${I.trim()} ${V.trim()}`.slice(0, 30),
+              name: (nmm === "username" ? De : `${I.trim()} ${V.trim()}`).slice(0, 30),
+              name_mode: nmm === "username" ? "username" : "full",
+              bg_reg: 1,
+              gender: gdr || null,
+              birth_date: bdt || null,
+              geo_country_code: cty || null,
+              geo_country: cnm,
+              geo_province: gg.province || null,
+              geo_district: gg.district || null,
               handle: De,
               first_name: I.trim(),
               last_name: V.trim(),
@@ -7073,8 +7084,8 @@ function J_() {
           if (em) return { error: x("errExists") };
           continue;
         }
-        if (Kt.session && cty) me.from("profiles").update({ country: cty }).eq("id", Kt.user.id).then(() => {}, () => {});
-        _e(`Conta criada. O seu nome de utilizador é ${De} (só você o vê). Guarde-o: serve para entrar.`);
+        if (Kt.session && cty) me.from("profiles").update({ country: cty, gender: gdr || null, birth_date: bdt || null }).eq("id", Kt.user.id).then(() => {}, () => {});
+        _e(`Conta criada. O seu nome de utilizador é ${De}. Guarde-o: serve para entrar.`);
         return Kt.session ? {} : { info: x("infoConfirm") };
       }
       return { error: x("errUsernameTaken") };
@@ -13932,6 +13943,14 @@ function px({
     [ctc, sctc] = B.useState(""),
     [cod, scod] = B.useState(""),
     [otn, sotn] = B.useState(""),
+    [gdr, sgdr] = B.useState(""),
+    [bdt, sbdt] = B.useState(""),
+    [prv, sprv] = B.useState(""),
+    [dst, sdst] = B.useState(""),
+    [prl, sprl] = B.useState([]),
+    [dsl, sdsl] = B.useState([]),
+    [gerr, sgerr] = B.useState(false),
+    [nmm, snmm] = B.useState("full"),
     z = l === "signup",
     isPh = z ? a === "phone" : v.trim().startsWith("+"),
     fe = (X) => {
@@ -13948,7 +13967,19 @@ function px({
           return G("O nome de utilizador deve ter 3 a 14 letras ou números, sem espaços.");
       } else if (X.length < 3) return G(x("errWrong"));
       if (z) {
+        if (!gdr) return G(BG_L("Choose your gender.", "Escolha o sexo."));
+        if (!bdt) return G(BG_L("Enter your date of birth (age).", "Indique a sua data de nascimento (idade)."));
+        const _bd = new Date(bdt + "T00:00:00"), _nw = new Date();
+        let _ag = _nw.getFullYear() - _bd.getFullYear();
+        if (_nw.getMonth() < _bd.getMonth() || (_nw.getMonth() === _bd.getMonth() && _nw.getDate() < _bd.getDate())) _ag--;
+        if (isNaN(_ag) || _ag < 0 || _ag > 110) return G(BG_L("Enter a valid date of birth.", "Indique uma data de nascimento válida."));
+        if (_ag < 13) return G(x("errUnder13"));
         if (!cty) return G("Escolha o país onde vive.");
+        if (cty === "MZ") {
+          if (!prv) return G(BG_L("Choose your province.", "Escolha a província."));
+          if (!dst) return G(BG_L("Choose your district.", "Escolha o distrito."));
+        }
+        if (a === "email" && /@(mailinator|tempmail|temp-mail|10minutemail|guerrillamail|yopmail|trashmail|sharklasers|getnada|dispostable|maildrop|throwawaymail|fakeinbox)\./i.test(ctc)) return G(BG_L("Use a real email (not a temporary one).", "Use um email verdadeiro (não temporário)."));
         const cc = ctc.trim();
         if (a === "email" ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cc) : !i_.test(cc.replace(/[\s\-()]/g, ""))) return G(a === "email" ? x("errEmail") : x("errPhone"));
       }
@@ -13969,7 +14000,7 @@ function px({
         return;
       }
       Y = await (z
-        ? r({ firstName: w, lastName: E, otherNames: otn, base: X, password: h, email: a === "email" ? ctc.trim().toLowerCase() : null, country: cty })
+        ? r({ firstName: w, lastName: E, otherNames: otn, base: X, password: h, email: a === "email" ? ctc.trim().toLowerCase() : null, country: cty, gender: gdr, birthDate: bdt, nameMode: nmm, geo: cty === "MZ" ? { province: ((prl.find((q) => String(q.id) === String(prv))) || {}).name || null, district: ((dsl.find((q) => String(q.id) === String(dst))) || {}).name || null } : {} })
         : n({ username: X, password: h }));
       L(!1);
       (Y.error && G(Y.error), Y.info && (F(Y.info), c("login")));
@@ -13980,6 +14011,22 @@ function px({
       background: X ? k.strong : "transparent",
       color: X ? k.onStrong : k.mute,
     });
+  B.useEffect(() => {
+    if (cty !== "MZ") { sprl([]); sdsl([]); sprv(""); sdst(""); sgerr(false); return; }
+    let ok = true;
+    window.__sb.from("provinces").select("id,name").eq("country_code", "MZ").order("name").then((r) => {
+      if (!ok) return;
+      if (r.error || !r.data || !r.data.length) sgerr(true); else { sgerr(false); sprl(r.data); }
+    }, () => { if (ok) sgerr(true); });
+    return () => { ok = false; };
+  }, [cty]);
+  B.useEffect(() => {
+    sdst("");
+    if (!prv) { sdsl([]); return; }
+    let ok = true;
+    window.__sb.from("districts").select("id,name").eq("province_id", prv).order("name").then((r) => { if (ok) sdsl(r.data || []); }, () => {});
+    return () => { ok = false; };
+  }, [prv]);
   return u.jsx("div", {
     className: "min-h-screen flex justify-center",
     style: {
@@ -14128,7 +14175,7 @@ u.jsxs("div", {
                         className: "text-[11px] mt-1",
                         style: { color: k.mute },
                         children:
-                          "Só você vê este nome. Se já existir, o sistema acrescenta um número.",
+                          BG_L("Used to log in. If it already exists, the system adds a number.", "Serve para entrar. Se já existir, o sistema acrescenta um número."),
                       }),
                   ],
                 }),
@@ -14137,7 +14184,26 @@ u.jsxs("div", {
                   a === "email" && u.jsx("div", { className: "text-[11px] mt-1", style: { color: k.mute }, children: BG_L("Register with a real email.","Regista com email verdadeiro.") }),
                   a === "phone" && u.jsx("div", { className: "text-[11px] mt-1", style: { color: k.mute }, children: "Escreva o número com o indicativo do país, começando por +. Exemplo: +258 86 0289 885 (+258 = Moçambique). Vai receber um código por SMS." }),
                 ] }),
+                z && u.jsx(Rg, { value: gdr, onChange: sgdr, className: te, style: be }),
+                z && u.jsxs("div", { children: [
+                  u.jsx("div", { className: "text-[11px] mb-1", style: { color: k.mute }, children: BG_L("Date of birth (your age is calculated from it)", "Data de nascimento (a idade é calculada a partir dela)") }),
+                  u.jsx("input", { type: "date", value: bdt, onChange: (X) => sbdt(X.target.value), max: new Date().toISOString().slice(0, 10), min: "1900-01-01", "aria-label": BG_L("Date of birth", "Data de nascimento"), className: te, style: be }),
+                ] }),
                 z && u.jsx(Pg, { lang: e, value: cty, onChange: scty, className: te, style: be }),
+                z && cty === "MZ" && u.jsxs("select", { value: prv, onChange: (X) => sprv(X.target.value), "aria-label": BG_L("Province", "Província"), className: te, style: be, children: [
+                  u.jsx("option", { value: "", children: BG_L("Province *", "Província *") }),
+                  prl.map((q) => u.jsx("option", { value: q.id, children: q.name }, q.id)),
+                ] }),
+                z && cty === "MZ" && u.jsxs("select", { value: dst, onChange: (X) => sdst(X.target.value), disabled: !prv, "aria-label": BG_L("District", "Distrito"), className: te, style: be, children: [
+                  u.jsx("option", { value: "", children: BG_L("District *", "Distrito *") }),
+                  dsl.map((q) => u.jsx("option", { value: q.id, children: q.name }, q.id)),
+                ] }),
+                z && cty === "MZ" && gerr && u.jsx("div", { className: "text-[11px]", style: { color: k.like }, role: "alert", children: BG_L("Could not load provinces. Check your internet and choose the country again.", "Não foi possível carregar as províncias. Verifique a internet e escolha o país de novo.") }),
+                z && u.jsxs("div", { children: [
+                  u.jsx("div", { className: "text-[11px] mb-1", style: { color: k.mute }, children: BG_L("Name shown on your account", "Nome a mostrar na sua conta") }),
+                  u.jsx("div", { className: "flex gap-2", children: [["full", BG_L("Full name", "Nome completo")], ["username", BG_L("Username", "Nome do utilizador")]].map(([v2, lb]) => u.jsx("button", { type: "button", onClick: () => snmm(v2), "aria-pressed": nmm === v2, className: "flex-1 px-3 py-2.5 rounded-lg text-sm font-bold", style: { background: nmm === v2 ? k.strong : k.paper, color: nmm === v2 ? k.onStrong : k.ink, border: "2px solid " + k.strong }, children: lb }, v2)) }),
+                  u.jsx("div", { className: "text-[11px] mt-1", style: { color: k.mute }, children: BG_L("Others will see: ", "Os outros vão ver: ") + (nmm === "username" ? (v || "…") : (((w || "").trim() + " " + (E || "").trim()).trim() || "…")) }),
+                ] }),
                 u.jsxs("div", {
                   className: "relative",
                   style: { display: isPh ? "none" : void 0 },
@@ -14287,5 +14353,23 @@ window.bgShareGroup=function(kind,x){var me=uid();if(!me)return;var b=sheet("�
 })();
 </script>
 
+<script>
+/* BENGU: depois do 1.º login (email confirmado), passa o sexo, a data de nascimento e a localização do registo para o perfil */
+(function(){var busy=false,done=false;
+function run(){var sb=window.__sb;if(!sb||busy||done)return;busy=true;
+ sb.auth.getSession().then(function(r){var s=r&&r.data&&r.data.session;if(!s||!s.user){busy=false;return}
+  var m=s.user.user_metadata||{};if(!m.bg_reg){busy=false;done=true;return}
+  return sb.from("profiles").select("*").eq("id",s.user.id).maybeSingle().then(function(q){var p=q&&q.data;if(!p){busy=false;return}
+   var u={},g={};
+   if(!p.gender&&m.gender)u.gender=m.gender;
+   if(!p.birth_date&&m.birth_date)u.birth_date=m.birth_date;
+   if(!p.geo_country_code&&m.geo_country_code){g.geo_country_code=m.geo_country_code;g.geo_country=m.geo_country||null;g.geo_province=m.geo_province||null;g.geo_district=m.geo_district||null}
+   var all=Object.assign({},u,g);
+   if(!Object.keys(all).length){busy=false;done=true;return}
+   return sb.from("profiles").update(all).eq("id",s.user.id).then(function(w){
+    if(w&&w.error&&Object.keys(u).length)return sb.from("profiles").update(u).eq("id",s.user.id);return w}).then(function(){busy=false;done=true})})
+ }).catch(function(){busy=false})}
+setInterval(run,4000);setTimeout(run,1500)})();
+</script>
 </body>
 </html>

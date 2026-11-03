@@ -4268,7 +4268,13 @@ function bgEqBuild(a, st) {
 function bgEqApply(g, st) {
   const on = st.on !== false;
   g.filters.forEach((f, q) => { f.gain.value = on ? st.g[q] || 0 : 0; });
-  g.master.gain.value = Math.max(1, Math.min(2, (st.amp || 100) / 100));
+  const ampv = Math.max(1, Math.min(2, (st.amp || 100) / 100));
+  g.master.gain.value = ampv;
+  try {
+    const c = g.comp;
+    if (ampv > 1.001) { c.threshold.value = -1; c.knee.value = 0; c.ratio.value = 20; c.attack.value = 0.003; c.release.value = 0.15; }
+    else { c.threshold.value = -3; c.knee.value = 6; c.ratio.value = 6; c.attack.value = 0.003; c.release.value = 0.25; }
+  } catch (x) {}
   if (g.pan) g.pan.pan.value = Math.max(-1, Math.min(1, (st.bal || 0) / 100));
   const fx = on ? st.fx || "none" : "none";
   if (g.fx !== fx) { g.fx = fx; bgEqFx(g, fx); }
@@ -4291,6 +4297,7 @@ function bgFmtLeft(ms) { const s = Math.max(0, Math.ceil(ms / 1000)), m = Math.f
 function BgEqPanel({ e, onClose }) {
   const q = e.eq, on = q.on !== false;
   const [favs, setFavs] = B.useState(bgEqFavs);
+  const [pOpen, setPOpen] = B.useState(false);
   const saveFavs = (a) => { setFavs(a); try { localStorage.setItem("bg_eq_favs", JSON.stringify(a)); } catch (x) {} };
   const chip = (act) => ({ padding: "6px 12px", borderRadius: 999, fontSize: 13, fontWeight: 700, background: act ? k.saffron : k.paper, color: act ? k.onAccent : k.ink });
   const small = { padding: "4px 8px", borderRadius: 999, fontSize: 12, background: k.paper, color: k.ink };
@@ -4318,7 +4325,8 @@ function BgEqPanel({ e, onClose }) {
     q.err && u.jsx("div", { className: "text-xs mb-3 p-2 rounded-lg", style: { background: k.paper, color: k.like }, children: q.err }),
     u.jsx("button", { onClick: () => e.eqOn(!on), "aria-pressed": on, className: "w-full py-2.5 rounded-full text-sm font-bold mb-1", style: { background: on ? k.saffron : k.paper, color: on ? k.onAccent : k.ink }, children: on ? "Equalizador: LIGADO (toque para desligar)" : "Equalizador: DESLIGADO (toque para ligar)" }),
     title("Predefinições"),
-    u.jsx("div", { className: "flex flex-wrap gap-2", children: Object.keys(BG_EQP).map((n) => u.jsx("button", { onClick: () => e.eqPreset(n), style: chip(q.pr === n), children: n }, n)) }),
+    u.jsxs("button", { onClick: () => setPOpen(!pOpen), "aria-expanded": pOpen, className: "w-full flex items-center justify-between py-2.5 px-4 rounded-full text-sm font-bold", style: { background: k.paper, color: k.ink }, children: [u.jsx("span", { children: q.pr || "Normal" }), u.jsx("span", { children: pOpen ? "▲" : "▼" })] }),
+    pOpen && u.jsx("div", { className: "flex flex-wrap gap-2 mt-2", children: Object.keys(BG_EQP).map((n) => u.jsx("button", { onClick: () => { e.eqPreset(n); setPOpen(false); }, style: chip(q.pr === n), children: n }, n)) }),
     title("As minhas equalizações (com nome)"),
     u.jsxs("div", { className: "flex flex-wrap gap-2", children: [
       favs.map((f, i) => u.jsxs("span", { className: "inline-flex items-center gap-1", children: [
@@ -4331,7 +4339,7 @@ function BgEqPanel({ e, onClose }) {
     title("Manual (20 faixas)"),
     u.jsx("div", { style: { display: "flex", overflowX: "auto", opacity: on ? 1 : 0.4, paddingBottom: 4 }, children: BG_EQF.map((f, i) => u.jsxs("div", { style: { width: 26, flex: "0 0 26px", textAlign: "center" }, children: [
       u.jsx("div", { style: { fontSize: 9, color: k.mute, height: 12 }, children: (q.g[i] > 0 ? "+" : "") + q.g[i] }),
-      u.jsx("div", { style: { position: "relative", height: 130 }, children: u.jsx("input", { type: "range", min: -12, max: 12, step: 1, value: q.g[i], disabled: !on, onChange: (ev) => e.eqGain(i, Number(ev.target.value)), "aria-label": f + " Hz", style: { position: "absolute", left: "50%", top: "50%", width: 120, margin: 0, transform: "translate(-50%,-50%) rotate(-90deg)", accentColor: k.saffron, touchAction: "none" } }) }),
+      u.jsx("div", { style: { position: "relative", height: 650 }, children: u.jsx("input", { type: "range", min: -12, max: 12, step: 1, value: q.g[i], disabled: !on, onChange: (ev) => e.eqGain(i, Number(ev.target.value)), "aria-label": f + " Hz", style: { position: "absolute", left: "50%", top: "50%", width: 600, margin: 0, transform: "translate(-50%,-50%) rotate(-90deg)", accentColor: k.saffron, touchAction: "none" } }) }),
       u.jsx("div", { style: { fontSize: 9, color: k.mute }, children: lbl(f) }),
     ] }, f)) }),
     u.jsx("div", { className: "text-[11px]", style: { color: k.mute }, children: "Frequências em Hz · ganho em dB (−12 a +12)" }),
@@ -5485,6 +5493,26 @@ function Ws({ on: e, onChange: t, label: r }) {
     }),
   });
 }
+function bgMp3Queue(post, url, artist, audio) {
+  const S = window.__bgVidSrc, list = [];
+  let start = -1;
+  const mk = (p, it, ix, art) => ({ key: "mp3-" + (p ? p.id : url) + "-" + ix, url: it.audio || it.url, title: ((p && p.text) || "").split("\n")[0].slice(0, 70) || "Vídeo Bengu", artist: art || "Bengu", credits: it.audio ? "Modo MP3 · poupa dados" : "Modo MP3", cover: null, postId: p ? p.id : null, post: null, item: {} });
+  try {
+    if (S && Array.isArray(S.posts)) {
+      S.posts.slice().sort(S.cmp).forEach((p) => {
+        if (!p || p.suspended) return;
+        (p.items || []).forEach((it, ix) => {
+          if (!it || it.kind !== "video" || !it.url) return;
+          const us = S.users && S.users[p.userId];
+          if (start < 0 && post && p.id === post.id && it.url === url) start = list.length;
+          list.push(mk(p, it, ix, (us && us.name) || "Bengu"));
+        });
+      });
+    }
+  } catch (x) {}
+  if (start < 0) { list.unshift(mk(post, { url, audio }, 0, artist)); start = 0; }
+  return { list, start };
+}
 function q_({ src: e, className: t, style: r, post: ps, mp3: mp3u, owner: own }) {
   const n = B.useRef(null),
     [pv, setPv] = B.useState(false),
@@ -5505,7 +5533,8 @@ function q_({ src: e, className: t, style: r, post: ps, mp3: mp3u, owner: own })
     if (!pl || !pl.play) return;
     const t0 = v ? v.currentTime : 0;
     v && v.pause();
-    pl.play([{ key: "mp3-" + (ps ? ps.id : e), url: mp3u || e, title: ((ps && ps.text) || "").split("\n")[0].slice(0, 70) || "Vídeo Bengu", artist: own || "Bengu", credits: mp3u ? "Modo MP3 · poupa dados" : "Modo MP3", cover: null, postId: ps ? ps.id : null, post: null, item: {} }], 0);
+    const Q = bgMp3Queue(ps, e, own, mp3u);
+    pl.play(Q.list, Q.start);
     t0 > 1 && setTimeout(() => { try { pl.seek(t0); } catch (x) {} }, 700);
   };
   const vid = (
@@ -7580,6 +7609,7 @@ function J_() {
       (I.pinnedAt && V.pinnedAt ? String(V.pinnedAt).localeCompare(String(I.pinnedAt)) : 0) ||
       V.createdAt.localeCompare(I.createdAt),
     ln = A.filter((I) => !j.includes(I.userId)),
+    bgVidPub = (window.__bgVidSrc = { posts: ln, users: E, cmp: In }),
     sd = [...ln]
       .filter((I) =>
         Y === "all"
@@ -9269,7 +9299,7 @@ function ex({ r: e, cardProps: t }) {
             children: u.jsx(Oo, { size: 28, fill: d.saved ? "#fff" : "none" }),
           }),
           u.jsx("button", {
-            onClick: () => { const v_ = r.current; v_ && v_.pause(); c(!0); bgPl && bgPl.play && bgPl.play([{ key: "mp3-" + e.post.id, url: e.item.audio || e.item.url, title: (e.post.text || "").split("\n")[0].slice(0, 70) || "Reel Bengu", artist: (d.user && d.user.name) || "Bengu", credits: e.item.audio ? "Modo MP3 · poupa dados" : "Modo MP3", cover: null, postId: e.post.id, post: null, item: {} }], 0); },
+            onClick: () => { const v_ = r.current; v_ && v_.pause(); c(!0); if (bgPl && bgPl.play) { const Q_ = bgMp3Queue(e.post, e.item.url, (d.user && d.user.name) || "Bengu", e.item.audio); bgPl.play(Q_.list, Q_.start); } },
             className: f,
             "aria-label": "Modo MP3",
             title: "Modo MP3: ouvir só o áudio (ecrã apagado, menos dados)",

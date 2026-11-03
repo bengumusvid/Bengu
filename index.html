@@ -63,6 +63,110 @@ function addBtn(on){
 window.bgIsAdm=function(){try{return window.__bgAdm===true||localStorage.getItem("bg_adm")==="1"}catch(e){return window.__bgAdm===true}};
 </script>
 <script>
+/* BENGU — Administração: tabela de inscritos e gráfico de crescimento (só administrador) */
+(function(){
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ";
+function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return""}}
+function rpc(n,a){return fetch(U+"/rest/v1/rpc/"+n,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/json"},body:JSON.stringify(a||{})}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j&&j.message||"Erro");return j})})}
+function el(t,c,x){var e=document.createElement(t);if(c)e.style.cssText=c;if(x!=null)e.textContent=x;return e}
+var CARD="background:#1b2050;border-radius:14px;padding:12px;margin:10px 0;",
+    BTN="background:#262c66;color:#fff;border:0;border-radius:10px;padding:8px 11px;font:600 13px system-ui,sans-serif;cursor:pointer;",
+    ON="background:#f5b400;color:#14163a;border:0;border-radius:10px;padding:8px 11px;font:700 13px system-ui,sans-serif;cursor:pointer;";
+function nf(n){return Number(n||0).toLocaleString("pt-PT")}
+function p2(n){return(n<10?"0":"")+n}
+function lab(t,unit){var d=new Date(t);if(unit==="year")return String(d.getUTCFullYear());if(unit==="month")return p2(d.getUTCMonth()+1)+"/"+d.getUTCFullYear();return p2(d.getUTCDate())+"/"+p2(d.getUTCMonth()+1)}
+var RANGES=[["day","Dia","30 dias"],["week","Semana","26 semanas"],["month","Mês","24 meses"],["year5","Ano","5 anos"],["year10","Ano","10 anos"]];
+function unitOf(k){return k.indexOf("year")===0?"year":k}
+
+function drawChart(box,read,pts,mode,unit){
+ var W=340,H=180,pl=40,pr=8,pt=10,pb=24,iw=W-pl-pr,ih=H-pt-pb,vals=pts.map(function(p){return mode==="new"?p.n:p.total}),
+     mx=Math.max.apply(null,vals),mn=mode==="new"?0:Math.min.apply(null,vals);
+ if(mx===mn){mx=mn+1}
+ var pad=mode==="new"?0:(mx-mn)*0.1;mn=Math.max(0,mn-pad);mx=mx+pad;
+ function X(i){return pl+(pts.length===1?iw/2:i*iw/(pts.length-1))}
+ function Y(v){return pt+ih-(v-mn)/(mx-mn)*ih}
+ var s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="display:block;touch-action:pan-y" xmlns="http://www.w3.org/2000/svg">';
+ for(var g=0;g<=4;g++){var v=mn+(mx-mn)*g/4,y=Y(v);s+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y+'" y2="'+y+'" stroke="#2a2f66" stroke-width="1"/><text x="'+(pl-4)+'" y="'+(y+3)+'" font-size="9" fill="#9aa0d0" text-anchor="end">'+nf(Math.round(v))+'</text>'}
+ if(mode==="new"){
+  var bw=Math.max(1.5,iw/pts.length*0.7);
+  pts.forEach(function(p,i){var x=pl+(i+0.5)*iw/pts.length,y=Y(p.n);s+='<rect x="'+(x-bw/2)+'" y="'+y+'" width="'+bw+'" height="'+Math.max(0,pt+ih-y)+'" rx="1.5" fill="#f5b400"/>'})
+ }else{
+  var d=pts.map(function(p,i){return(i?"L":"M")+X(i)+" "+Y(p.total)}).join(" ");
+  s+='<path d="'+d+' L'+X(pts.length-1)+" "+(pt+ih)+" L"+X(0)+" "+(pt+ih)+' Z" fill="rgba(245,180,0,.18)"/><path d="'+d+'" fill="none" stroke="#f5b400" stroke-width="2.2" stroke-linejoin="round"/>';
+  if(pts.length<=40)pts.forEach(function(p,i){s+='<circle cx="'+X(i)+'" cy="'+Y(p.total)+'" r="2.2" fill="#f5b400"/>'})
+ }
+ var idx=[0,Math.floor((pts.length-1)/2),pts.length-1];
+ idx.forEach(function(i,k){var x=mode==="new"?pl+(i+0.5)*iw/pts.length:X(i);s+='<text x="'+x+'" y="'+(H-6)+'" font-size="9" fill="#9aa0d0" text-anchor="'+(k===0?"start":k===2?"end":"middle")+'">'+lab(pts[i].t,unit)+'</text>'});
+ s+='<line id="bgm-cur" x1="0" x2="0" y1="'+pt+'" y2="'+(pt+ih)+'" stroke="#fff" stroke-opacity=".5" stroke-dasharray="3 3" style="display:none"/></svg>';
+ box.innerHTML=s;
+ var svg=box.firstChild,cur=svg.querySelector("#bgm-cur");
+ function show(ev){
+  var r=svg.getBoundingClientRect(),px=(ev.clientX-r.left)/r.width*W,i=mode==="new"?Math.floor((px-pl)/iw*pts.length):Math.round((px-pl)/iw*(pts.length-1));
+  i=Math.max(0,Math.min(pts.length-1,i));var p=pts[i],x=mode==="new"?pl+(i+0.5)*iw/pts.length:X(i);
+  cur.setAttribute("x1",x);cur.setAttribute("x2",x);cur.style.display="";
+  read.textContent=lab(p.t,unit)+" · +"+nf(p.n)+" novos · total "+nf(p.total)}
+ svg.addEventListener("pointerdown",show);svg.addEventListener("pointermove",function(e){if(e.buttons||e.pointerType==="mouse")show(e)});
+ var l=pts[pts.length-1];read.textContent="Toque no gráfico para ver o dia · último: +"+nf(l.n)+" · total "+nf(l.total)}
+
+window.bengu_admin_members=function(){
+ if(document.getElementById("bgm-ov"))return;
+ var ov=el("div","position:fixed;inset:0;z-index:2147483000;background:#0f1330;color:#fff;font:14px system-ui,sans-serif;overflow:auto;-webkit-overflow-scrolling:touch;padding:calc(env(safe-area-inset-top,0px) + 10px) calc(env(safe-area-inset-right,0px) + 12px) calc(env(safe-area-inset-bottom,0px) + 20px) calc(env(safe-area-inset-left,0px) + 12px)");
+ ov.id="bgm-ov";
+ var top=el("div","display:flex;align-items:center;gap:8px;position:sticky;top:0;background:#0f1330;padding:4px 0 8px;z-index:2"),
+     h=el("b","flex:1;font-size:17px","👥 Inscritos e crescimento"),x=el("button",BTN,"✕");
+ x.onclick=function(){ov.remove()};top.append(h,x);
+ var wrap=el("div","max-width:960px;margin:0 auto"),body=el("div","");wrap.append(top,body);ov.append(wrap);document.body.append(ov);
+ body.append(el("p","opacity:.7","A carregar…"));
+ rpc("bengu_admin_growth").then(function(G){
+  body.replaceChildren();
+  var range="day",mode="new";
+  function series(k){var b=G[k],t=b.before||0;return b.points.map(function(p){t+=p.n;return{t:p.t,n:p.n,total:t}})}
+  var last=function(k){var a=G[k].points;return a.length?a[a.length-1].n:0};
+  var cards=el("div","display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:6px 0");
+  [["Total de inscritos",nf(G.total)],["Hoje","+"+nf(last("day"))],["Esta semana","+"+nf(last("week"))],["Este mês","+"+nf(last("month"))]].forEach(function(c){var d=el("div","background:#1b2050;border-radius:12px;padding:10px"),v=el("div","font-size:21px;font-weight:800;color:#f5b400",c[1]);d.append(v,el("div","font-size:12px;opacity:.75",c[0]));cards.append(d)});
+  var ch=el("div",CARD),tabs=el("div","display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"),mtabs=el("div","display:flex;gap:6px;margin-bottom:8px"),
+      box=el("div",""),read=el("div","font-size:12px;opacity:.85;margin-top:6px;min-height:16px"),sum=el("div","font-size:12px;opacity:.7;margin-top:2px");
+  function paint(){
+   [].forEach.call(tabs.children,function(b,i){b.style.cssText=RANGES[i][0]===range?ON:BTN});
+   [].forEach.call(mtabs.children,function(b,i){b.style.cssText=(i===0?"new":"total")===mode?ON:BTN});
+   var pts=series(range),tot=pts.reduce(function(a,p){return a+p.n},0);
+   drawChart(box,read,pts,mode,unitOf(range));
+   sum.textContent="Período: "+RANGES.filter(function(r){return r[0]===range})[0][2]+" · "+nf(tot)+" novos inscritos"}
+  RANGES.forEach(function(r){var b=el("button",BTN,r[1]+(r[0].indexOf("year")===0?" ("+r[2]+")":""));b.onclick=function(){range=r[0];paint()};tabs.append(b)});
+  [["Novos por período","new"],["Total acumulado","total"]].forEach(function(m){var b=el("button",BTN,m[0]);b.onclick=function(){mode=m[1];paint()};mtabs.append(b)});
+  ch.append(el("b","","Crescimento da rede"),el("div","height:8px"),tabs,mtabs,box,read,sum);
+  body.append(cards,ch);paint();
+
+  /* tabela */
+  var tb=el("div",CARD),q=el("input","width:100%;box-sizing:border-box;background:#0f1330;color:#fff;border:1px solid #2a2f66;border-radius:10px;padding:10px;font-size:14px;margin:6px 0"),
+      sc=el("div","overflow-x:auto"),pg=el("div","display:flex;align-items:center;gap:8px;margin-top:8px"),
+      prev=el("button",BTN,"‹ Anterior"),next=el("button",BTN,"Seguinte ›"),info=el("div","flex:1;text-align:center;font-size:12px;opacity:.8"),
+      page=0,PS=25,qt=0,total=0;
+  q.placeholder="Pesquisar por nome ou e-mail";q.type="search";
+  pg.append(prev,info,next);tb.append(el("b","","Tabela de inscritos"),q,sc,pg);body.append(tb);
+  function load(){
+   sc.replaceChildren(el("p","opacity:.7","A carregar…"));
+   rpc("bengu_admin_members",{p_q:q.value.trim()||null,p_limit:PS,p_offset:page*PS}).then(function(R){
+    total=R.total||0;sc.replaceChildren();
+    var t=el("table","width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px"),hd=el("tr","text-align:left;color:#9aa0d0");
+    ["#","Nome","E-mail","Inscrição","Último acesso"].forEach(function(c){hd.append(el("th","padding:6px 8px;border-bottom:1px solid #2a2f66;white-space:nowrap",c))});t.append(hd);
+    (R.rows||[]).forEach(function(r,i){var tr=el("tr","");
+     function td(v){var d=el("td","padding:7px 8px;border-bottom:1px solid #22275a;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis",v);tr.append(d)}
+     td(String(total-page*PS-i));td(r.name||"—");td(r.email||"—");td(r.created_at?new Date(r.created_at).toLocaleDateString("pt-PT"):"—");td(r.last_sign_in_at?new Date(r.last_sign_in_at).toLocaleDateString("pt-PT"):"—");t.append(tr)});
+    if(!(R.rows||[]).length)sc.append(el("p","opacity:.7","Sem resultados."));else sc.append(t);
+    var pages=Math.max(1,Math.ceil(total/PS));info.textContent=nf(total)+" inscritos · pág. "+(page+1)+"/"+pages;
+    prev.disabled=page<=0;next.disabled=page>=pages-1;prev.style.opacity=prev.disabled?.4:1;next.style.opacity=next.disabled?.4:1
+   }).catch(function(e){sc.replaceChildren(el("p","color:#ff9b9b",e.message))})}
+  prev.onclick=function(){if(page>0){page--;load()}};next.onclick=function(){page++;load()};
+  q.oninput=function(){clearTimeout(qt);qt=setTimeout(function(){page=0;load()},350)};
+  load()
+ }).catch(function(e){body.replaceChildren(el("p","color:#ff9b9b",/does not exist|schema cache|could not find/i.test(e.message)?"Falta executar o ficheiro bengu-inscritos.sql no Supabase.":e.message))})
+};
+/* permitir rotação do ecrã (quando o navegador o permite) */
+try{if(screen.orientation&&screen.orientation.unlock)screen.orientation.unlock()}catch(e){}
+})();
+</script>
+<script>
 /* BENGU OFFLINE — memória do que já foi visto.
    1) Respostas GET da base de dados (feed, perfis, comentários, estados…) ficam guardadas no aparelho (IndexedDB) e são usadas quando não há internet.
    2) Fotos já vistas ficam na cache "bengu-seen" e são mostradas sem internet.
@@ -10195,6 +10299,7 @@ function Ad_({ onBack: e, say: t }) {
         ],
       }),
       u.jsx("div", { className: "px-4 pb-2", children: u.jsx("button", { onClick: () => window.bengu_admin_earnings && window.bengu_admin_earnings(), className: "w-full rounded-xl py-3 text-sm font-bold", style: { background: k.saffron, color: k.onAccent }, children: "💰 Comissão e levantamentos" }) }),
+      u.jsx("div", { className: "px-4 pb-2", children: u.jsx("button", { onClick: () => window.bengu_admin_members && window.bengu_admin_members(), className: "w-full rounded-xl py-3 text-sm font-bold", style: { background: k.card, color: k.ink, border: "1px solid " + k.line }, children: "👥 Inscritos e crescimento" }) }),
       u.jsx("h2", {
         id: "bg-adm-users",
         className: "px-4 pt-3 pb-2 text-sm font-bold",

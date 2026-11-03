@@ -4337,9 +4337,10 @@ function BgEqPanel({ e, onClose }) {
       u.jsx("button", { onClick: addFav, style: { ...chip(!1), border: "1px dashed " + k.mute }, children: "💾 Guardar a atual com nome" }),
     ] }),
     title("Manual (20 faixas)"),
+    u.jsx("style", { children: ".bgeq{-webkit-appearance:none;appearance:none;background:transparent;height:26px}.bgeq::-webkit-slider-runnable-track{height:8px;border-radius:4px;background:#5a6598}.bgeq::-moz-range-track{height:8px;border-radius:4px;background:#5a6598}.bgeq::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#FFA91F;margin-top:-8px}.bgeq::-moz-range-thumb{width:24px;height:24px;border:0;border-radius:50%;background:#FFA91F}" }),
     u.jsx("div", { style: { display: "flex", overflowX: "auto", opacity: on ? 1 : 0.4, paddingBottom: 4 }, children: BG_EQF.map((f, i) => u.jsxs("div", { style: { width: 26, flex: "0 0 26px", textAlign: "center" }, children: [
       u.jsx("div", { style: { fontSize: 9, color: k.mute, height: 12 }, children: (q.g[i] > 0 ? "+" : "") + q.g[i] }),
-      u.jsx("div", { style: { position: "relative", height: 650 }, children: u.jsx("input", { type: "range", min: -12, max: 12, step: 1, value: q.g[i], disabled: !on, onChange: (ev) => e.eqGain(i, Number(ev.target.value)), "aria-label": f + " Hz", style: { position: "absolute", left: "50%", top: "50%", width: 600, margin: 0, transform: "translate(-50%,-50%) rotate(-90deg)", accentColor: k.saffron, touchAction: "none" } }) }),
+      u.jsx("div", { style: { position: "relative", height: 650 }, children: u.jsx("input", { className: "bgeq", type: "range", min: -12, max: 12, step: 1, value: q.g[i], disabled: !on, onChange: (ev) => e.eqGain(i, Number(ev.target.value)), "aria-label": f + " Hz", style: { position: "absolute", left: "50%", top: "50%", width: 600, margin: 0, transform: "translate(-50%,-50%) rotate(-90deg)", accentColor: k.saffron, touchAction: "none" } }) }),
       u.jsx("div", { style: { fontSize: 9, color: k.mute }, children: lbl(f) }),
     ] }, f)) }),
     u.jsx("div", { className: "text-[11px]", style: { color: k.mute }, children: "Frequências em Hz · ganho em dB (−12 a +12)" }),

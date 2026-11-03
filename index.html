@@ -4294,6 +4294,43 @@ function bgEqFavs() {
   try { const a = JSON.parse(localStorage.getItem("bg_eq_favs") || "[]"); return Array.isArray(a) ? a.filter((f) => f && f.name && Array.isArray(f.g) && f.g.length === 20) : []; } catch (e) { return []; }
 }
 function bgFmtLeft(ms) { const s = Math.max(0, Math.ceil(ms / 1000)), m = Math.floor(s / 60), x = s % 60; return m + ":" + (x < 10 ? "0" : "") + x; }
+function BgEqSlider({ v, on, label, onChange }) {
+  const H = 230, T = 22, ref = B.useRef(null), st = B.useRef({ id: null, x: 0, y: 0, drag: !1 });
+  const cy = T / 2 + ((12 - v) / 24) * (H - T), mid = H / 2;
+  const setFrom = (clientY) => {
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const p = Math.min(Math.max(clientY - r.top - T / 2, 0), r.height - T);
+    const val = Math.round(12 - (p / (r.height - T)) * 24);
+    if (val !== v) onChange(val);
+  };
+  const bar = (extra) => ({ position: "absolute", left: "50%", ...extra });
+  return u.jsxs("div", {
+    ref, role: "slider", tabIndex: on ? 0 : -1, "aria-label": label, "aria-orientation": "vertical", "aria-valuemin": -12, "aria-valuemax": 12, "aria-valuenow": v, "aria-disabled": !on,
+    style: { position: "relative", width: 26, height: H, touchAction: "pan-x", cursor: on ? "pointer" : "default", outline: "none", userSelect: "none", WebkitUserSelect: "none" },
+    onPointerDown: (ev) => { if (!on) return; st.current = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, drag: !1 }; try { ev.currentTarget.setPointerCapture(ev.pointerId); } catch (x) {} },
+    onPointerMove: (ev) => {
+      const s = st.current;
+      if (!on || s.id !== ev.pointerId) return;
+      if (!s.drag) { const dy = Math.abs(ev.clientY - s.y), dx = Math.abs(ev.clientX - s.x); if (dy > 5 && dy > dx) s.drag = !0; else return; }
+      setFrom(ev.clientY);
+    },
+    onPointerUp: (ev) => { const s = st.current; if (on && s.id === ev.pointerId && !s.drag) setFrom(ev.clientY); st.current = { id: null, x: 0, y: 0, drag: !1 }; },
+    onPointerCancel: () => { st.current = { id: null, x: 0, y: 0, drag: !1 }; },
+    onKeyDown: (ev) => {
+      if (!on) return;
+      if (ev.key === "ArrowUp" || ev.key === "ArrowRight") { ev.preventDefault(); onChange(Math.min(12, v + 1)); }
+      else if (ev.key === "ArrowDown" || ev.key === "ArrowLeft") { ev.preventDefault(); onChange(Math.max(-12, v - 1)); }
+    },
+    children: [
+      u.jsx("div", { style: bar({ top: T / 2, bottom: T / 2, width: 4, marginLeft: -2, borderRadius: 2, background: k.mute, opacity: 0.55 }) }, "t"),
+      u.jsx("div", { style: bar({ top: Math.min(mid, cy), height: Math.abs(cy - mid), width: 4, marginLeft: -2, background: k.saffron }) }, "f"),
+      u.jsx("div", { style: bar({ top: mid - 1, width: 14, height: 2, marginLeft: -7, background: k.mute }) }, "z"),
+      u.jsx("div", { style: bar({ top: cy - T / 2, width: T, height: T, marginLeft: -T / 2, borderRadius: "50%", background: k.saffron, boxShadow: "0 1px 4px rgba(0,0,0,.45)" }) }, "b"),
+    ],
+  });
+}
 function BgEqPanel({ e, onClose }) {
   const q = e.eq, on = q.on !== false;
   const [favs, setFavs] = B.useState(bgEqFavs);
@@ -4337,11 +4374,10 @@ function BgEqPanel({ e, onClose }) {
       u.jsx("button", { onClick: addFav, style: { ...chip(!1), border: "1px dashed " + k.mute }, children: "💾 Guardar a atual com nome" }),
     ] }),
     title("Manual (20 faixas)"),
-    u.jsx("style", { children: ".bgeq{-webkit-appearance:none;appearance:none;background:transparent;height:26px}.bgeq::-webkit-slider-runnable-track{height:8px;border-radius:4px;background:#5a6598}.bgeq::-moz-range-track{height:8px;border-radius:4px;background:#5a6598}.bgeq::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#FFA91F;margin-top:-8px}.bgeq::-moz-range-thumb{width:24px;height:24px;border:0;border-radius:50%;background:#FFA91F}" }),
     u.jsx("div", { style: { display: "flex", overflowX: "auto", opacity: on ? 1 : 0.4, paddingBottom: 4 }, children: BG_EQF.map((f, i) => u.jsxs("div", { style: { width: 26, flex: "0 0 26px", textAlign: "center" }, children: [
-      u.jsx("div", { style: { fontSize: 9, color: k.mute, height: 12 }, children: (q.g[i] > 0 ? "+" : "") + q.g[i] }),
-      u.jsx("div", { style: { position: "relative", height: 650 }, children: u.jsx("input", { className: "bgeq", type: "range", min: -12, max: 12, step: 1, value: q.g[i], disabled: !on, onChange: (ev) => e.eqGain(i, Number(ev.target.value)), "aria-label": f + " Hz", style: { position: "absolute", left: "50%", top: "50%", width: 600, margin: 0, transform: "translate(-50%,-50%) rotate(-90deg)", accentColor: k.saffron, touchAction: "none" } }) }),
-      u.jsx("div", { style: { fontSize: 9, color: k.mute }, children: lbl(f) }),
+      u.jsx("div", { style: { fontSize: 10, color: k.mute, height: 16, lineHeight: "16px" }, children: (q.g[i] > 0 ? "+" : "") + q.g[i] }),
+      u.jsx(BgEqSlider, { v: q.g[i], on, label: f + " Hz", onChange: (val) => e.eqGain(i, val) }),
+      u.jsx("div", { style: { fontSize: 10, color: k.mute, height: 16, lineHeight: "16px", marginTop: 2 }, children: lbl(f) }),
     ] }, f)) }),
     u.jsx("div", { className: "text-[11px]", style: { color: k.mute }, children: "Frequências em Hz · ganho em dB (−12 a +12)" }),
     title("Balanço (esquerda / direita)"),

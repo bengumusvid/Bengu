@@ -4330,12 +4330,13 @@ function bgEqBuild(a, st) {
   const filters = BG_EQF.map((f, q) => { const bq = ctx.createBiquadFilter(); bq.type = q === 0 ? "lowshelf" : q === N - 1 ? "highshelf" : "peaking"; bq.frequency.value = f; bq.Q.value = 2; bq.gain.value = 0; return bq; });
   src.connect(filters[0]);
   for (let q = 0; q < N - 1; q++) filters[q].connect(filters[q + 1]);
-  const fxIn = ctx.createGain(), master = ctx.createGain(), comp = ctx.createDynamicsCompressor();
+  const fxIn = ctx.createGain(), master = ctx.createGain(), comp = ctx.createDynamicsCompressor(), post = ctx.createGain();
   filters[N - 1].connect(fxIn); master.connect(comp);
   let pan = null;
   try { pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null; } catch (e) { pan = null; }
-  if (pan) { comp.connect(pan); pan.connect(ctx.destination); } else comp.connect(ctx.destination);
-  const g = { ctx, filters, fxIn, master, comp, pan, extra: [], fx: "__init" };
+  comp.connect(post);
+  if (pan) { post.connect(pan); pan.connect(ctx.destination); } else post.connect(ctx.destination);
+  const g = { ctx, filters, fxIn, master, comp, post, pan, extra: [], fx: "__init" };
   bgEqApply(g, st);
   return g;
 }
@@ -4344,9 +4345,11 @@ function bgEqApply(g, st) {
   g.filters.forEach((f, q) => { f.gain.value = on ? st.g[q] || 0 : 0; });
   const ampv = Math.max(0, Math.min(2, (st.amp == null ? 100 : st.amp) / 100));
   g.master.gain.value = ampv;
+  if (g.post) g.post.gain.value = ampv > 1 ? 1 + (ampv - 1) * 0.5 : 1;
   try {
     const c = g.comp;
-    if (ampv > 1.001) { c.threshold.value = -1; c.knee.value = 0; c.ratio.value = 20; c.attack.value = 0.003; c.release.value = 0.15; }
+    /* acima de 100%: o ganho sobe de verdade (pré + pós-ganho) e o compressor só protege os picos, sem anular o aumento */
+    if (ampv > 1.001) { c.threshold.value = -9; c.knee.value = 8; c.ratio.value = 6; c.attack.value = 0.003; c.release.value = 0.2; }
     else { c.threshold.value = -3; c.knee.value = 6; c.ratio.value = 6; c.attack.value = 0.003; c.release.value = 0.25; }
   } catch (x) {}
   if (g.pan) g.pan.pan.value = Math.max(-1, Math.min(1, (st.bal || 0) / 100));
@@ -4369,7 +4372,7 @@ function bgEqFavs() {
 }
 function bgFmtLeft(ms) { const s = Math.max(0, Math.ceil(ms / 1000)), m = Math.floor(s / 60), x = s % 60; return m + ":" + (x < 10 ? "0" : "") + x; }
 function BgEqSlider({ v, on, label, onChange }) {
-  const H = 230, T = 22, ref = B.useRef(null), st = B.useRef({ id: null, x: 0, y: 0, drag: !1 });
+  const H = 230, T = 11, ref = B.useRef(null), st = B.useRef({ id: null, x: 0, y: 0, drag: !1 });
   const cy = T / 2 + ((12 - v) / 24) * (H - T), mid = H / 2;
   const setFrom = (clientY) => {
     const el = ref.current;
@@ -12343,11 +12346,11 @@ function cx({ post: e, me: t, onClose: r }) {
   );
 }
 function dx({ post: e, me: t, users: us, onClose: r, say: n }) {
-  const [s] = B.useState(() => `${window.location.origin}/s/${og()}`);
+  const [s] = B.useState(() => `${Rc()}#${og()}`);
   const [uq, setUq] = B.useState(""),
     [sentTo, setSentTo] = B.useState({});
   B.useEffect(() => {
-    const p = s.split("/s/")[1];
+    const p = s.split("#")[1];
     me.from("share_links")
       .insert({ code: p, post_id: e.id, created_by: t.id })
       .then(

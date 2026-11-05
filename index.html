@@ -2747,7 +2747,7 @@ function me(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexi
 function hd(x){var o={apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/json"};if(x)for(var k in x)o[k]=x[k];return o}
 function el(t,css,txt){var e=document.createElement(t);if(css)e.style.cssText=css;if(txt!=null)e.textContent=txt;return e}
 var BTN="border:0;border-radius:12px;padding:10px 14px;font-weight:700;font-size:14px;cursor:pointer;",Y=BTN+"background:#f5b400;color:#14163a",G=BTN+"background:#2a2f66;color:#fff";
-function pickMime(){var c=["video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4;codecs=avc1,mp4a.40.2","video/mp4;codecs=avc1","video/mp4"];
+function pickMime(){var c=["video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4;codecs=avc1,mp4a.40.2","video/mp4;codecs=avc1","video/mp4","video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm;codecs=h264,opus","video/webm"];
  for(var i=0;i<c.length;i++){try{if(window.MediaRecorder&&MediaRecorder.isTypeSupported(c[i]))return c[i]}catch(e){}}return""}
 function mm(s){s=Math.floor(s);return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
 
@@ -3206,7 +3206,7 @@ ageRow.append(el("span","width:92px;flex:none","Idade"));ageB.forEach(function(b
   box.append(tbar,subE);place();fxApply()}
  function ensureAudio(){if(actx)return;actx=new (window.AudioContext||window.webkitAudioContext)();destS=actx.createMediaStreamDestination();dest=actx.createDelay(1);dest.delayTime.value=syncMs/1000;dest.connect(destS)}
  function startRecording(){stopPv();dm.style.display="none";
-  if(!mime){say("Este telemóvel não grava vídeo em MP4. Atualize o navegador.");return Promise.resolve()}
+  if(!mime){say("Este navegador não consegue gravar vídeo. Abra no Chrome atualizado.");return Promise.resolve()}
   var out=cv.captureStream?cv.captureStream(30):null;if(!out){say("Este navegador não suporta gravação com filtros.");return Promise.resolve()}
   var needAudio=!!music||mic.checked;var p=Promise.resolve();
   if(needAudio){ensureAudio();if(actx.state==="suspended")actx.resume();
@@ -3314,7 +3314,7 @@ function even(n) { return Math.max(2, Math.round(n / 2) * 2); }
 function fmt(t) { t = Math.max(0, t); var m = Math.floor(t / 60), s = t - m * 60; return m + ":" + (s < 10 ? "0" : "") + s.toFixed(1); }
 function fs(v) { return (+v).toFixed(1) + " s"; }
 function hs(i, k) { var x = Math.sin(i * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x); }
-function mimeFor() { return ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4;codecs=avc1,mp4a.40.2", "video/mp4;codecs=avc1", "video/mp4"].find(function (t) { return window.MediaRecorder && MediaRecorder.isTypeSupported(t); }) || ""; }
+function mimeFor() { return ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4;codecs=avc1,mp4a.40.2", "video/mp4;codecs=avc1", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"].find(function (t) { return window.MediaRecorder && MediaRecorder.isTypeSupported(t); }) || ""; }
 
 window.bgVideoEditor = function (root, P) {
   var uidc = 0, nid = function () { return "i" + (++uidc); };
@@ -3639,7 +3639,7 @@ window.bgVideoEditor = function (root, P) {
       if (!exporting) return;
       try {
         var stream = cv.captureStream(30); dest.stream.getAudioTracks().forEach(function (t) { stream.addTrack(t); });
-        expMime = mimeFor(); if (!expMime) { exporting = false; expOv.style.display = "none"; toast("Este telemóvel não grava vídeo em MP4. Atualize o navegador."); return; } var bps = cfg.maxBytes ? clamp(Math.floor(cfg.maxBytes * 8 * .9 / Math.max(1, D)), 15e4, 4e6) : 3e6;
+        expMime = mimeFor(); if (!expMime) { exporting = false; expOv.style.display = "none"; toast("Este navegador não consegue gravar vídeo. Abra no Chrome atualizado."); return; } var bps = cfg.maxBytes ? clamp(Math.floor(cfg.maxBytes * 8 * .9 / Math.max(1, D)), 15e4, 4e6) : 3e6;
         mr = new MediaRecorder(stream, expMime ? { mimeType: expMime, videoBitsPerSecond: bps } : { videoBitsPerSecond: bps }); mrChunks = [];
         mr.ondataavailable = function (e) { if (e.data && e.data.size) mrChunks.push(e.data); };
         try { master.disconnect(ac.destination); } catch (e) { }
@@ -3650,7 +3650,7 @@ window.bgVideoEditor = function (root, P) {
   function endExport() { exporting = false; expOv.style.display = "none"; try { master.connect(ac.destination); } catch (e) { } }
   function finishExport() {
     var m = mr; if (!m) { endExport(); return; } m.onstop = function () {
-      endExport(); if (dead) return; var type = (m.mimeType || expMime || "video/mp4").split(";")[0], name = (P.file.name || "video").replace(/\.[^.]+$/, ""), f = new File(mrChunks, name + "-editado" + ".mp4", { type: type }); mr = null; P.done(f, D);
+      endExport(); if (dead) return; var type = (m.mimeType || expMime || "video/mp4").split(";")[0], name = (P.file.name || "video").replace(/\.[^.]+$/, ""), f = new File(mrChunks, name + "-editado" + (/webm/.test(type) ? ".webm" : ".mp4"), { type: type }); mr = null; P.done(f, D);
     }; try { if (m.state !== "inactive") m.stop(); } catch (e) { endExport(); }
   }
   function cancelExport() { var m = mr; mr = null; exporting = false; pause(); if (m) { m.onstop = null; try { m.stop(); } catch (e) { } } endExport(); T = 0; setT(0); }

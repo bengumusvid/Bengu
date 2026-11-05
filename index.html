@@ -6424,6 +6424,19 @@ function es({
 }) {
   const g = B.useRef(null);
   const [rp_, setRp_] = B.useState(null);
+  const [vis_, setVis_] = B.useState(e.visibility);
+  B.useEffect(() => { setVis_(e.visibility); }, [e.visibility]);
+  const setPriv_ = async (v) => {
+    try {
+      const r = await me.from("posts").update({ visibility: v }).eq("id", e.id).select("id");
+      if (r.error || !r.data || !r.data.length) throw r.error || new Error("sem linhas");
+      setVis_(v);
+      return !0;
+    } catch (err) {
+      alert("Não foi possível alterar a privacidade. Tente outra vez.");
+      return !1;
+    }
+  };
   B.useEffect(() => {
     if (!n) return;
     let on = !0;
@@ -6479,24 +6492,15 @@ function es({
                   n ? " · " : null,
                   sg(e.createdAt),
                   e.pinnedAt && u.jsx("span", { className: "ml-1", title: "Fixada", "aria-label": "Fixada", children: "📌" }),
-                  e.visibility === "private" &&
-                    u.jsx(pg, { size: 12, "aria-label": x("private") }),
-                  e.visibility === "followers" &&
-                    u.jsx(Vc, { size: 12, "aria-label": x("followersOnly") }),
-                  h &&
-                    u.jsxs("span", {
-                      className: "ml-1",
-                      children: ["👀 ", Mt(e.views), dlN != null && " · ⏬ " + Mt(dlN)],
+                  vis_ === "private" && u.jsx(pg, { size: 12, "aria-label": x("private") }),
+                  vis_ === "followers" && u.jsx(Vc, { size: 12, "aria-label": x("followersOnly") }),
+                  h && !n && u.jsxs("span", { className: "ml-1", children: ["👀 ", Mt(e.views), dlN != null && " · ⏬ " + Mt(dlN)],
                     }),
                 ],
               }),
             ],
           }),
-          bgPinFn &&
-            window.bgIsAdm &&
-            window.bgIsAdm() &&
-            u.jsx("button", {
-              onClick: () => bgPinFn(e.id),
+          bgPinFn && !n && window.bgIsAdm && window.bgIsAdm() && u.jsx("button", { onClick: () => bgPinFn(e.id),
               "aria-label": e.pinnedAt ? "Desafixar" : "Fixar no topo",
               title: e.pinnedAt ? "Desafixar" : "Fixar no topo",
               className: "p-2",
@@ -6514,17 +6518,13 @@ function es({
                       className: "p-2",
                       children: u.jsx("span", { style: { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: "50%", background: "#e53935", color: "#fff", fontWeight: 900, fontSize: 13, lineHeight: 1 }, children: "!" }),
                     }),
-                  u.jsx("button", {
-                    onClick: () => p(e.id),
-                    "aria-label": x("editPost"),
-                    className: "p-2",
-                    children: u.jsx($c, { size: 18, color: k.mute }),
-                  }),
-                  u.jsx("button", {
-                    onClick: () => d(e.id),
-                    "aria-label": x("delete"),
-                    className: "p-2",
-                    children: u.jsx(_g, { size: 18, color: k.mute }),
+                  u.jsx(BgPostMenu, {
+                    k, x, vis: vis_, onVis: setPriv_,
+                    views: h ? e.views : null, dl: h ? dlN : null,
+                    pinned: !!e.pinnedAt,
+                    onPin: bgPinFn && window.bgIsAdm && window.bgIsAdm() ? () => bgPinFn(e.id) : null,
+                    onEdit: () => p(e.id), onDelete: () => d(e.id),
+                    icons: { edit: $c, del: _g, pub: E_, fol: Vc, pri: pg },
                   }),
                 ],
               })
@@ -6610,7 +6610,7 @@ function es({
           }),
           (() => { const vi_ = (e.items || []).find((y_) => y_.kind === "video" || y_.kind === "audio"); return vi_ ? u.jsx("button", { onClick: () => window.bengu_use_audio && window.bengu_use_audio(vi_.url, vi_.kind === "audio" ? String(vi_.name || "Música").replace(/\.[a-z0-9]{2,4}$/i, "") : "Som de " + ((t && t.name) || "vídeo"), vi_.audio, vi_.kind === "video"), "aria-label": "Usar áudio", title: "Usar áudio", className: "flex items-center justify-center px-3 py-1 rounded-full text-base", style: { background: k.paper, color: k.ink }, children: "🎼" }) : null; })(),
           u.jsx("div", { className: "flex-1" }),
-          m &&
+          !1 && /* botão laranja de descarregar escondido (já existe no leitor) */
             u.jsx("button", {
               onClick: () => l(e.id), "aria-label": b.length > 1 ? x("downloadAll") : x("download"), title: b.length > 1 ? x("downloadAll") : x("download"), className: "flex items-center justify-center px-3 py-1 rounded-full text-base",
               style: { background: k.saffron, color: k.onAccent },
@@ -12084,6 +12084,49 @@ function bgTrL() { return BG_TRL[(Tu.lang || "pt").slice(0, 2)] || BG_TRL.en; }
 function bgAdLabel() {
   const L = { pt: "PUBLICIDADE", en: "ADVERTISEMENT", fr: "PUBLICITÉ", sw: "TANGAZO", ar: "إعلان" };
   return L[(Tu.lang || "pt").slice(0, 2)] || "ADVERTISEMENT";
+}
+function BgPostMenu({ k, x, vis, onVis, views, dl, pinned, onPin, onEdit, onDelete, icons }) {
+  const [open, setOpen] = B.useState(false);
+  const [sub, setSub] = B.useState(false);
+  const [busy, setBusy] = B.useState(false);
+  const close = () => { setOpen(false); setSub(false); };
+  const row = { display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "12px 16px", textAlign: "left", fontSize: 15, color: k.ink };
+  const opts = [["public", icons.pub, "public"], ["followers", icons.fol, "followersOnly"], ["private", icons.pri, "private"]];
+  const cur = opts.find((o) => o[0] === (vis || "public")) || opts[0];
+  const Ico = (C, c) => u.jsx(C, { size: 18, color: c || k.mute });
+  return u.jsxs("span", {
+    style: { position: "relative", display: "inline-flex" },
+    children: [
+      u.jsx("button", {
+        onClick: () => { setOpen(!open); setSub(false); },
+        "aria-label": "Mais opções", "aria-expanded": open, className: "p-2",
+        children: u.jsxs("svg", { width: 18, height: 18, viewBox: "0 0 24 24", fill: k.mute, children: [
+          u.jsx("circle", { cx: 12, cy: 5, r: 2 }), u.jsx("circle", { cx: 12, cy: 12, r: 2 }), u.jsx("circle", { cx: 12, cy: 19, r: 2 }),
+        ] }),
+      }),
+      open && u.jsx("button", { onClick: close, "aria-label": "Fechar", style: { position: "fixed", inset: 0, zIndex: 60, background: "transparent", cursor: "default" } }),
+      open && u.jsxs("div", {
+        role: "menu",
+        style: { position: "absolute", right: 0, top: "100%", zIndex: 61, minWidth: 240, background: k.paper, border: "1px solid rgba(128,128,128,.35)", borderRadius: 14, boxShadow: "0 8px 28px rgba(0,0,0,.35)", overflow: "hidden" },
+        children: [
+          views != null && u.jsxs("div", { style: { ...row, color: k.mute, fontSize: 13, borderBottom: "1px solid rgba(128,128,128,.25)" },
+            children: [u.jsx("span", { children: "\uD83D\uDC40 " + Mt(views) }), dl != null && u.jsx("span", { children: "\u23EC " + Mt(dl) })] }),
+          onPin && u.jsxs("button", { role: "menuitem", style: row, onClick: () => { close(); onPin(); },
+            children: [u.jsx("span", { children: "\uD83D\uDCCC" }), u.jsx("span", { children: pinned ? "Desafixar" : "Fixar no topo" })] }),
+          u.jsxs("button", { role: "menuitem", style: row, onClick: () => { close(); onEdit(); },
+            children: [Ico(icons.edit), u.jsx("span", { children: x("editPost") })] }),
+          u.jsxs("button", { role: "menuitem", style: row, onClick: () => setSub(!sub), "aria-expanded": sub,
+            children: [Ico(cur[1]), u.jsx("span", { style: { flex: 1 }, children: x("visibility") + ": " + x(cur[2]) }), u.jsx("span", { style: { color: k.mute }, children: sub ? "\u25B4" : "\u25BE" })] }),
+          sub && opts.map(([v, C, key]) => u.jsxs("button", { key: v, role: "menuitemradio", "aria-checked": v === cur[0], disabled: busy,
+            style: { ...row, paddingLeft: 44, fontWeight: v === cur[0] ? 700 : 400, opacity: busy ? 0.6 : 1 },
+            onClick: async () => { if (v === cur[0]) return close(); setBusy(true); const ok = await onVis(v); setBusy(false); if (ok) close(); },
+            children: [Ico(C), u.jsx("span", { style: { flex: 1 }, children: x(key) }), v === cur[0] && u.jsx("span", { children: "\u2713" })] })),
+          u.jsxs("button", { role: "menuitem", style: { ...row, color: "#e5484d", borderTop: "1px solid rgba(128,128,128,.25)" }, onClick: () => { close(); onDelete(); },
+            children: [Ico(icons.del, "#e5484d"), u.jsx("span", { children: x("delete") })] }),
+        ],
+      }),
+    ],
+  });
 }
 function BgPostTr({ text }) {
   const h = B.createElement, L = bgTrL(), lg = (Tu.lang || "pt").slice(0, 2);

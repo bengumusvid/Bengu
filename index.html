@@ -12346,11 +12346,11 @@ function cx({ post: e, me: t, onClose: r }) {
   );
 }
 function dx({ post: e, me: t, users: us, onClose: r, say: n }) {
-  const [s] = B.useState(() => `${Rc()}#${og()}`);
+  const [s] = B.useState(() => `${window.location.origin}/s/${og()}`);
   const [uq, setUq] = B.useState(""),
     [sentTo, setSentTo] = B.useState({});
   B.useEffect(() => {
-    const p = s.split("#")[1];
+    const p = s.split("/s/")[1];
     me.from("share_links")
       .insert({ code: p, post_id: e.id, created_by: t.id })
       .then(

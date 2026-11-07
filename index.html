@@ -14224,7 +14224,15 @@ function px({
                 u.jsx("img", { src: BG_LOGO, alt: "Bengu", width: 44, height: 44, style: { borderRadius: 10, display: "block" } }),
                 u.jsx("span", {
                   className:
-                    "font-extrabold text-4xl tracking-tight text-white",
+                    "font-extrabold text-4xl tracking-tight",
+                  style: {
+                    background: "linear-gradient(135deg,#FFD84D 0%,#E8B424 55%,#C98A0C 100%)",
+                    WebkitBackgroundClip: "text",
+                    backgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    color: "transparent",
+                    filter: "drop-shadow(0 2px 6px rgba(0,0,0,.35))",
+                  },
                   children: "Bengu",
                 }),
               ],
@@ -14251,7 +14259,9 @@ function px({
               className: "mt-4 flex flex-wrap gap-2",
               style: { maxWidth: 340 },
               children: [["📸", "Fotos e vídeos"], ["🎵", "Música"], ["💬", "Bate-papo"], ["🏆", "Torneios"], ["📰", "Notícias"], ["🎤", "Concursos"]].map(([ic, lb]) =>
-                u.jsx("span", { className: "text-xs font-semibold rounded-full px-3 py-1.5", style: { background: "rgba(255,255,255,.14)", color: "#fff" }, children: (e || "").startsWith("pt") ? ic + " " + lb : ic }, lb),
+                lb === "Música"
+                  ? u.jsx("button", { type: "button", onClick: () => window.bgLocalMusic && window.bgLocalMusic(), "aria-label": "Música offline", className: "text-xs font-semibold rounded-full px-3 py-1.5", style: { background: "rgba(255,176,32,.2)", color: "#fff", border: "1px solid rgba(255,176,32,.7)" }, children: (e || "").startsWith("pt") ? ic + " " + lb : ic }, lb)
+                  : u.jsx("span", { className: "text-xs font-semibold rounded-full px-3 py-1.5", style: { background: "rgba(255,255,255,.14)", color: "#fff" }, children: (e || "").startsWith("pt") ? ic + " " + lb : ic }, lb),
               ),
             }),
           ],
@@ -14520,6 +14530,307 @@ setInterval(run,4000);setTimeout(run,1500)})();
 (function(){function up(e){if(!e||e.type!=="range")return;var mn=+e.min||0,mx=e.max===""?100:+e.max,v=+e.value,p=mx>mn?(v-mn)/(mx-mn)*100:0;e.style.setProperty("--p",p+"%")}
 function all(){var a=document.querySelectorAll("input[type=range]");for(var i=0;i<a.length;i++)up(a[i])}
 document.addEventListener("input",function(e){up(e.target)},true);setInterval(all,250);all()})();
+</script>
+<script>
+/* BENGU — Música offline do telefone (antes de entrar na conta).
+   Sem internet, sem conta. Os ficheiros nunca saem do telefone. */
+(function () {
+  "use strict";
+  var EXT = /\.(mp3|m4a|aac|wav|ogg|oga|opus|flac)$/i;
+  var pt = true;
+  try { pt = (localStorage.getItem("bengu_lang") || navigator.language || "pt").slice(0, 2).toLowerCase() !== "en"; } catch (e) {}
+  var T = pt ? {
+    title: "Música offline", sub: "As músicas do seu telefone, sem internet e sem conta.",
+    folder: "Escolher a pasta das músicas", files: "Escolher ficheiros MP3", refresh: "Atualizar lista",
+    scanning: "A procurar músicas…", n: " músicas", empty: "Escolha uma vez a pasta onde estão os seus MP3 (por exemplo, Música). Da próxima vez o Bengu encontra tudo sozinho.",
+    reconnect: "Tocar para voltar a ligar à pasta", search: "Pesquisar música ou artista", close: "Fechar",
+    none: "Nada a tocar", err: "Não foi possível abrir este ficheiro.", unknown: "Artista desconhecido",
+    noresult: "Nenhuma música encontrada.", perm: "Permita o acesso à pasta para continuar."
+  } : {
+    title: "Offline music", sub: "The music on your phone, with no internet and no account.",
+    folder: "Choose your music folder", files: "Choose MP3 files", refresh: "Refresh list",
+    scanning: "Looking for music…", n: " songs", empty: "Choose the folder with your MP3s once (for example, Music). Next time Bengu finds everything by itself.",
+    reconnect: "Tap to reconnect to the folder", search: "Search song or artist", close: "Close",
+    none: "Nothing playing", err: "Could not open this file.", unknown: "Unknown artist",
+    noresult: "No songs found.", perm: "Allow access to the folder to continue."
+  };
+
+  var ICON = {
+    play: '<svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>',
+    prev: '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M6 6h2v12H6zM9.5 12 18 6v12z"/></svg>',
+    next: '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M16 6h2v12h-2zM6 18V6l8.5 6z"/></svg>',
+    shuffle: '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M10.6 9.2 5.4 4 4 5.4l5.2 5.2zM14.5 4l2.0 2-12.5 12.5 1.4 1.4L17.9 7.4l2.1 2.1V4zM14.8 13.4l-1.4 1.4 3.5 3.5-2.1 2.1H20v-5.5l-2.1 2.1z"/></svg>',
+    repeat: '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2zM17 17H7v-3l-4 4 4 4v-3h12v-6h-2z"/></svg>',
+    back: '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z"/></svg>',
+    note: '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 3v10.6A4 4 0 1 0 14 17V7h4V3z"/></svg>'
+  };
+
+  var css = document.createElement("style");
+  css.textContent =
+    "#bgm{position:fixed;inset:0;z-index:2147482000;display:none;flex-direction:column;background:#0A0E24;color:#fff;" +
+    "padding:env(safe-area-inset-top,0) 0 0}#bgm.on{display:flex}" +
+    "#bgm *{box-sizing:border-box}#bgm button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}" +
+    ".bgm-top{display:flex;align-items:center;gap:10px;padding:12px 14px 4px}" +
+    ".bgm-x{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.12)!important;display:flex;align-items:center;justify-content:center}" +
+    ".bgm-h{font-size:22px;font-weight:800;background:linear-gradient(135deg,#FFD84D,#E8B424 55%,#C98A0C);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}" +
+    ".bgm-sub{padding:0 18px 10px;font-size:13px;color:rgba(255,255,255,.7);line-height:1.35}" +
+    ".bgm-act{display:flex;flex-wrap:wrap;gap:8px;padding:0 14px 10px}" +
+    ".bgm-b{padding:10px 14px;border-radius:999px;font-size:13px;font-weight:700;background:rgba(255,255,255,.14)!important}" +
+    ".bgm-b.gold{background:linear-gradient(135deg,#FFD84D,#E8B424 55%,#C98A0C)!important;color:#12183A!important}" +
+    ".bgm-q{margin:0 14px 8px;padding:11px 14px;border-radius:12px;border:0;outline:0;background:#12183A;color:#fff;font:inherit;font-size:14px;width:calc(100% - 28px)}" +
+    ".bgm-q::placeholder{color:rgba(255,255,255,.5)}" +
+    ".bgm-cnt{padding:0 18px 6px;font-size:12px;color:rgba(255,255,255,.6)}" +
+    ".bgm-list{flex:1;min-height:0;overflow-y:auto;position:relative;-webkit-overflow-scrolling:touch}" +
+    ".bgm-sp{position:relative;width:100%}" +
+    ".bgm-r{position:absolute;left:0;right:0;height:58px;display:flex;align-items:center;gap:12px;padding:0 18px;text-align:left;width:100%}" +
+    ".bgm-r.cur{background:rgba(242,184,36,.14)}" +
+    ".bgm-ic{flex:0 0 38px;height:38px;border-radius:10px;background:#12183A;color:#E8B424;display:flex;align-items:center;justify-content:center}" +
+    ".bgm-r.cur .bgm-ic{background:#E8B424;color:#12183A}" +
+    ".bgm-tx{min-width:0;flex:1}.bgm-t{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+    ".bgm-a{font-size:12px;color:rgba(255,255,255,.65);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+    ".bgm-em{padding:28px 24px;text-align:center;color:rgba(255,255,255,.75);font-size:14px;line-height:1.45}" +
+    ".bgm-np{background:#12183A;border-radius:22px 22px 0 0;padding:14px 18px calc(14px + env(safe-area-inset-bottom,0px))}" +
+    ".bgm-nt{font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+    ".bgm-na{font-size:12px;color:rgba(255,255,255,.65);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:16px}" +
+    ".bgm-sk{display:flex;align-items:center;gap:8px;margin:10px 0 4px;font-size:11px;color:rgba(255,255,255,.7);font-variant-numeric:tabular-nums}" +
+    ".bgm-sk input{flex:1;accent-color:#E8B424;height:28px}" +
+    ".bgm-ct{display:flex;align-items:center;justify-content:space-between}" +
+    ".bgm-ct button{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:.9}" +
+    ".bgm-ct .pp{width:60px;height:60px;background:linear-gradient(135deg,#FFD84D,#E8B424 55%,#C98A0C)!important;color:#12183A;opacity:1}" +
+    ".bgm-ct .on{color:#FFD84D;opacity:1}" +
+    "#bgm-pill{position:fixed;left:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:2147481000;display:none;align-items:center;gap:8px;max-width:78vw;" +
+    "padding:9px 14px;border-radius:999px;background:#12183A;color:#fff;border:1px solid rgba(242,184,36,.6);box-shadow:0 8px 24px rgba(0,0,0,.4);font:inherit;font-size:13px;font-weight:700}" +
+    "#bgm-pill.on{display:flex}#bgm-pill span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+    "#bgm-toast{position:fixed;left:50%;transform:translateX(-50%);bottom:120px;z-index:2147482500;background:#fff;color:#12183A;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:700;display:none}";
+  document.head.appendChild(css);
+
+  /* ---------- armazenamento (lembra a pasta escolhida) ---------- */
+  function idb() { return new Promise(function (ok, no) { var r = indexedDB.open("bengu_localmusic", 1); r.onupgradeneeded = function () { r.result.createObjectStore("kv"); }; r.onsuccess = function () { ok(r.result); }; r.onerror = function () { no(r.error); }; }); }
+  function kvGet(k) { return idb().then(function (d) { return new Promise(function (ok) { var q = d.transaction("kv").objectStore("kv").get(k); q.onsuccess = function () { ok(q.result || null); }; q.onerror = function () { ok(null); }; }); }).catch(function () { return null; }); }
+  function kvSet(k, v) { return idb().then(function (d) { return new Promise(function (ok) { var t = d.transaction("kv", "readwrite"); t.objectStore("kv").put(v, k); t.oncomplete = function () { ok(true); }; t.onerror = function () { ok(false); }; }); }).catch(function () { return false; }); }
+
+  /* ---------- estado ---------- */
+  var tracks = [], view = [], cur = -1, url = null, shuffle = false, rep = 0, fails = 0, q = "", dirH = null, open = false, built = false;
+  var hasDir = typeof window.showDirectoryPicker === "function";
+  var au = new Audio(); au.preload = "auto";
+  var el = {};
+
+  function toast(m) { el.toast.textContent = m; el.toast.style.display = "block"; clearTimeout(toast.t); toast.t = setTimeout(function () { el.toast.style.display = "none"; }, 2600); }
+  function mm(s) { if (!isFinite(s)) return "0:00"; s = Math.floor(s); return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2); }
+  function mk(name, handle, file) {
+    var b = name.replace(EXT, "").replace(/^\d+[\s._-]+(?=\D)/, "").replace(/_/g, " ").trim(), a = "", t = b, i = b.indexOf(" - ");
+    if (i > 0) { a = b.slice(0, i).trim(); t = b.slice(i + 3).trim(); }
+    return { artist: a, title: t || name, handle: handle, file: file, key: (a + " " + t).toLowerCase() };
+  }
+
+  /* ---------- procurar músicas na pasta ---------- */
+  async function walk(dir, out, depth) {
+    for await (var ent of dir.entries()) {
+      var n = ent[0], h = ent[1];
+      if (n.charAt(0) === ".") continue;
+      if (h.kind === "file") { if (EXT.test(n)) { out.push(mk(n, h, null)); if (out.length % 40 === 0) { el.cnt.textContent = T.scanning + " " + out.length; } } }
+      else if (depth < 8) { await walk(h, out, depth + 1); }
+    }
+  }
+  async function rescan() {
+    if (!dirH) return;
+    el.cnt.textContent = T.scanning; el.re.style.display = "none"; el.re.textContent = T.refresh; el.re.onclick = function () { auto(); };
+    var out = [];
+    try { await walk(dirH, out, 0); } catch (e) { el.re.style.display = "inline-block"; toast(T.perm); return; }
+    out.sort(function (a, b) { return a.key.localeCompare(b.key); });
+    setTracks(out, true); el.re.style.display = "inline-block";
+  }
+  function setTracks(list, keepCur) {
+    var curT = keepCur && cur >= 0 ? tracks[cur] : null;
+    tracks = list; cur = -1;
+    if (curT) for (var i = 0; i < tracks.length; i++) if (tracks[i].handle && curT.handle && tracks[i].handle.name === curT.handle.name && tracks[i].key === curT.key) { cur = i; break; }
+    applyFilter();
+  }
+  function applyFilter() {
+    var s = q.trim().toLowerCase(); view = [];
+    for (var i = 0; i < tracks.length; i++) if (!s || tracks[i].key.indexOf(s) >= 0) view.push(i);
+    el.cnt.textContent = tracks.length ? (view.length + (s ? " / " + tracks.length : "") + T.n) : "";
+    el.list.scrollTop = 0; drawList();
+  }
+
+  /* ---------- lista (só desenha as linhas visíveis) ---------- */
+  var RH = 58;
+  function drawList() {
+    el.sp.innerHTML = "";
+    if (!tracks.length) { var em = document.createElement("div"); em.className = "bgm-em"; em.textContent = T.empty; el.sp.style.height = "auto"; el.sp.appendChild(em); return; }
+    if (!view.length) { var e2 = document.createElement("div"); e2.className = "bgm-em"; e2.textContent = T.noresult; el.sp.style.height = "auto"; el.sp.appendChild(e2); return; }
+    el.sp.style.height = view.length * RH + "px";
+    var st = el.list.scrollTop, h = el.list.clientHeight || 400;
+    var a = Math.max(0, Math.floor(st / RH) - 4), b = Math.min(view.length, Math.ceil((st + h) / RH) + 4);
+    for (var i = a; i < b; i++) {
+      (function (vi) {
+        var ti = view[vi], t = tracks[ti], r = document.createElement("button");
+        r.type = "button"; r.className = "bgm-r" + (ti === cur ? " cur" : ""); r.style.top = vi * RH + "px";
+        var ic = document.createElement("div"); ic.className = "bgm-ic"; ic.innerHTML = ti === cur && !au.paused ? ICON.pause.replace(/26/g, "20") : ICON.note;
+        var tx = document.createElement("div"); tx.className = "bgm-tx";
+        var t1 = document.createElement("div"); t1.className = "bgm-t"; t1.textContent = t.title;
+        var t2 = document.createElement("div"); t2.className = "bgm-a"; t2.textContent = t.artist || T.unknown;
+        tx.appendChild(t1); tx.appendChild(t2); r.appendChild(ic); r.appendChild(tx);
+        r.onclick = function () { play(ti); };
+        el.sp.appendChild(r);
+      })(i);
+    }
+  }
+  var raf = 0;
+  function onScroll() { if (raf) return; raf = requestAnimationFrame(function () { raf = 0; drawList(); }); }
+
+  /* ---------- reprodução ---------- */
+  async function play(i) {
+    var t = tracks[i]; if (!t) return;
+    try {
+      var f = t.file || await t.handle.getFile();
+      if (url) URL.revokeObjectURL(url);
+      url = URL.createObjectURL(f);
+      cur = i; au.src = url;
+      await au.play(); fails = 0;
+    } catch (e) {
+      toast(T.err);
+      if (++fails < 5) { cur = i; next(true); }
+      return;
+    }
+    meta(t); ui(); drawList();
+  }
+  function next(auto) {
+    if (!view.length) return;
+    var p = view.indexOf(cur), n;
+    if (shuffle && view.length > 1) { do { n = Math.floor(Math.random() * view.length); } while (n === p); }
+    else { n = p + 1; if (n >= view.length) { if (auto && rep === 0) { ui(); return; } n = 0; } }
+    play(view[n]);
+  }
+  function prev() {
+    if (!view.length) return;
+    if (au.currentTime > 4) { au.currentTime = 0; return; }
+    var p = view.indexOf(cur); play(view[p <= 0 ? view.length - 1 : p - 1]);
+  }
+  function toggle() { if (cur < 0) { if (view.length) play(view[0]); return; } if (au.paused) au.play().catch(function () { }); else au.pause(); }
+  function meta(t) {
+    if (!("mediaSession" in navigator)) return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.artist || "Bengu", album: "Bengu" });
+      navigator.mediaSession.setActionHandler("play", toggle); navigator.mediaSession.setActionHandler("pause", toggle);
+      navigator.mediaSession.setActionHandler("previoustrack", prev); navigator.mediaSession.setActionHandler("nexttrack", function () { next(false); });
+      navigator.mediaSession.setActionHandler("seekto", function (d) { if (d.seekTime != null) au.currentTime = d.seekTime; });
+    } catch (e) { }
+  }
+  function ui() {
+    var t = tracks[cur];
+    el.nt.textContent = t ? t.title : T.none; el.na.textContent = t ? (t.artist || T.unknown) : "";
+    el.pp.innerHTML = au.paused ? ICON.play : ICON.pause;
+    el.sh.className = shuffle ? "on" : ""; el.rp.className = rep ? "on" : "";
+    el.rp.style.position = "relative"; el.rp.title = rep === 2 ? "1" : "";
+    el.pill.firstChild.nextSibling.textContent = t ? t.title : "";
+    el.pill.firstChild.innerHTML = au.paused ? ICON.play.replace(/26/g, "16") : ICON.pause.replace(/26/g, "16");
+    el.pill.className = !open && t ? "on" : "";
+  }
+  au.addEventListener("play", function () { ui(); drawList(); });
+  au.addEventListener("pause", function () { ui(); drawList(); });
+  au.addEventListener("ended", function () { if (rep === 2) { au.currentTime = 0; au.play(); } else next(true); });
+  au.addEventListener("timeupdate", function () {
+    if (!built) return;
+    el.tc.textContent = mm(au.currentTime); el.td.textContent = mm(au.duration);
+    if (!el.sk.__drag) { el.sk.max = isFinite(au.duration) ? au.duration : 0; el.sk.value = au.currentTime; }
+  });
+
+  /* ---------- escolher pasta / ficheiros ---------- */
+  async function pickFolder() {
+    try {
+      var h = await window.showDirectoryPicker({ id: "bengu-music", mode: "read", startIn: "music" });
+      dirH = h; await kvSet("dir", h); await rescan();
+    } catch (e) { if (e && e.name !== "AbortError") toast(T.perm); }
+  }
+  function pickFiles() { el.fi.value = ""; el.fi.click(); }
+  function onFiles() {
+    var out = [], fs = el.fi.files || [];
+    for (var i = 0; i < fs.length; i++) if (EXT.test(fs[i].name) || /^audio\//.test(fs[i].type)) out.push(mk(fs[i].name, null, fs[i]));
+    if (!out.length) return;
+    out.sort(function (a, b) { return a.key.localeCompare(b.key); });
+    setTracks(out, false); if (!au.src || au.paused) play(view[0]);
+  }
+  async function reconnect() {
+    if (!dirH) return;
+    try {
+      var p = await dirH.requestPermission({ mode: "read" });
+      if (p === "granted") await rescan(); else toast(T.perm);
+    } catch (e) { toast(T.perm); }
+  }
+  async function auto() {
+    if (!hasDir) return;
+    if (!dirH) dirH = await kvGet("dir");
+    if (!dirH) return;
+    try {
+      var p = await dirH.queryPermission({ mode: "read" });
+      if (p !== "granted") p = await dirH.requestPermission({ mode: "read" });
+      if (p === "granted") { await rescan(); }
+      else { el.re.style.display = "inline-block"; el.re.textContent = T.reconnect; el.re.onclick = reconnect; }
+    } catch (e) { el.re.style.display = "inline-block"; el.re.textContent = T.reconnect; el.re.onclick = reconnect; }
+  }
+
+  /* ---------- construir o ecrã ---------- */
+  function btn(cls, html, fn) { var b = document.createElement("button"); b.type = "button"; if (cls) b.className = cls; b.innerHTML = html; if (fn) b.onclick = fn; return b; }
+  function build() {
+    built = true;
+    var root = document.createElement("div"); root.id = "bgm"; root.setAttribute("role", "dialog"); root.setAttribute("aria-label", T.title);
+    var top = document.createElement("div"); top.className = "bgm-top";
+    var x = btn("bgm-x", ICON.back, close); x.setAttribute("aria-label", T.close);
+    var h = document.createElement("div"); h.className = "bgm-h"; h.textContent = "🎵 " + T.title;
+    top.appendChild(x); top.appendChild(h);
+    var sub = document.createElement("div"); sub.className = "bgm-sub"; sub.textContent = T.sub;
+    var act = document.createElement("div"); act.className = "bgm-act";
+    if (hasDir) act.appendChild(btn("bgm-b gold", T.folder, pickFolder));
+    act.appendChild(btn(hasDir ? "bgm-b" : "bgm-b gold", T.files, pickFiles));
+    el.re = btn("bgm-b", T.refresh, function () { auto(); }); el.re.style.display = "none"; act.appendChild(el.re);
+    el.fi = document.createElement("input"); el.fi.type = "file"; el.fi.accept = "audio/*,.mp3"; el.fi.multiple = true; el.fi.style.display = "none"; el.fi.onchange = onFiles;
+    var qi = document.createElement("input"); qi.className = "bgm-q"; qi.type = "search"; qi.placeholder = T.search; qi.oninput = function () { q = qi.value; applyFilter(); };
+    el.cnt = document.createElement("div"); el.cnt.className = "bgm-cnt";
+    el.list = document.createElement("div"); el.list.className = "bgm-list"; el.sp = document.createElement("div"); el.sp.className = "bgm-sp"; el.list.appendChild(el.sp); el.list.addEventListener("scroll", onScroll, { passive: true });
+    var np = document.createElement("div"); np.className = "bgm-np";
+    el.nt = document.createElement("div"); el.nt.className = "bgm-nt"; el.nt.textContent = T.none;
+    el.na = document.createElement("div"); el.na.className = "bgm-na";
+    var skw = document.createElement("div"); skw.className = "bgm-sk";
+    el.tc = document.createElement("span"); el.tc.textContent = "0:00"; el.td = document.createElement("span"); el.td.textContent = "0:00";
+    el.sk = document.createElement("input"); el.sk.type = "range"; el.sk.min = 0; el.sk.max = 0; el.sk.step = "any"; el.sk.value = 0;
+    el.sk.addEventListener("input", function () { el.sk.__drag = true; el.tc.textContent = mm(el.sk.value); });
+    el.sk.addEventListener("change", function () { au.currentTime = +el.sk.value; el.sk.__drag = false; });
+    skw.appendChild(el.tc); skw.appendChild(el.sk); skw.appendChild(el.td);
+    var ct = document.createElement("div"); ct.className = "bgm-ct";
+    el.sh = btn("", ICON.shuffle, function () { shuffle = !shuffle; ui(); });
+    var pv = btn("", ICON.prev, prev);
+    el.pp = btn("pp", ICON.play, toggle);
+    var nx = btn("", ICON.next, function () { next(false); });
+    el.rp = btn("", ICON.repeat, function () { rep = (rep + 1) % 3; ui(); });
+    [el.sh, pv, el.pp, nx, el.rp].forEach(function (b) { ct.appendChild(b); });
+    np.appendChild(el.nt); np.appendChild(el.na); np.appendChild(skw); np.appendChild(ct);
+    [top, sub, act, el.fi, qi, el.cnt, el.list, np].forEach(function (n) { root.appendChild(n); });
+    document.body.appendChild(root); el.root = root;
+    el.toast = document.createElement("div"); el.toast.id = "bgm-toast"; document.body.appendChild(el.toast);
+    el.pill = document.createElement("button"); el.pill.id = "bgm-pill"; el.pill.type = "button";
+    el.pill.appendChild(document.createElement("i")); el.pill.appendChild(document.createElement("span"));
+    el.pill.onclick = function () { window.bgLocalMusic(); }; document.body.appendChild(el.pill);
+    drawList(); ui();
+  }
+
+  function close() {
+    if (!open) return;
+    open = false; el.root.classList.remove("on"); ui();
+    if (history.state && history.state.bgm) history.back();
+  }
+  window.addEventListener("popstate", function () { if (open) { open = false; el.root.classList.remove("on"); ui(); } });
+
+  window.bgLocalMusic = function () {
+    if (!built) build();
+    open = true; el.root.classList.add("on"); ui();
+    try { history.pushState({ bgm: 1 }, ""); } catch (e) { }
+    drawList();
+    if (!tracks.length) auto();
+  };
+})();
+
 </script>
 </body>
 </html>

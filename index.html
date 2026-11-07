@@ -386,7 +386,7 @@ XMLHttpRequest.prototype.send=function(body){
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.41.9_03.11.2026" />
+    <meta name="bengu-build" content="4.42.0_07.11.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -460,7 +460,7 @@ start();
     <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400..900&display=swap" />
+    <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400..900&display=swap" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="favicon-32.png" type="image/png" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
@@ -2394,12 +2394,13 @@ var tries=0;(function wait(){if(!tok()){if(++tries<150){setTimeout(wait,1000)}re
   <script>/* BENGU 4.3: actualização automática (cache / service worker) */
 (function(){
 var M0=document.querySelector('meta[name="bengu-build"]'),B=(M0&&M0.content)||"4.38.0_03.11.2026",KEY="bg_build",TRY="bg_build_try";
-function wipe(){var p=[];try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.filter(function(n){return n!=="bengu-seen"}).map(function(n){return caches.delete(n)}))}))}catch(e){}
- try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}))}catch(e){}
+function wipe(){var p=[];try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.filter(function(n){return n!=="bengu-seen"&&n.indexOf("bengu-shell")!==0}).map(function(n){return caches.delete(n)}))}))}catch(e){}
+ try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.update().catch(function(){})}))}))}catch(e){}
  return Promise.all(p).catch(function(){})}
 function reloadFor(v){try{if(sessionStorage.getItem(TRY)===v)return;sessionStorage.setItem(TRY,v)}catch(e){}wipe().then(function(){try{localStorage.setItem(KEY,v)}catch(e){}location.reload()})}
 try{if(localStorage.getItem(KEY)!==B){localStorage.setItem(KEY,B);wipe()}}catch(e){}
 function check(){fetch(location.pathname+"?_="+Date.now(),{cache:"no-store",headers:{"Cache-Control":"no-cache"}}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="bengu-build" content="([^"]+)"/);if(m&&m[1]!==B)reloadFor(m[1])}).catch(function(){})}
+try{if("serviceWorker" in navigator)window.addEventListener("load",function(){navigator.serviceWorker.register("./sw.js").catch(function(){})})}catch(e){}
 setTimeout(check,4000);setInterval(check,120000);
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")check()});
 try{if(navigator.serviceWorker){navigator.serviceWorker.getRegistration().then(function(r){if(r)r.update()}).catch(function(){});var f=0;navigator.serviceWorker.addEventListener("controllerchange",function(){if(f||!navigator.serviceWorker.controller)return;f=1;try{if(sessionStorage.getItem("bg_cc"))return;sessionStorage.setItem("bg_cc","1")}catch(e){}location.reload()})}}catch(e){}

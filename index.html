@@ -14697,7 +14697,7 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
   /* ---------- estado ---------- */
   var tracks = [], view = [], idx = {}, cur = -1, url = null, shuffle = false, rep = 0, fails = 0, q = "", open = false, built = false;
   var dirs = [], dirTracks = [], fileTracks = [], lib = [], favSet = new Set(), removed = new Set(), queue = [];
-  var onlyFav = false, resumeAfter = null, scanned = false, qOpenF = false;
+  var restored = false, lastSave = 0, onlyFav = false, resumeAfter = null, scanned = false, qOpenF = false;
   var skipF = new Set(), drag = null, press = null, noClick = 0, reNeed = false, lastScan = 0, scanning = false, quiet = false;
   var hasDir = typeof window.showDirectoryPicker === "function";
   var au = new Audio(); au.preload = "auto";
@@ -14818,6 +14818,7 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
   function chips() {
     if (!built) return;
     var fc = favCount();
+    miSet(el.al, L("Todas as músicas", "All songs"), tracks.length ? String(tracks.length) : "", !onlyFav && !q);
     miSet(el.fv, T.favs, fc ? String(fc) : "", onlyFav);
     miSet(el.qb, T.queue, queue.length ? String(queue.length) : "", queue.length > 0);
     miSet(el.re, reNeed ? T.reconnect : (hasDir ? T.refresh : T.syncFolder), "");
@@ -14911,7 +14912,7 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
       if (url) URL.revokeObjectURL(url);
       url = URL.createObjectURL(f);
       cur = i; au.src = url; ensureGraph();
-      await au.play(); fails = 0;
+      await au.play(); fails = 0; lastSave = 0;
     } catch (e) {
       toast(T.err);
       if (++fails < 5) { cur = i; next(true); }
@@ -14919,6 +14920,29 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     }
     meta(t); ui(); drawList();
   }
+  function saveLast(force) {
+    if (cur < 0 || !tracks[cur]) return;
+    var n = Date.now(); if (!force && n - lastSave < 4000) return; lastSave = n;
+    kvSet("last", { id: tracks[cur].id, pos: au.currentTime || 0 });
+  }
+  function showAll() {
+    onlyFav = false; q = ""; if (el.qi) el.qi.value = "";
+    applyFilter(); if (el.list) el.list.scrollTop = 0;
+  }
+  async function restoreLast() {
+    if (restored || cur >= 0) return; restored = true;
+    var l = await kvGet("last"); if (!l || idx[l.id] == null) return;
+    try {
+      var i = idx[l.id], f = await fileOf(tracks[i]); if (cur >= 0) return;
+      if (url) URL.revokeObjectURL(url);
+      url = URL.createObjectURL(f); cur = i; au.src = url;
+      au.addEventListener("loadedmetadata", function h() { au.removeEventListener("loadedmetadata", h); try { au.currentTime = l.pos || 0; } catch (e) { } });
+      meta(tracks[i]); ui(); drawList();
+      var vi = view.indexOf(i); if (vi >= 0 && el.list) el.list.scrollTop = Math.max(0, vi * RH - 120);
+    } catch (e) { }
+  }
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") saveLast(true); });
+  window.addEventListener("pagehide", function () { saveLast(true); });
   function next(auto) {
     /* a fila "tocar a seguir" tem prioridade */
     var took = false;
@@ -14943,7 +14967,7 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     if (au.currentTime > 4) { au.currentTime = 0; return; }
     var p = view.indexOf(cur); play(view[p <= 0 ? view.length - 1 : p - 1]);
   }
-  function toggle() { if (cur < 0) { if (view.length) play(view[0]); return; } if (au.paused) au.play().catch(function () { }); else { wantPlay = false; au.pause(); } }
+  function toggle() { if (cur < 0) { if (view.length) play(view[0]); return; } if (au.paused) { ensureGraph(); au.play().catch(function () { }); } else { wantPlay = false; au.pause(); } }
   function meta(t) {
     if (!("mediaSession" in navigator)) return;
     try {
@@ -14983,6 +15007,7 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
   });
   au.addEventListener("timeupdate", function () {
     if (!built) return;
+    saveLast();
     if (sleepAt) sleepCheck();
     el.tc.textContent = mm(au.currentTime); el.td.textContent = mm(au.duration);
     if (!el.sk.__drag) { el.sk.max = isFinite(au.duration) ? au.duration : 0; el.sk.value = au.currentTime; }
@@ -14997,6 +15022,17 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
       for (var i = 0; i < dirs.length; i++) { try { if (await dirs[i].isSameEntry(h)) dup = true; } catch (e) { } }
       if (!dup) dirs.push(h);
       await kvSet("dirs", dirs); await rescan();
+    } catch (e) { if (e && e.name !== "AbortError") toast(T.perm); }
+  }
+  /* copia a pasta para dentro do Bengu: depois disto não é preciso nenhuma permissão, nem depois de reiniciar o telefone */
+  async function copyFolder() {
+    if (!hasDir) { el.fd.value = ""; el.fd.click(); return; }
+    try {
+      await loadState();
+      var h = await window.showDirectoryPicker({ id: "bengu-music", mode: "read", startIn: "music" }), out = [], files = [];
+      await walk(h, out, 0, h.name + "/");
+      for (var i = 0; i < out.length; i++) { try { files.push(await out[i].handle.getFile()); } catch (e) { } if (i % 50 === 0 && built) el.cnt.textContent = T.scanning + " " + i + "/" + out.length; }
+      await onFiles({ target: { files: files } }, true);
     } catch (e) { if (e && e.name !== "AbortError") toast(T.perm); }
   }
   function pickFiles() { el.fi.value = ""; el.fi.click(); }
@@ -15446,8 +15482,8 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     top.appendChild(el.mb); top.appendChild(h); top.appendChild(x);
     el.fi = document.createElement("input"); el.fi.type = "file"; el.fi.accept = "audio/*,.mp3"; el.fi.multiple = true; el.fi.style.display = "none"; el.fi.onchange = function (e) { onFiles(e, false); };
     el.fd = document.createElement("input"); el.fd.type = "file"; el.fd.multiple = true; el.fd.setAttribute("webkitdirectory", ""); el.fd.style.display = "none"; el.fd.onchange = function (e) { onFiles(e, true); };
-    var qi = document.createElement("input"); qi.className = "bgm-q"; qi.type = "search"; qi.placeholder = T.search; qi.oninput = function () { q = qi.value; applyFilter(); };
-    el.cnt = document.createElement("div"); el.cnt.className = "bgm-cnt";
+    var qi = document.createElement("input"); qi.className = "bgm-q"; qi.type = "search"; qi.placeholder = T.search; qi.oninput = function () { q = qi.value; applyFilter(); }; el.qi = qi;
+    el.cnt = document.createElement("div"); el.cnt.className = "bgm-cnt"; el.cnt.style.cursor = "pointer"; el.cnt.style.textDecoration = "underline"; el.cnt.setAttribute("role", "button"); el.cnt.onclick = showAll;
     el.list = document.createElement("div"); el.list.className = "bgm-list"; el.sp = document.createElement("div"); el.sp.className = "bgm-sp"; el.list.appendChild(el.sp); el.list.addEventListener("scroll", onScroll, { passive: true });
     el.zone = btn("bgm-zone", "", qOpen);
     var np = document.createElement("div"); np.className = "bgm-np";
@@ -15474,7 +15510,9 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     function ms(t) { var d = document.createElement("div"); d.className = "bgm-ms"; d.textContent = t; mp.appendChild(d); }
     var mt = document.createElement("div"); mt.className = "bgm-mt"; mt.textContent = "🎵 " + T.title; mp.appendChild(mt);
     ms(T.lib);
+    el.al = mi("🎼", L("Todas as músicas", "All songs"), showAll); mp.appendChild(el.al);
     mp.appendChild(mi("📁", T.folder, pickFolder));
+    mp.appendChild(mi("💾", L("Copiar pasta para a app (sem pedir permissão)", "Copy folder into the app (no permission prompts)"), copyFolder));
     mp.appendChild(mi("🎵", T.files, pickFiles));
     el.re = mi("🔄", T.refresh, refreshNow); mp.appendChild(el.re);
     ms(T.lists);
@@ -15509,7 +15547,7 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     open = true; el.root.classList.add("on"); ui();
     try { history.pushState({ bgm: 1 }, ""); } catch (e) { }
     drawList();
-    loadState().then(function () { drawList(); chips(); auto(); });
+    loadState().then(function () { drawList(); chips(); auto(); restoreLast(); });
   };
 })();
 

@@ -14697,7 +14697,7 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
   /* ---------- estado ---------- */
   var tracks = [], view = [], idx = {}, cur = -1, url = null, shuffle = false, rep = 0, fails = 0, q = "", open = false, built = false;
   var dirs = [], dirTracks = [], fileTracks = [], lib = [], favSet = new Set(), removed = new Set(), queue = [];
-  var restored = false, lastSave = 0, onlyFav = false, resumeAfter = null, scanned = false, qOpenF = false;
+  var stopped = false, restored = false, lastSave = 0, onlyFav = false, resumeAfter = null, scanned = false, qOpenF = false;
   var skipF = new Set(), drag = null, press = null, noClick = 0, reNeed = false, lastScan = 0, scanning = false, quiet = false;
   var hasDir = typeof window.showDirectoryPicker === "function";
   var au = new Audio(); au.preload = "auto";
@@ -14973,7 +14973,7 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     try {
       navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.artist || "Bengu", album: "Bengu" });
       navigator.mediaSession.setActionHandler("play", toggle); navigator.mediaSession.setActionHandler("pause", toggle);
-      navigator.mediaSession.setActionHandler("previoustrack", prev); navigator.mediaSession.setActionHandler("nexttrack", function () { next(false); });
+      navigator.mediaSession.setActionHandler("stop", stopPlay); navigator.mediaSession.setActionHandler("previoustrack", prev); navigator.mediaSession.setActionHandler("nexttrack", function () { next(false); });
       navigator.mediaSession.setActionHandler("seekto", function (d) { if (d.seekTime != null) au.currentTime = d.seekTime; });
       navigator.mediaSession.setActionHandler("seekbackward", function () { au.currentTime = Math.max(0, au.currentTime - 10); });
       navigator.mediaSession.setActionHandler("seekforward", function () { au.currentTime = Math.min(au.duration || 1e9, au.currentTime + 10); });
@@ -14989,10 +14989,10 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     el.rp.setAttribute("aria-label", rep === 2 ? T.rep1 : rep === 1 ? T.repAll : T.repOff);
     el.pill.firstChild.nextSibling.textContent = t ? t.title : "";
     el.pill.firstChild.innerHTML = au.paused ? ICON.play.replace(/26/g, "16") : ICON.pause.replace(/26/g, "16");
-    el.pill.className = !open && t ? "on" : "";
+    el.pill.className = !open && t && !stopped ? "on" : "";
     chips();
   }
-  au.addEventListener("play", function () { wantPlay = true; try { if (G) G.ctx.resume().catch(function () { }); } catch (e) { } try { if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing"; } catch (e) { } ui(); drawList(); });
+  au.addEventListener("play", function () { wantPlay = true; stopped = false; try { if (G) G.ctx.resume().catch(function () { }); } catch (e) { } try { if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing"; } catch (e) { } ui(); drawList(); });
   au.addEventListener("pause", function () {
     try { if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused"; } catch (e) { }
     ui(); drawList();
@@ -15088,8 +15088,7 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     await rescan(silent);
     if (need) showRe(2);
   }
-  setInterval(function () { if (open && document.visibilityState === "visible" && dirs.length && Date.now() - lastScan > 150000) auto(true); }, 30000);
-  document.addEventListener("visibilitychange", function () { if (open && document.visibilityState === "visible" && dirs.length && Date.now() - lastScan > 20000) auto(true); });
+  /* a lista fica memorizada: só se atualiza a pedido (menu) ou na primeira abertura depois de a app/telefone ter sido fechado */
 
   /* ---------- menu (☰) ---------- */
   function mi(ic, tx, fn) {
@@ -15478,7 +15477,7 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     var top = document.createElement("div"); top.className = "bgm-top";
     el.mb = btn("bgm-x", ICON.menu, menuOpen); el.mb.setAttribute("aria-label", T.menu);
     var h = document.createElement("div"); h.className = "bgm-h"; h.textContent = "🎵 " + T.title;
-    var x = btn("bgm-x", ICON.close, close); x.setAttribute("aria-label", T.close);
+    var x = btn("bgm-x", ICON.close, stopPlay); x.setAttribute("aria-label", T.close);
     top.appendChild(el.mb); top.appendChild(h); top.appendChild(x);
     el.fi = document.createElement("input"); el.fi.type = "file"; el.fi.accept = "audio/*,.mp3"; el.fi.multiple = true; el.fi.style.display = "none"; el.fi.onchange = function (e) { onFiles(e, false); };
     el.fd = document.createElement("input"); el.fd.type = "file"; el.fd.multiple = true; el.fd.setAttribute("webkitdirectory", ""); el.fd.style.display = "none"; el.fd.onchange = function (e) { onFiles(e, true); };
@@ -15535,6 +15534,13 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     drawList(); ui();
   }
 
+  /* X: pára a música e fecha o leitor (minimizar a app não pára) */
+  function stopPlay() {
+    saveLast(true); wantPlay = false; stopped = true;
+    try { au.pause(); } catch (e) { }
+    try { if ("mediaSession" in navigator) { navigator.mediaSession.playbackState = "none"; navigator.mediaSession.metadata = null; } } catch (e) { }
+    close(); ui();
+  }
   function close() {
     if (!open) return;
     open = false; el.root.classList.remove("on"); eqClose(); sleepClose(); qClose(); menuClose(); cancelPress(); endDrag(false); ui();
@@ -15547,7 +15553,12 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     open = true; el.root.classList.add("on"); ui();
     try { history.pushState({ bgm: 1 }, ""); } catch (e) { }
     drawList();
-    loadState().then(function () { drawList(); chips(); auto(); restoreLast(); });
+    loadState().then(function () {
+      drawList(); chips();
+      var fresh = true; try { fresh = !sessionStorage.getItem("bgm_scanned"); sessionStorage.setItem("bgm_scanned", "1"); } catch (e) { }
+      if (fresh) auto(true);
+      restoreLast();
+    });
   };
 })();
 

@@ -15,7 +15,7 @@ function netFirst(req, key, ms) {
   return new Promise(function (ok) {
     var done = false, t = setTimeout(function () { if (!done) caches.match(key, { ignoreSearch: true }).then(function (r) { if (r && !done) { done = true; ok(r); } }); }, ms);
     fetch(req).then(function (res) {
-      if (res && res.ok) { var cp = res.clone(); caches.open(SHELL).then(function (c) { c.put(key, cp); }); }
+      if (res && res.ok && /text\/html/.test(res.headers.get("content-type") || "")) { var cp = res.clone(); caches.open(SHELL).then(function (c) { c.put(key, cp); }); }
       if (!done) { done = true; clearTimeout(t); ok(res); }
     }).catch(function () {
       clearTimeout(t);
@@ -26,7 +26,11 @@ function netFirst(req, key, ms) {
 self.addEventListener("fetch", function (e) {
   var r = e.request, u = new URL(r.url);
   if (r.method !== "GET" || r.cache === "no-store" || u.searchParams.has("_")) return;
-  if (r.mode === "navigate" && u.origin === location.origin) { e.respondWith(netFirst(r, "./index.html", 3500)); return; }
+  if (r.mode === "navigate" && u.origin === location.origin) {
+    /* só a página da app; ficheiros como /ads.txt passam sem interferência */
+    if (u.pathname === new URL("./", location).pathname || /\/index\.html$/.test(u.pathname)) e.respondWith(netFirst(r, "./index.html", 3500));
+    return;
+  }
   var font = /(^|\.)fonts\.(googleapis|gstatic)\.com$/.test(u.hostname);
   if (u.origin !== location.origin && !font) return;
   e.respondWith(caches.open(SHELL).then(function (c) {

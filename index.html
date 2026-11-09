@@ -14989,10 +14989,15 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
   }
   function sz(ic, n) { return ic.replace(/width="\d+" height="\d+"/, 'width="' + n + '" height="' + n + '"'); }
   function pfill(f) { if (!el.pFill || (el.pbar && el.pbar.__drag)) return; el.pFill.style.width = (Math.max(0, Math.min(1, f)) * 100) + "%"; }
+  var pillRaf = 0, pillF = 0;
   function pillSeek(e) {
-    var r = el.pbar.getBoundingClientRect(), f = Math.max(0, Math.min(1, (e.clientX - r.left) / Math.max(1, r.width)));
-    if (isFinite(au.duration) && au.duration > 0) au.currentTime = f * au.duration;
-    el.pFill.style.width = (f * 100) + "%";
+    var r = el.pbar.getBoundingClientRect();
+    pillF = Math.max(0, Math.min(1, (e.clientX - r.left) / Math.max(1, r.width)));
+    el.pFill.style.width = (pillF * 100) + "%";
+    if (!pillRaf) pillRaf = requestAnimationFrame(function () {
+      pillRaf = 0;
+      if (isFinite(au.duration) && au.duration > 0) au.currentTime = pillF * au.duration;
+    });
   }
   function ui() {
     var t = tracks[cur];

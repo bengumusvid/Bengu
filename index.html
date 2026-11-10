@@ -14767,6 +14767,8 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
      trash: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6zM19 4h-3.5l-1-1h-5l-1 1H5v2h14z"/></svg>'
   };
 
+  ICON.minimize = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+  ICON.pip = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z"/></svg>';
   var css = document.createElement("style");
   css.textContent =
     "#bgm{position:fixed;inset:0;z-index:2147482000;display:none;flex-direction:column;background:#0A0E24;color:#fff;" +
@@ -14838,6 +14840,7 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     ".bgm-mt{padding:6px 18px 10px;font-size:20px;font-weight:800;color:#E8B424}.bgm-ms{padding:14px 18px 4px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.5)}" +
     "#bgm .bgm-mi{display:flex;align-items:center;gap:14px;width:100%;padding:13px 18px;font-size:15px;font-weight:700;text-align:left}#bgm .bgm-mi i{font-style:normal;width:24px;text-align:center}#bgm .bgm-mi span{flex:1;min-width:0}" +
     "#bgm .bgm-mi em{font-style:normal;font-size:12px;font-weight:800;color:#12183A;background:#E8B424;border-radius:999px;padding:2px 8px}#bgm .bgm-mi em:empty{display:none}#bgm .bgm-mi.act{color:#E8B424}#bgm .bgm-mi:active{background:rgba(255,255,255,.08)}";
+  css.textContent += ".bgm-top{gap:8px}.bgm-h{font-size:20px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}";
   document.head.appendChild(css);
 
   /* ---------- armazenamento (IndexedDB — tudo fica guardado no telefone) ---------- */
@@ -15145,16 +15148,35 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     var p = view.indexOf(cur); play(view[p <= 0 ? view.length - 1 : p - 1]);
   }
   function toggle() { if (cur < 0) { if (view.length) play(view[0]); return; } if (au.paused) { ensureGraph(); au.play().catch(function () { }); } else { wantPlay = false; au.pause(); } }
+  function art() {
+    if (art.u !== undefined) return art.u;
+    art.u = [];
+    try {
+      var c = document.createElement("canvas"); c.width = c.height = 512; var g = c.getContext("2d");
+      var gr = g.createLinearGradient(0, 0, 512, 512); gr.addColorStop(0, "#FFD84D"); gr.addColorStop(.55, "#E8B424"); gr.addColorStop(1, "#C98A0C");
+      g.fillStyle = "#0A0E24"; g.fillRect(0, 0, 512, 512);
+      g.fillStyle = gr; g.beginPath(); g.arc(256, 256, 210, 0, Math.PI * 2); g.fill();
+      g.fillStyle = "#12183A"; g.translate(88, 112); g.scale(12, 12); g.fill(new Path2D("M12 3v10.6A4 4 0 1 0 14 17V7h4V3z"));
+      art.u = [{ src: c.toDataURL("image/png"), sizes: "512x512", type: "image/png" }];
+    } catch (e) { }
+    return art.u;
+  }
+  function pos() {
+    try { if ("mediaSession" in navigator && navigator.mediaSession.setPositionState && isFinite(au.duration) && au.duration > 0) navigator.mediaSession.setPositionState({ duration: au.duration, playbackRate: au.playbackRate || 1, position: Math.min(au.currentTime || 0, au.duration) }); } catch (e) { }
+  }
+  ["loadedmetadata", "seeked", "play", "pause", "ratechange"].forEach(function (n) { au.addEventListener(n, pos); });
   function meta(t) {
     if (!("mediaSession" in navigator)) return;
     try {
-      navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.artist || "Bengu", album: "Bengu" });
+      navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.artist || "Bengu", album: "Bengu", artwork: art() });
       navigator.mediaSession.setActionHandler("play", toggle); navigator.mediaSession.setActionHandler("pause", toggle);
       navigator.mediaSession.setActionHandler("stop", stopPlay); navigator.mediaSession.setActionHandler("previoustrack", prev); navigator.mediaSession.setActionHandler("nexttrack", function () { next(false); });
       navigator.mediaSession.setActionHandler("seekto", function (d) { if (d.seekTime != null) au.currentTime = d.seekTime; });
       navigator.mediaSession.setActionHandler("seekbackward", function () { au.currentTime = Math.max(0, au.currentTime - 10); });
       navigator.mediaSession.setActionHandler("seekforward", function () { au.currentTime = Math.min(au.duration || 1e9, au.currentTime + 10); });
     } catch (e) { }
+    try { if (pipOk) navigator.mediaSession.setActionHandler("enterpictureinpicture", function () { pipEnter(); }); } catch (e) { }
+    pos();
   }
   function sz(ic, n) { return ic.replace(/width="\d+" height="\d+"/, 'width="' + n + '" height="' + n + '"'); }
   function ui() {
@@ -15655,7 +15677,9 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     el.mb = btn("bgm-x", ICON.menu, menuOpen); el.mb.setAttribute("aria-label", T.menu);
     var h = document.createElement("div"); h.className = "bgm-h"; h.textContent = "🎵 " + T.title;
     var x = btn("bgm-x", ICON.close, stopPlay); x.setAttribute("aria-label", T.close);
-    top.appendChild(el.mb); top.appendChild(h); top.appendChild(x);
+    x.title = L("Parar e fechar", "Stop and close");
+    var mn = btn("bgm-x", ICON.minimize, close); mn.setAttribute("aria-label", L("Minimizar", "Minimize")); mn.title = L("Minimizar (a música continua)", "Minimize (music keeps playing)");
+    top.appendChild(el.mb); top.appendChild(h); top.appendChild(mn); top.appendChild(x);
     el.fi = document.createElement("input"); el.fi.type = "file"; el.fi.accept = "audio/*,.mp3"; el.fi.multiple = true; el.fi.style.display = "none"; el.fi.onchange = function (e) { onFiles(e, false); };
     el.fd = document.createElement("input"); el.fd.type = "file"; el.fd.multiple = true; el.fd.setAttribute("webkitdirectory", ""); el.fd.style.display = "none"; el.fd.onchange = function (e) { onFiles(e, true); };
     var qi = document.createElement("input"); qi.className = "bgm-q"; qi.type = "search"; qi.placeholder = T.search; qi.oninput = function () { q = qi.value; applyFilter(); }; el.qi = qi;
@@ -15697,6 +15721,7 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     ms(T.snd);
     X.eb = mi("🎚", L("Equalizador e efeitos", "Equalizer & effects"), eqOpen); mp.appendChild(X.eb);
     X.tm = mi("⏲", L("Cronómetro", "Timer"), sleepOpen); mp.appendChild(X.tm);
+    if (pipOk) mp.appendChild(mi("🪟", L("Janela flutuante sobre outras apps", "Float over other apps"), pipEnter));
     ms(T.mng);
     el.rs = mi("↩", T.restore, function () { removed = new Set(); skipF = new Set(); saveRemoved(); saveSkip(); rebuild(); }); mp.appendChild(el.rs);
     el.cl = mi("🗑", T.clearLib, clearLib); mp.appendChild(el.cl);
@@ -15716,7 +15741,8 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     el.pBtn = pbtn(sz(ICON.play, 16), "Pausar / reproduzir", function () { toggle(); }); el.pBtn.classList.add("pp");
     el.pNext = pbtn(sz(ICON.next, 16), "Seguinte", function () { next(false); });
     el.pExp = pbtn('<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>', L("Expandir lista de músicas", "Expand song list"), function () { if (window.bgLocalMusic) window.bgLocalMusic(); });
-    el.pill.append(el.pExp, el.pPrev, el.pBtn, el.pNext);
+    if (pipOk) el.pPip = pbtn(ICON.pip, L("Janela flutuante sobre outras apps", "Float over other apps"), pipEnter);
+    el.pill.append.apply(el.pill, [el.pExp, el.pPrev, el.pBtn, el.pNext].concat(el.pPip ? [el.pPip] : []));
     el.pill.style.touchAction = "none";
     var pillWinMove = function (e) {
       if (!pillStart) return;
@@ -15750,11 +15776,49 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     drawList(); ui();
   }
 
+  /* ---------- janela flutuante sobre outras apps (Picture-in-Picture do navegador) ---------- */
+  var pip = { v: null, c: null, g: null, tm: 0 };
+  var pipOk = !!(document.pictureInPictureEnabled && window.HTMLVideoElement && HTMLVideoElement.prototype.requestPictureInPicture && HTMLCanvasElement.prototype.captureStream);
+  function clip(g, s, w) { s = String(s); if (g.measureText(s).width <= w) return s; while (s.length > 1 && g.measureText(s + "…").width > w) s = s.slice(0, -1); return s + "…"; }
+  function pipDraw() {
+    var c = pip.c, g = pip.g; if (!c) return;
+    var t = tracks[cur], W = c.width, p = au.duration > 0 ? Math.min(1, au.currentTime / au.duration) : 0;
+    g.fillStyle = "#12183A"; g.fillRect(0, 0, W, c.height);
+    g.fillStyle = "#E8B424"; g.fillRect(0, 0, W, 6);
+    g.textBaseline = "alphabetic"; g.font = "700 22px sans-serif"; g.fillText("🎵 Bengu", 16, 40);
+    g.fillStyle = "#fff"; g.font = "800 28px sans-serif"; g.fillText(clip(g, t ? t.title : T.none, W - 32), 16, 92);
+    g.fillStyle = "rgba(255,255,255,.7)"; g.font = "600 20px sans-serif"; g.fillText(clip(g, t ? (t.artist || T.unknown) : "", W - 32), 16, 124);
+    g.fillStyle = "rgba(255,255,255,.25)"; g.fillRect(16, 150, W - 32, 6);
+    g.fillStyle = "#E8B424"; g.fillRect(16, 150, (W - 32) * p, 6);
+    g.fillStyle = "#fff"; g.font = "700 18px sans-serif"; g.fillText((au.paused ? "⏸ " : "▶ ") + mm(au.currentTime) + " / " + mm(au.duration), 16, 182);
+  }
+  function pipEnsure() {
+    if (pip.v) return pip.v;
+    var c = document.createElement("canvas"); c.width = 480; c.height = 200;
+    var v = document.createElement("video"); v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.setAttribute("aria-hidden", "true");
+    v.style.cssText = "position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:.01;pointer-events:none";
+    document.body.appendChild(v);
+    pip.c = c; pip.g = c.getContext("2d"); pip.v = v; pipDraw();
+    v.srcObject = c.captureStream(4);
+    v.addEventListener("leavepictureinpicture", function () { clearInterval(pip.tm); pip.tm = 0; try { v.pause(); } catch (e) { } });
+    return v;
+  }
+  async function pipEnter() {
+    if (!pipOk) { toast(L("Este navegador não permite a janela flutuante.", "This browser does not support the floating window.")); return; }
+    try {
+      var v = pipEnsure(); pipDraw(); await v.play();
+      if (document.pictureInPictureElement !== v) await v.requestPictureInPicture();
+      clearInterval(pip.tm); pip.tm = setInterval(pipDraw, 500);
+      if (open) close();
+    } catch (e) { toast(L("Não foi possível abrir a janela flutuante.", "Could not open the floating window.")); }
+  }
+
   /* X: pára a música e fecha o leitor (minimizar a app não pára) */
   function stopPlay() {
     saveLast(true); wantPlay = false; stopped = true;
     try { au.pause(); } catch (e) { }
     try { if ("mediaSession" in navigator) { navigator.mediaSession.playbackState = "none"; navigator.mediaSession.metadata = null; } } catch (e) { }
+    try { if (document.pictureInPictureElement) document.exitPictureInPicture(); } catch (e) { }
     close(); ui();
   }
   function close() {

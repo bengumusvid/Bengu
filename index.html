@@ -669,16 +669,19 @@ window.window.bgZoom=function(box,target){
   });
   box.addEventListener("dblclick",function(e){toggle(e.clientX,e.clientY)});
 };
-bengu_full=function(src,list,idx){
+bengu_full=function(src,list,idx,cx){
  var L=(list&&list.length>1)?list:null,n=L?(idx>=0&&idx<L.length?idx:Math.max(0,L.indexOf(src))):0,sx=0,sy=0,pt=0;
  var im=h("img",{src:L?L[n]:src,style:"max-width:100%;max-height:100%;object-fit:contain;margin:auto;user-select:none;-webkit-user-drag:none",on:{click:function(e){e.stopPropagation()}}});
  var BS="position:absolute;width:40px;height:40px;border:0;border-radius:50%;background:rgba(255,255,255,.25);color:#fff;font-size:22px;";
  var cl=h("button",{style:BS+"top:calc(12px + env(safe-area-inset-top,0px));right:12px",on:{click:function(e){e.stopPropagation();close()}}},"\u2715");
  var ct=h("div",{style:"position:absolute;top:calc(22px + env(safe-area-inset-top,0px));left:0;right:0;text-align:center;color:#fff;font:700 14px var(--bg-font);pointer-events:none;text-shadow:0 1px 3px #000"},"");
- var o=h("div",{style:"position:fixed;inset:0;z-index:100000;background:#000;display:flex;align-items:center;justify-content:center",on:{click:function(){close()}}},[im,ct]);
+ var bb=h("div",{style:"position:absolute;right:10px;bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:3"});
+ var o=h("div",{style:"position:fixed;inset:0;z-index:100000;background:#000;display:flex;align-items:center;justify-content:center",on:{click:function(){close()}}},[im,ct,bb]);
+ function pbar(){bb.replaceChildren();if(cx&&cx.items&&window.bgItemBarDom){var d=window.bgItemBarDom(cx.post,cx.items[n]);if(d)bb.append(d)}}
+ pbar();
  var os0=document.documentElement.style.overscrollBehaviorY;document.documentElement.style.overscrollBehaviorY="contain";
  function close(){document.removeEventListener("keydown",key);document.documentElement.style.overscrollBehaviorY=os0;o.remove()}
- function paint(d){im.src=L[n];ct.textContent=(n+1)+" / "+L.length;try{im.animate([{transform:"translateX("+(d*60)+"px)",opacity:0},{transform:"translateX(0)",opacity:1}],{duration:200,easing:"ease-out"})}catch(e){}[n-1,n+1].forEach(function(k){if(L[k]){var p=new Image();p.src=L[k]}})}
+ function paint(d){pbar();im.src=L[n];ct.textContent=(n+1)+" / "+L.length;try{im.animate([{transform:"translateX("+(d*60)+"px)",opacity:0},{transform:"translateX(0)",opacity:1}],{duration:200,easing:"ease-out"})}catch(e){}[n-1,n+1].forEach(function(k){if(L[k]){var p=new Image();p.src=L[k]}})}
  function go(d){if(!L)return;var m=n+d;if(m<0||m>=L.length)return;n=m;paint(d)}
  function key(e){if(e.key==="ArrowRight")go(1);else if(e.key==="ArrowLeft")go(-1);else if(e.key==="Escape")close()}
  if(L){
@@ -4499,9 +4502,16 @@ function bgIrCalc(rows, key, uid) {
 function bgIrToast(m) {
   try { const d = document.createElement("div"); d.textContent = m; d.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:90px;max-width:86vw;padding:10px 16px;border-radius:999px;background:#12183A;color:#fff;font:700 13px system-ui,sans-serif;z-index:2147483000;box-shadow:0 6px 20px rgba(0,0,0,.4);text-align:center"; document.body.appendChild(d); setTimeout(() => d.remove(), 2800); } catch (e) {}
 }
-function BgItemBar({ post, item, layout, off, center, dl }) {
+function BgItemBar({ post, item, layout, off, center, dl, reveal }) {
   const pid = post && post.id, key = bgIrKey(item && item.url), uid = bgMeId();
   const [st, setSt] = B.useState({ likes: 0, dislikes: 0, mine: 0 });
+  const [shown, setShown] = B.useState(!reveal);
+  B.useEffect(() => {
+    if (!reveal || shown || !item) return;
+    const h = (ev) => { const t = ev.target; if (t && t.tagName === "VIDEO" && t.getAttribute("src") === item.url) setShown(!0); };
+    document.addEventListener("click", h, !0);
+    return () => document.removeEventListener("click", h, !0);
+  }, [reveal, shown, item && item.url]);
   B.useEffect(() => {
     if (!pid) return;
     let on = true;
@@ -4510,7 +4520,7 @@ function BgItemBar({ post, item, layout, off, center, dl }) {
     window.addEventListener("bengu-ir", h);
     return () => { on = false; window.removeEventListener("bengu-ir", h); };
   }, [pid, key, uid]);
-  if (!pid || !item || !item.url) return null;
+  if (!pid || !item || !item.url || !shown) return null;
   const ping = () => window.dispatchEvent(new CustomEvent("bengu-ir", { detail: pid }));
   const react = async (v) => {
     if (!uid) return bgIrToast("Inicie sessão.");
@@ -4551,6 +4561,59 @@ function BgItemBar({ post, item, layout, off, center, dl }) {
     ? u.jsx("div", { onClick: (ev) => ev.stopPropagation(), style: { position: "absolute", right: 6, bottom: off == null ? 8 : off, display: "flex", flexDirection: "column", gap: 6, zIndex: 3 }, children: kids })
     : u.jsx("div", { onClick: (ev) => ev.stopPropagation(), style: { display: "flex", flexWrap: "wrap", gap: 8, justifyContent: center ? "center" : "flex-start", padding: center ? "0" : "6px 16px 10px" }, children: kids });
 }
+async function bgIrReact(pid, key, uid, old, v) {
+  const nv = old === v ? 0 : v;
+  const rows = (BG_IR.rows[pid] || []).filter((r) => !(r.item_key === key && r.user_id === uid));
+  if (nv) rows.push({ item_key: key, user_id: uid, value: nv === 1 ? "like" : "dislike" });
+  BG_IR.rows[pid] = rows; window.dispatchEvent(new CustomEvent("bengu-ir", { detail: pid }));
+  const q = nv
+    ? me.from("item_reactions").upsert({ post_id: pid, item_key: key, user_id: uid, value: nv === 1 ? "like" : "dislike" }, { onConflict: "post_id,item_key,user_id" })
+    : me.from("item_reactions").delete().eq("post_id", pid).eq("item_key", key).eq("user_id", uid);
+  const r = await q;
+  if (r && r.error) { await bgIrLoad(pid, true); window.dispatchEvent(new CustomEvent("bengu-ir", { detail: pid })); bgIrToast("Não foi possível guardar. Execute o ficheiro bengu-reacoes-ficheiros.sql."); }
+}
+window.bgItemBarDom = function (post, item) {
+  if (!post || !post.id || !item || !item.url) return null;
+  const pid = post.id, key = bgIrKey(item.url), uid = bgMeId();
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "display:flex;flex-direction:column;gap:8px";
+  wrap.addEventListener("click", (e) => e.stopPropagation());
+  wrap.addEventListener("touchstart", (e) => e.stopPropagation(), { passive: !0 });
+  let st = { likes: 0, dislikes: 0, mine: 0 };
+  const mkb = (ic, label) => {
+    const b = document.createElement("button"); b.type = "button"; b.setAttribute("aria-label", label); b.title = label;
+    b.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;width:48px;min-height:48px;border-radius:16px;border:0;background:rgba(255,255,255,.2);color:#fff;font-size:22px;line-height:24px;gap:1px;padding:4px 0";
+    const i = document.createElement("span"); i.textContent = ic;
+    const c = document.createElement("span"); c.style.cssText = "font-size:11px;font-weight:700"; b.append(i, c); b._c = c; return b;
+  };
+  const bl = mkb("👍", "Gostar"), bd = mkb("👎", "Não gostar"), bs = mkb("📤", "Partilhar");
+  const likeCol = (window.__bgK && window.__bgK.like) || "#E91E63";
+  const paint = () => {
+    bl._c.textContent = st.likes; bd._c.textContent = st.dislikes;
+    bl.style.background = st.mine === 1 ? likeCol : "rgba(255,255,255,.2)";
+    bd.style.background = st.mine === -1 ? "#B71C1C" : "rgba(255,255,255,.2)";
+  };
+  paint();
+  const sync = () => { st = bgIrCalc(BG_IR.rows[pid] || [], key, uid); paint(); };
+  bgIrLoad(pid).then(sync);
+  const h = (ev) => { if (!wrap.isConnected) { window.removeEventListener("bengu-ir", h); return; } if (ev.detail === pid) sync(); };
+  window.addEventListener("bengu-ir", h);
+  bl.onclick = () => { if (!uid) return bgIrToast("Inicie sessão."); bgIrReact(pid, key, uid, st.mine, 1); };
+  bd.onclick = () => { if (!uid) return bgIrToast("Inicie sessão."); bgIrReact(pid, key, uid, st.mine, -1); };
+  bs.onclick = async () => {
+    const url = item.url, title = item.title || item.name || "Bengu";
+    try { if (navigator.share) { await navigator.share({ title, text: title + " · Bengu", url }); return; } } catch (e) { if (e && e.name === "AbortError") return; }
+    try { await navigator.clipboard.writeText(url); bgIrToast("Ligação copiada"); } catch (e) { window.prompt("Copiar ligação:", url); }
+  };
+  wrap.append(bl, bd, bs);
+  const owner = ((window.__bgUsersMap || {})[post.userId]) || {};
+  if (post.allowDownload && (post.userId === uid || owner.allowDl !== !1)) {
+    const bw = mkb("⏬", "Descarregar"); bw._c.textContent = "";
+    bw.onclick = async () => { try { await Ou(item, pid); bgBumpDl(pid); } catch (e) {} };
+    wrap.append(bw);
+  }
+  return wrap;
+};
 function BgShuffleIcon({ size, color }) {
   return u.jsxs("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", children: [
     u.jsx("path", { d: "M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" }),
@@ -6224,7 +6287,7 @@ function BgGrid({ items: i, RT, lim, post: e, mine: mine, onDel: onDel, grp: grp
             onClick: () => {
               if (last) { setOpen(true); setSel(-1); return; }
               if (l.kind === "image") bgCountPost(e);
-              if (l.kind === "image" && window.bengu_full) { const g = i.filter((q) => q.kind === "image").map((q) => q.url); window.bengu_full(l.url, g, g.indexOf(l.url)); }
+              if (l.kind === "image" && window.bengu_full) { const g = i.filter((q) => q.kind === "image").map((q) => q.url); window.bengu_full(l.url, g, g.indexOf(l.url), grp ? { post: e, items: i.filter((q) => q.kind === "image") } : null); }
             },
             style: { position: "relative", breakInside: "avoid", marginBottom: 6, borderRadius: 10, overflow: "hidden", cursor: "pointer", outline: sel === c ? "3px solid " + k.saffron : "none", outlineOffset: -3 },
             children: [
@@ -6232,7 +6295,7 @@ function BgGrid({ items: i, RT, lim, post: e, mine: mine, onDel: onDel, grp: grp
                 ? u.jsx("img", { src: l.url, alt: "", loading: "lazy", className: "w-full block", style: { width: "100%", aspectRatio: RT[c % RT.length], objectFit: "cover", background: k.paper } })
                 : u.jsx(q_, { src: l.url, post: e, mp3: l.audio || null, className: "w-full block bg-black", style: { maxHeight: 460 } }),
               canDel && !last && u.jsx("button", { onClick: (ev) => { ev.stopPropagation(); setSel(sel === c ? -1 : c); }, "aria-label": "Apagar só esta", style: { position: "absolute", top: 6, right: 6, width: 32, height: 32, borderRadius: 999, background: "rgba(8,10,24,.65)", color: "#fff", fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center" }, children: "🗑" }),
-              grp && !last && u.jsx(BgItemBar, { post: e, item: l, layout: "v", off: l.kind === "video" ? 56 : 8, dl: dlIt }),
+              grp && !last && l.kind === "video" && u.jsx(BgItemBar, { post: e, item: l, layout: "v", off: 56, dl: dlIt, reveal: !0 }),
               last && u.jsx("div", { style: { position: "absolute", inset: 0, background: "rgba(8,10,24,.62)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34, fontWeight: 800 }, children: "+" + (rest + 1) }),
             ],
           }, c);
@@ -6241,7 +6304,7 @@ function BgGrid({ items: i, RT, lim, post: e, mine: mine, onDel: onDel, grp: grp
       cur && u.jsxs("div", {
         style: { display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", padding: "2px 12px 8px" },
         children: [
-          cur.kind === "image" && u.jsx("button", { onClick: () => { const g = i.filter((q) => q.kind === "image").map((q) => q.url); window.bengu_full && window.bengu_full(cur.url, g, g.indexOf(cur.url)); }, style: pill(k.paper, k.ink), children: BG_L("🔍 View", "🔍 Ver") }),
+          cur.kind === "image" && u.jsx("button", { onClick: () => { const g = i.filter((q) => q.kind === "image").map((q) => q.url); window.bengu_full && window.bengu_full(cur.url, g, g.indexOf(cur.url), grp ? { post: e, items: i.filter((q) => q.kind === "image") } : null); }, style: pill(k.paper, k.ink), children: BG_L("🔍 View", "🔍 Ver") }),
           u.jsx("button", { onClick: () => { const it = cur; setSel(-1); onDel(e.id, e.items.indexOf(it)); }, "aria-label": "Apagar só esta", style: pill("#B71C1C", "#fff"), children: BG_L("🗑 Delete only this", "🗑 Apagar só esta") }),
           u.jsx("button", { onClick: () => setSel(-1), style: pill(k.paper, k.ink), children: "✕" }),
         ],
@@ -6321,7 +6384,7 @@ function K_({ post: e, users: t, mine: mn_, onDeleteItem: dit_, onDownloadItem: 
                         alt: "",
                         loading: "lazy",
                         className: "w-full block",
-                        onClick: () => { bgCountPost(e); const g = i.filter((q) => q.kind === "image").map((q) => q.url); window.bengu_full && window.bengu_full(l.url, g, g.indexOf(l.url)); },
+                        onClick: () => { bgCountPost(e); const g = i.filter((q) => q.kind === "image").map((q) => q.url); window.bengu_full && window.bengu_full(l.url, g, g.indexOf(l.url), grp ? { post: e, items: i.filter((q) => q.kind === "image") } : null); },
                         style: RT && l.kind === "image"
                           ? { width: "100%", aspectRatio: RT[c % RT.length], objectFit: "cover", background: k.paper, cursor: "zoom-in" }
                           : { maxHeight: 640, objectFit: "contain", background: k.paper, cursor: "zoom-in" },
@@ -6355,7 +6418,7 @@ function K_({ post: e, users: t, mine: mn_, onDeleteItem: dit_, onDownloadItem: 
                       },
                       children: "🗑 Apagar só esta",
                     }),
-                  grp && u.jsx(BgItemBar, { key: "ib", post: e, item: l, layout: "v", off: l.kind === "video" ? 56 : 8, dl: dlIt_ }),
+                  grp && l.kind === "video" && u.jsx(BgItemBar, { key: "ib", post: e, item: l, layout: "v", off: 56, dl: dlIt_, reveal: !0 }),
                 ],
               },
               c,

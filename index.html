@@ -4481,6 +4481,96 @@ function BgEqPanel({ e, onClose }) {
     u.jsx("button", { onClick: () => e.eqReset(), className: "w-full py-2.5 rounded-full text-sm font-bold", style: { background: k.paper, color: k.ink }, children: "Repor tudo" }),
   ] }) });
 }
+/* ===== BENGU: gostar / não gostar / partilhar / descarregar por ficheiro ===== */
+const BG_IR = { rows: {}, loading: {} };
+function bgIrKey(url) { let h = 5381; const q = String(url || ""); for (let i = 0; i < q.length; i++) h = ((h << 5) + h + q.charCodeAt(i)) | 0; return "i" + (h >>> 0).toString(36) + q.length; }
+function bgIrLoad(pid, force) {
+  if (!force && BG_IR.loading[pid]) return BG_IR.loading[pid];
+  const p = Promise.resolve(me.from("item_reactions").select("item_key,value,user_id").eq("post_id", pid)).then(
+    (r) => { BG_IR.rows[pid] = (r && r.data) || BG_IR.rows[pid] || []; return BG_IR.rows[pid]; },
+    () => { BG_IR.rows[pid] = BG_IR.rows[pid] || []; return BG_IR.rows[pid]; });
+  BG_IR.loading[pid] = p; return p;
+}
+function bgIrCalc(rows, key, uid) {
+  let l = 0, d = 0, m = 0;
+  for (const r of rows || []) { if (r.item_key !== key) continue; if (r.value === "like") l++; else if (r.value === "dislike") d++; if (uid && r.user_id === uid) m = r.value === "like" ? 1 : -1; }
+  return { likes: l, dislikes: d, mine: m };
+}
+function bgIrToast(m) {
+  try { const d = document.createElement("div"); d.textContent = m; d.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:90px;max-width:86vw;padding:10px 16px;border-radius:999px;background:#12183A;color:#fff;font:700 13px system-ui,sans-serif;z-index:2147483000;box-shadow:0 6px 20px rgba(0,0,0,.4);text-align:center"; document.body.appendChild(d); setTimeout(() => d.remove(), 2800); } catch (e) {}
+}
+function BgItemBar({ post, item, layout, off, center, dl }) {
+  const pid = post && post.id, key = bgIrKey(item && item.url), uid = bgMeId();
+  const [st, setSt] = B.useState({ likes: 0, dislikes: 0, mine: 0 });
+  B.useEffect(() => {
+    if (!pid) return;
+    let on = true;
+    bgIrLoad(pid).then((rows) => { on && setSt(bgIrCalc(rows, key, uid)); });
+    const h = (ev) => { if (ev.detail === pid && on) setSt(bgIrCalc(BG_IR.rows[pid] || [], key, uid)); };
+    window.addEventListener("bengu-ir", h);
+    return () => { on = false; window.removeEventListener("bengu-ir", h); };
+  }, [pid, key, uid]);
+  if (!pid || !item || !item.url) return null;
+  const ping = () => window.dispatchEvent(new CustomEvent("bengu-ir", { detail: pid }));
+  const react = async (v) => {
+    if (!uid) return bgIrToast("Inicie sessão.");
+    const old = st.mine, nv = old === v ? 0 : v;
+    const rows = (BG_IR.rows[pid] || []).filter((r) => !(r.item_key === key && r.user_id === uid));
+    if (nv) rows.push({ item_key: key, user_id: uid, value: nv === 1 ? "like" : "dislike" });
+    BG_IR.rows[pid] = rows; ping();
+    const q = nv
+      ? me.from("item_reactions").upsert({ post_id: pid, item_key: key, user_id: uid, value: nv === 1 ? "like" : "dislike" }, { onConflict: "post_id,item_key,user_id" })
+      : me.from("item_reactions").delete().eq("post_id", pid).eq("item_key", key).eq("user_id", uid);
+    const r = await q;
+    if (r && r.error) { await bgIrLoad(pid, true); ping(); bgIrToast("Não foi possível guardar. Execute o ficheiro bengu-reacoes-ficheiros.sql."); }
+  };
+  const share = async () => {
+    const url = item.url, title = item.title || item.name || "Bengu";
+    try { if (navigator.share) { await navigator.share({ title, text: title + " · Bengu", url }); return; } } catch (e) { if (e && e.name === "AbortError") return; }
+    try { await navigator.clipboard.writeText(url); bgIrToast("Ligação copiada"); } catch (e) { window.prompt("Copiar ligação:", url); }
+  };
+  const owner = ((window.__bgUsersMap || {})[post.userId]) || {};
+  const canDl = !!post.allowDownload && (post.userId === uid || owner.allowDl !== !1);
+  const download = async () => { if (dl) return dl(item, pid); try { await Ou(item, pid); bgBumpDl(pid); } catch (e) {} };
+  const vert = layout === "v";
+  const mk = (ic, n, fn, label, on, onBg) => u.jsxs("button", {
+    onClick: (ev) => { ev.stopPropagation(); fn(); },
+    "aria-label": label, title: label, "aria-pressed": !!on,
+    style: vert
+      ? { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: 40, minHeight: 40, borderRadius: 14, background: on ? onBg : "rgba(8,10,24,.62)", color: "#fff", fontSize: 18, lineHeight: "20px", gap: 1, padding: "4px 0" }
+      : { display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 999, background: on ? onBg : k.paper, color: on ? "#fff" : k.ink, fontSize: 15, fontWeight: 700 },
+    children: [u.jsx("span", { children: ic }), n != null && u.jsx("span", { style: { fontSize: vert ? 10 : 13, fontWeight: 700 }, children: n })],
+  });
+  const kids = [
+    mk("👍", st.likes, () => react(1), "Gostar", st.mine === 1, k.like),
+    mk("👎", st.dislikes, () => react(-1), "Não gostar", st.mine === -1, "#B71C1C"),
+    mk("📤", null, share, "Partilhar", false, k.saffron),
+    canDl && mk("⏬", null, download, "Descarregar", false, k.saffron),
+  ];
+  return vert
+    ? u.jsx("div", { onClick: (ev) => ev.stopPropagation(), style: { position: "absolute", right: 6, bottom: off == null ? 8 : off, display: "flex", flexDirection: "column", gap: 6, zIndex: 3 }, children: kids })
+    : u.jsx("div", { onClick: (ev) => ev.stopPropagation(), style: { display: "flex", flexWrap: "wrap", gap: 8, justifyContent: center ? "center" : "flex-start", padding: center ? "0" : "6px 16px 10px" }, children: kids });
+}
+function BgShuffleIcon({ size, color }) {
+  return u.jsxs("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", children: [
+    u.jsx("path", { d: "M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" }),
+    u.jsx("path", { d: "m18 2 4 4-4 4" }),
+    u.jsx("path", { d: "M2 6h1.9c1.5 0 2.9.9 3.6 2.2" }),
+    u.jsx("path", { d: "M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8" }),
+    u.jsx("path", { d: "m18 14 4 4-4 4" }),
+  ] });
+}
+function BgToolsPanel({ e, onEq, onSl, onClose }) {
+  const act = e.sleepLeft > 0 || e.sleepEnd;
+  const row = (on) => ({ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 16, fontSize: 16, fontWeight: 700, textAlign: "left", background: on ? k.saffron : k.paper, color: on ? k.onAccent : k.ink });
+  return u.jsx("div", { className: "fixed inset-0 flex items-end justify-center", style: { background: "rgba(0,0,0,.55)", zIndex: 70 }, onClick: onClose, children: u.jsxs("div", { onClick: (ev) => ev.stopPropagation(), className: "w-full rounded-t-2xl px-5 py-4", style: { background: k.card, color: k.ink, maxWidth: 560 }, children: [
+    u.jsxs("div", { className: "flex items-center justify-between mb-3", children: [u.jsx("b", { className: "text-base", children: "🎚 Equalizador e ⏲ Cronómetro" }), u.jsx("button", { onClick: onClose, "aria-label": "Fechar", className: "text-lg px-2", children: "✕" })] }),
+    u.jsxs("div", { className: "flex flex-col gap-3 mb-2", children: [
+      u.jsxs("button", { onClick: onEq, style: row(!1), children: [u.jsx("span", { style: { fontSize: 20 }, children: "🎚" }), u.jsx("span", { children: "Equalizador" })] }),
+      u.jsxs("button", { onClick: onSl, style: row(act), children: [u.jsx("span", { style: { fontSize: 20 }, children: "⏲" }), u.jsx("span", { children: e.sleepLeft > 0 ? "Cronómetro · desliga em " + bgFmtLeft(e.sleepLeft) : e.sleepEnd ? "Cronómetro · no fim da música" : "Cronómetro" })] }),
+    ] }),
+  ] }) });
+}
 function BgSleepPanel({ e, onClose }) {
   const act = e.sleepLeft > 0 || e.sleepEnd;
   const chip = (on) => ({ padding: "10px 14px", borderRadius: 999, fontSize: 14, fontWeight: 700, background: on ? k.saffron : k.paper, color: on ? k.onAccent : k.ink });
@@ -4833,6 +4923,7 @@ function D_() {
   const e = Do();
   const [eqOpen, seqOpen] = B.useState(!1);
   const [slOpen, sslOpen] = B.useState(!1);
+  const [tlOpen, stlOpen] = B.useState(!1);
   if (!e.open || !e.cur) return null;
   const t = e.repeat === "one" ? A_ : N_;
   return u.jsx("div", {
@@ -4913,28 +5004,38 @@ function D_() {
               ],
             }),
             u.jsxs("div", {
-              className: "flex items-center justify-center gap-5",
+              className: "flex items-center justify-between w-full",
               children: [
                 u.jsx("button", {
                   onClick: e.cycle,
                   "aria-label": x("repeat"),
                   "aria-pressed": e.repeat !== "off",
-                  className: "p-2",
+                  className: "p-1.5",
                   children: u.jsx(t, {
                     size: 22,
                     color: e.repeat === "off" ? k.mute : k.ink,
                   }),
                 }),
                 u.jsx("button", {
+                  onClick: e.toggleShuffle,
+                  "aria-label": "Baralhar",
+                  "aria-pressed": !!e.shuffle,
+                  className: "p-1.5",
+                  children: u.jsx(BgShuffleIcon, {
+                    size: 22,
+                    color: e.shuffle ? k.ink : k.mute,
+                  }),
+                }),
+                u.jsx("button", {
                   onClick: e.prev,
                   "aria-label": "Previous",
-                  className: "p-2",
+                  className: "p-1.5",
                   children: u.jsx(kg, { size: 26, color: k.ink }),
                 }),
                 u.jsx("button", {
                   onClick: () => e.skip(-10),
                   "aria-label": "-10s",
-                  className: "p-2",
+                  className: "p-1.5",
                   children: u.jsx(P_, { size: 24, color: k.ink }),
                 }),
                 u.jsx("button", {
@@ -4954,27 +5055,27 @@ function D_() {
                 u.jsx("button", {
                   onClick: () => e.skip(10),
                   "aria-label": "+10s",
-                  className: "p-2",
+                  className: "p-1.5",
                   children: u.jsx(R_, { size: 24, color: k.ink }),
                 }),
                 u.jsx("button", {
                   onClick: e.next,
                   "aria-label": "Next",
-                  className: "p-2",
+                  className: "p-1.5",
                   children: u.jsx(bg, { size: 26, color: k.ink }),
                 }),
               ],
             }),
-            u.jsxs("div", { className: "flex flex-wrap items-center justify-center gap-3", children: [
-              u.jsx("button", { onClick: e.toggleShuffle, "aria-pressed": e.shuffle, className: "px-4 py-2 rounded-full text-sm font-bold", style: { background: e.shuffle ? k.saffron : k.card, color: e.shuffle ? k.onAccent : k.ink }, children: "🔀 Baralhar" }),
-              u.jsx("button", { onClick: () => { seqOpen(!0); e.eqEnable(); }, className: "px-4 py-2 rounded-full text-sm font-bold", style: { background: k.card, color: k.ink }, children: "🎚 Equalizador" }),
-              u.jsx("button", { onClick: () => sslOpen(!0), className: "px-4 py-2 rounded-full text-sm font-bold", style: { background: e.sleepLeft > 0 || e.sleepEnd ? k.saffron : k.card, color: e.sleepLeft > 0 || e.sleepEnd ? k.onAccent : k.ink }, children: e.sleepLeft > 0 ? "⏲ " + bgFmtLeft(e.sleepLeft) : e.sleepEnd ? "⏲ Fim da música" : "⏲ Cronómetro" }),
+            (e.cur.post && e.cur.item) ? u.jsx(BgItemBar, { post: e.cur.post, item: e.cur.item, center: true }) : null,
+            u.jsx("div", { className: "flex flex-wrap items-center justify-center gap-3", children: [
+              u.jsx("button", { onClick: () => stlOpen(!0), className: "px-4 py-2 rounded-full text-sm font-bold", style: { background: e.sleepLeft > 0 || e.sleepEnd ? k.saffron : k.card, color: e.sleepLeft > 0 || e.sleepEnd ? k.onAccent : k.ink }, children: e.sleepLeft > 0 ? "🎚 ⏲ " + bgFmtLeft(e.sleepLeft) : e.sleepEnd ? "🎚 ⏲ Fim da música" : "🎚 Equalizador e ⏲ Cronómetro" }),
             ] }),
             ] }),
           ],
         }),
         eqOpen && u.jsx(BgEqPanel, { e, onClose: () => seqOpen(!1) }),
         slOpen && u.jsx(BgSleepPanel, { e, onClose: () => sslOpen(!1) }),
+        tlOpen && u.jsx(BgToolsPanel, { e, onEq: () => { stlOpen(!1); seqOpen(!0); e.eqEnable(); }, onSl: () => { stlOpen(!1); sslOpen(!0); }, onClose: () => stlOpen(!1) }),
       ],
     }),
   });
@@ -6107,7 +6208,7 @@ function BgLayoutPick() {
         style: { background: v === id ? k.strong : k.paper, color: v === id ? k.onStrong : k.ink } },
         h("span", { style: { fontSize: 18 } }, ic), lb))));
 }
-function BgGrid({ items: i, RT, lim, post: e, mine: mine, onDel: onDel }) {
+function BgGrid({ items: i, RT, lim, post: e, mine: mine, onDel: onDel, grp: grp, dlIt: dlIt }) {
   const [open, setOpen] = B.useState(false), [sel, setSel] = B.useState(-1);
   const over = i.length > lim && !open, shown = over ? i.slice(0, lim) : i, rest = i.length - lim;
   const canDel = !!(mine && onDel && i.length > 1);
@@ -6131,6 +6232,7 @@ function BgGrid({ items: i, RT, lim, post: e, mine: mine, onDel: onDel }) {
                 ? u.jsx("img", { src: l.url, alt: "", loading: "lazy", className: "w-full block", style: { width: "100%", aspectRatio: RT[c % RT.length], objectFit: "cover", background: k.paper } })
                 : u.jsx(q_, { src: l.url, post: e, mp3: l.audio || null, className: "w-full block bg-black", style: { maxHeight: 460 } }),
               canDel && !last && u.jsx("button", { onClick: (ev) => { ev.stopPropagation(); setSel(sel === c ? -1 : c); }, "aria-label": "Apagar só esta", style: { position: "absolute", top: 6, right: 6, width: 32, height: 32, borderRadius: 999, background: "rgba(8,10,24,.65)", color: "#fff", fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center" }, children: "🗑" }),
+              grp && !last && u.jsx(BgItemBar, { post: e, item: l, layout: "v", off: l.kind === "video" ? 56 : 8, dl: dlIt }),
               last && u.jsx("div", { style: { position: "absolute", inset: 0, background: "rgba(8,10,24,.62)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34, fontWeight: 800 }, children: "+" + (rest + 1) }),
             ],
           }, c);
@@ -6148,7 +6250,7 @@ function BgGrid({ items: i, RT, lim, post: e, mine: mine, onDel: onDel }) {
     ],
   });
 }
-function K_({ post: e, users: t, mine: mn_, onDeleteItem: dit_ }) {
+function K_({ post: e, users: t, mine: mn_, onDeleteItem: dit_, onDownloadItem: dlIt_ }) {
   const r = e.items.filter((l) => l.kind !== "bg");
   if (!r.length) return null;
   const n = r.find((l) => l.kind === "link");
@@ -6193,10 +6295,11 @@ function K_({ post: e, users: t, mine: mn_, onDeleteItem: dit_ }) {
     o = Ag([e], t),
     lay = i.length > 1 ? (i.find((z) => z.layout) || {}).layout : null,
     RT = { vertical: ["3 / 4"], square: ["1 / 1"], mixed: ["3 / 4", "1 / 1", "1 / 1", "3 / 4"] }[lay];
+  const grp = r.length > 1;
   return u.jsxs("div", {
     children: [
       i.length > 0 && RT &&
-        u.jsx(BgGrid, { items: i, RT: RT, lim: lay === "mixed" ? 5 : 4, post: e, mine: mn_, onDel: dit_ }),
+        u.jsx(BgGrid, { items: i, RT: RT, lim: lay === "mixed" ? 5 : 4, post: e, mine: mn_, onDel: dit_, grp: grp, dlIt: dlIt_ }),
       i.length > 0 && !RT &&
         u.jsx("div", {
           className:
@@ -6252,6 +6355,7 @@ function K_({ post: e, users: t, mine: mn_, onDeleteItem: dit_ }) {
                       },
                       children: "🗑 Apagar só esta",
                     }),
+                  grp && u.jsx(BgItemBar, { key: "ib", post: e, item: l, layout: "v", off: l.kind === "video" ? 56 : 8, dl: dlIt_ }),
                 ],
               },
               c,
@@ -6264,8 +6368,8 @@ function K_({ post: e, users: t, mine: mn_, onDeleteItem: dit_ }) {
           style: { color: k.mute },
           children: x("filesN", { n: i.length }),
         }),
-      o.map((l, c) => u.jsx(Wc, { song: l, queue: o, index: c }, l.key)),
-      a.map((l, c) =>
+      o.map((l, c) => u.jsxs(B.Fragment, { children: [u.jsx(Wc, { song: l, queue: o, index: c }), grp && u.jsx(BgItemBar, { post: e, item: l.item, dl: dlIt_ })] }, l.key)),
+      a.map((l, c) => u.jsxs("div", { children: [
         u.jsxs(
           "a",
           {
@@ -6305,7 +6409,8 @@ function K_({ post: e, users: t, mine: mn_, onDeleteItem: dit_ }) {
           },
           c,
         ),
-      ),
+        grp && u.jsx(BgItemBar, { post: e, item: l, dl: dlIt_ }),
+      ] }, "d" + c)),
     ],
   });
 }
@@ -6434,6 +6539,7 @@ function es({
   onReport: f,
   onLikers: v,
   onDeleteItem: delIt,
+  onDownloadItem: dlIt_,
   onPin: bgPinFn,
 }) {
   const g = B.useRef(null);
@@ -6561,7 +6667,7 @@ function es({
           children: Tg_(e.text),
         }),
       e.text && u.jsx(BgPostTr, { text: e.text }),
-      u.jsx(K_, { post: e, users: r, mine: n, onDeleteItem: delIt }),
+      u.jsx(K_, { post: e, users: r, mine: n, onDeleteItem: delIt, onDownloadItem: dlIt_ }),
       u.jsx(BgPostMusic, { post: e }),
       u.jsxs("div", {
         className: "flex items-center gap-5 px-4 pt-3 pb-1",
@@ -15546,7 +15652,8 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     el.pPrev = pbtn(sz(ICON.prev, 16), "Anterior", function () { prev(); });
     el.pBtn = pbtn(sz(ICON.play, 16), "Pausar / reproduzir", function () { toggle(); }); el.pBtn.classList.add("pp");
     el.pNext = pbtn(sz(ICON.next, 16), "Seguinte", function () { next(false); });
-    el.pill.append(el.pPrev, el.pBtn, el.pNext);
+    el.pExp = pbtn('<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>', L("Expandir lista de músicas", "Expand song list"), function () { if (window.bgLocalMusic) window.bgLocalMusic(); });
+    el.pill.append(el.pExp, el.pPrev, el.pBtn, el.pNext);
     el.pill.style.touchAction = "none";
     var pillWinMove = function (e) {
       if (!pillStart) return;

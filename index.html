@@ -15721,7 +15721,7 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     ms(T.snd);
     X.eb = mi("🎚", L("Equalizador e efeitos", "Equalizer & effects"), eqOpen); mp.appendChild(X.eb);
     X.tm = mi("⏲", L("Cronómetro", "Timer"), sleepOpen); mp.appendChild(X.tm);
-    if (pipOk) mp.appendChild(mi("🪟", L("Janela flutuante sobre outras apps", "Float over other apps"), pipEnter));
+    if (pipOk || NO) mp.appendChild(mi("🪟", L("Janela flutuante sobre outras apps", "Float over other apps"), pipEnter));
     ms(T.mng);
     el.rs = mi("↩", T.restore, function () { removed = new Set(); skipF = new Set(); saveRemoved(); saveSkip(); rebuild(); }); mp.appendChild(el.rs);
     el.cl = mi("🗑", T.clearLib, clearLib); mp.appendChild(el.cl);
@@ -15741,7 +15741,7 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     el.pBtn = pbtn(sz(ICON.play, 16), "Pausar / reproduzir", function () { toggle(); }); el.pBtn.classList.add("pp");
     el.pNext = pbtn(sz(ICON.next, 16), "Seguinte", function () { next(false); });
     el.pExp = pbtn('<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>', L("Expandir lista de músicas", "Expand song list"), function () { if (window.bgLocalMusic) window.bgLocalMusic(); });
-    if (pipOk) el.pPip = pbtn(ICON.pip, L("Janela flutuante sobre outras apps", "Float over other apps"), pipEnter);
+    if (pipOk || NO) el.pPip = pbtn(ICON.pip, L("Janela flutuante sobre outras apps", "Float over other apps"), pipEnter);
     el.pill.append.apply(el.pill, [el.pExp, el.pPrev, el.pBtn, el.pNext].concat(el.pPip ? [el.pPip] : []));
     el.pill.style.touchAction = "none";
     var pillWinMove = function (e) {
@@ -15804,6 +15804,7 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     return v;
   }
   async function pipEnter() {
+    if (NO) { overlayAsk(); return; }
     if (!pipOk) { toast(L("Este navegador não permite a janela flutuante.", "This browser does not support the floating window.")); return; }
     try {
       var v = pipEnsure(); pipDraw(); await v.play();
@@ -15827,6 +15828,35 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     if (history.state && history.state.bgm) history.back();
   }
   window.addEventListener("popstate", function () { if (open) { open = false; el.root.classList.remove("on"); ui(); } });
+
+  /* ---------- pílula nativa por cima de TODAS as apps (só na app Android com o plugin BenguOverlay) ---------- */
+  var NO = null, ovGranted = false;
+  try { NO = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BenguOverlay) || null; } catch (e) { }
+  async function ovPerm() { try { ovGranted = !!(await NO.hasPermission()).granted; } catch (e) { ovGranted = false; } return ovGranted; }
+  async function overlayAsk() {
+    if (await ovPerm()) { toast(L("Pílula flutuante ativa: aparece quando sair da app.", "Floating pill on: it shows when you leave the app.")); if (open) close(); ovSync(); return; }
+    toast(L("Ative “Sobrepor a outras apps” para o Bengu e volte.", "Allow “Display over other apps” for Bengu, then come back."));
+    try { await NO.requestPermission(); } catch (e) { }
+  }
+  function ovSync() {
+    if (!NO || !ovGranted) return;
+    var t = tracks[cur];
+    if (!t || stopped) { try { NO.hide(); } catch (e) { } return; }
+    try { NO.show({ title: t.title, artist: t.artist || T.unknown, playing: !au.paused, visible: document.visibilityState === "hidden" }); } catch (e) { }
+  }
+  if (NO) {
+    ovPerm().then(ovSync);
+    try {
+      NO.addListener("action", function (e) {
+        var a = e && e.action;
+        if (a === "toggle") toggle(); else if (a === "prev") prev(); else if (a === "next") next(false);
+        else if (a === "expand") { if (window.bgLocalMusic) window.bgLocalMusic(); }
+        else if (a === "close") stopPlay();
+      });
+    } catch (e) { }
+    document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") ovPerm().then(ovSync); else ovSync(); });
+    ["play", "pause", "loadedmetadata", "emptied"].forEach(function (n) { au.addEventListener(n, ovSync); });
+  }
 
   window.bgLocalMusic = function () {
     if (!built) build();

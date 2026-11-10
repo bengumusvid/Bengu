@@ -15192,10 +15192,13 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     chips();
   }
   au.addEventListener("play", function () { wantPlay = true; stopped = false; try { if (G) G.ctx.resume().catch(function () { }); } catch (e) { } try { if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing"; } catch (e) { } ui(); drawList(); });
+  /* só retoma sozinho se a pausa vier logo após apagar o ecrã; se outra app tomou o áudio, respeita e fica em pausa */
+  var lastHide = 0;
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") lastHide = Date.now(); });
   au.addEventListener("pause", function () {
     try { if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused"; } catch (e) { }
     ui(); drawList();
-    if (wantPlay && document.visibilityState === "hidden" && !au.ended) {
+    if (wantPlay && document.visibilityState === "hidden" && !au.ended && Date.now() - lastHide < 3000) {
       setTimeout(function () { if (wantPlay && au.paused && !au.ended) { try { if (G) G.ctx.resume(); } catch (e) { } au.play().catch(function () { }); } }, 250);
     }
   });
@@ -15506,7 +15509,7 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
   function keep() {
     if (!wantPlay || !au.src) return;
     try { if (G && G.ctx.state !== "running") G.ctx.resume().catch(function () { }); } catch (e) { }
-    if (au.paused && !au.ended && document.visibilityState === "hidden") au.play().catch(function () { });
+    if (au.paused && !au.ended && document.visibilityState === "hidden" && Date.now() - lastHide < 3000) au.play().catch(function () { });
   }
   setInterval(keep, 2000);
   document.addEventListener("visibilitychange", keep);

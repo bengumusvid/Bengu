@@ -16266,5 +16266,101 @@ if(orig)window.bengu_pay_switches=function(uid,name){
 function t(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
 function load(){fetch(U+"/rest/v1/rpc/bengu_get_eligibility",{method:"POST",headers:{apikey:K,Authorization:"Bearer "+(t()||K),"Content-Type":"application/json"},body:"{}"}).then(function(r){return r.ok?r.json():null}).then(function(e){if(e&&e.min_followers>=0){window.__bgMinF=e.min_followers;window.__bgMinV=e.min_views30}}).catch(function(){})}
 load();setInterval(load,60000)})();
-</script></body>
+</script><script>/* BENGU 4.52: IA (Claude), Jogos e painel do administrador. Botão ✨ por cima da barra de baixo. */
+(function(){
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ";
+function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
+function me(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).user.id}catch(e){return""}}
+function hd(){return{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/json"}}
+function el(t,css,txt){var e=document.createElement(t);if(css)e.style.cssText=css;if(txt!=null)e.textContent=txt;return e}
+function isAdm(){return window.__bgAdm===true||localStorage.getItem("bg_adm")==="1"}
+function rest(path,method,body,extra){return fetch(U+"/rest/v1/"+path,{method:method||"GET",headers:Object.assign(hd(),extra||{}),body:body?JSON.stringify(body):undefined}).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(t)});return r.status===204?null:r.text().then(function(t){return t?JSON.parse(t):null})})}
+function can(f){return rest("rpc/bengu_can_use","POST",{p_feature:f}).then(function(v){return v===true}).catch(function(){return false})}
+var BTN="border:0;border-radius:10px;padding:9px 14px;font-weight:700;font-size:14px;background:#f5b400;color:#14163a",INP="width:100%;box-sizing:border-box;border:1px solid #3a3f80;border-radius:10px;padding:9px;background:#1b1f48;color:#fff;font-size:14px";
+var ov=null;
+function close(){if(ov){ov.remove();ov=null}}
+function open(start){
+ if(!tok()){alert("Inicie sessão para usar a IA e os jogos.");return}
+ close();ov=el("div","position:fixed;inset:0;z-index:100010;background:rgba(0,0,0,.75);display:flex;align-items:flex-end;justify-content:center");
+ var c=el("div","background:#14163a;color:#fff;border-radius:16px 16px 0 0;width:100%;max-width:520px;height:88vh;display:flex;flex-direction:column;box-sizing:border-box;font-family:inherit"),
+  top=el("div","display:flex;gap:6px;align-items:center;padding:12px 12px 6px"),body=el("div","flex:1;min-height:0;overflow:auto;padding:8px 14px 14px"),
+  tabs=[["ia","🤖 IA"],["jogos","🎮 Jogos"]];if(isAdm())tabs.push(["adm","⚙️ Admin"]);
+ var bs={};tabs.forEach(function(t){var b=el("button","border:0;border-radius:16px;padding:7px 12px;font-weight:700;font-size:13px;background:#2a2f66;color:#fff",t[1]);b.onclick=function(){show(t[0])};bs[t[0]]=b;top.append(b)});
+ var x=el("button",BTN,"Fechar");x.style.marginLeft="auto";x.onclick=close;top.append(x);
+ c.append(top,body);ov.append(c);ov.onclick=function(e){if(e.target===ov)close()};document.body.append(ov);
+ function show(k){Object.keys(bs).forEach(function(z){bs[z].style.background=z===k?"#f5b400":"#2a2f66";bs[z].style.color=z===k?"#14163a":"#fff"});body.replaceChildren();
+  if(k==="ia")viewAI(body);else if(k==="jogos")viewGames(body);else viewAdmin(body)}
+ show(start||"ia")}
+/* ---------- IA ---------- */
+function viewAI(b){
+ b.append(el("p","font-size:12px;opacity:.7;margin:0 0 8px","O que escreveres aqui é enviado à IA (Claude) para responder. Não escrevas dados pessoais nem palavras-passe. A conversa não fica guardada."));
+ var msgs=[],log=el("div","display:flex;flex-direction:column;gap:8px;margin-bottom:10px"),row=el("div","display:flex;gap:8px"),inp=el("textarea",INP+";height:44px;resize:none"),go=el("button",BTN,"Enviar");inp.placeholder="Pergunta à IA…";
+ row.append(inp,go);b.append(log,row);
+ can("ai").then(function(ok){if(!ok){log.append(el("p","opacity:.85","A IA não está disponível para a sua conta neste momento (reservada a premium ou contas com selo)."));inp.disabled=go.disabled=true}});
+ function bub(t,me){var d=el("div","padding:9px 11px;border-radius:12px;max-width:88%;white-space:pre-wrap;word-break:break-word;font-size:14px;"+(me?"align-self:flex-end;background:#f5b400;color:#14163a":"align-self:flex-start;background:#26306b"),t);log.append(d);b.scrollTop=b.scrollHeight;return d}
+ function send(){var t=inp.value.trim();if(!t||go.disabled)return;inp.value="";msgs.push({role:"user",content:t});bub(t,true);var w=bub("…",false);go.disabled=true;
+  fetch(U+"/functions/v1/bengu-ai",{method:"POST",headers:hd(),body:JSON.stringify({messages:msgs})}).then(function(r){return r.json().catch(function(){return{}})}).then(function(d){go.disabled=false;
+   if(d.text){w.textContent=d.text;msgs.push({role:"assistant",content:d.text});if(d.remaining!=null)w.append(el("div","font-size:11px;opacity:.55;margin-top:4px","Pedidos restantes hoje: "+d.remaining))}
+   else{w.textContent=d.error||"Não foi possível obter resposta.";msgs.pop()}b.scrollTop=b.scrollHeight}).catch(function(){go.disabled=false;msgs.pop();w.textContent="Sem ligação. Tente de novo."})}
+ go.onclick=send;inp.onkeydown=function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}}
+/* ---------- Jogos ---------- */
+function viewGames(b){
+ var box=el("div");b.append(box);
+ can("games").then(function(ok){if(!ok){box.append(el("p","opacity:.85","Os jogos estão reservados a premium ou contas com selo."));return}memory(box)})}
+function memory(box){
+ var E=["🎵","🎤","🎧","🥁","🎸","🎹","🎺","🎻"],cards=E.concat(E).sort(function(){return Math.random()-.5}),open1=null,lock=false,moves=0,found=0,t0=0;
+ box.replaceChildren(el("h3","margin:4px 0","🧠 Jogo da memória"),el("p","font-size:12px;opacity:.7;margin:0 0 8px","Encontra os pares com o mínimo de jogadas e de tempo."));
+ var info=el("div","margin-bottom:8px;font-size:13px","Jogadas: 0"),grid=el("div","display:grid;grid-template-columns:repeat(4,1fr);gap:8px"),rank=el("div","margin-top:14px");box.append(info,grid,rank);
+ cards.forEach(function(v){var c=el("button","aspect-ratio:1;border:0;border-radius:12px;font-size:30px;background:#2a2f66;color:#fff","?");c.dataset.v=v;c.onclick=function(){flip(c)};grid.append(c)});
+ function flip(c){if(lock||c.dataset.done||c===open1)return;if(!t0)t0=Date.now();c.textContent=c.dataset.v;c.style.background="#3a3f90";
+  if(!open1){open1=c;return}moves++;info.textContent="Jogadas: "+moves;var a=open1;open1=null;
+  if(a.dataset.v===c.dataset.v){a.dataset.done=c.dataset.done="1";a.style.background=c.style.background="#2e7d32";if(++found===E.length)end()}
+  else{lock=true;setTimeout(function(){a.textContent=c.textContent="?";a.style.background=c.style.background="#2a2f66";lock=false},700)}}
+ function end(){var s=Math.round((Date.now()-t0)/1000),pts=Math.max(0,1000-moves*20-s*3);info.textContent="🎉 Terminaste! Jogadas: "+moves+" · "+s+" s · Pontos: "+pts;
+  rest("bengu_game_scores","POST",{user_id:me(),game:"memoria",score:pts},{Prefer:"return=minimal"}).then(board).catch(function(){board()});
+  var again=el("button",BTN+";margin-top:8px","Jogar outra vez");again.onclick=function(){memory(box)};box.append(again)}
+ function board(){rank.replaceChildren(el("b","","🏆 Melhores pontuações"));
+  rest("bengu_game_scores?select=user_id,score&game=eq.memoria&order=score.desc&limit=10").then(function(rows){rows=rows||[];if(!rows.length){rank.append(el("p","opacity:.7","Ainda sem pontuações."));return}
+   var ids=rows.map(function(r){return r.user_id}).filter(function(v,i,a){return a.indexOf(v)===i});
+   return rest("profiles?select=id,name&id=in.("+ids.join(",")+")").catch(function(){return[]}).then(function(ps){var nm={};(ps||[]).forEach(function(p){nm[p.id]=p.name});
+    rows.forEach(function(r,i){var rw=el("div","display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #2a2f66;font-size:14px",(i+1)+". "+(nm[r.user_id]||"Utilizador"));rw.append(el("b","",String(r.score)));rank.append(rw)})})}).catch(function(){})}
+ board()}
+/* ---------- Administrador ---------- */
+function viewAdmin(b){
+ if(!isAdm()){b.append(el("p","","Só o administrador."));return}
+ b.append(el("p","opacity:.7","A carregar…"));
+ Promise.all([rest("bengu_features?select=key,access"),rest("bengu_ai_settings?select=daily_limit,model,paid_mode&id=eq.1"),rest("bengu_ai_plans?select=id,name,days,price,currency,active&order=days.asc")]).then(function(r){
+  b.replaceChildren();var F={};(r[0]||[]).forEach(function(f){F[f.key]=f.access});var S=(r[1]||[])[0]||{daily_limit:20,model:"claude-haiku-5-5",paid_mode:false},P=r[2]||[];
+  var OPT=[["all","Todos"],["premium","Só premium"],["verified","Só com selo"],["premium_or_verified","Premium ou selo"],["off","Desligado"]];
+  function sel(key,label){var w=el("div","margin:8px 0"),s=el("select",INP);w.append(el("div","font-size:13px;opacity:.8;margin-bottom:3px",label),s);OPT.forEach(function(o){var op=el("option","",o[1]);op.value=o[0];if(F[key]===o[0])op.selected=true;s.append(op)});
+   s.onchange=function(){rest("bengu_features?key=eq."+key,"PATCH",{access:s.value,updated_at:new Date().toISOString()},{Prefer:"return=minimal"}).then(function(){toast("Guardado")}).catch(function(){toast("Erro ao guardar")})};return w}
+  b.append(el("h3","margin:4px 0","Acesso"),sel("ai","Quem pode usar a IA"),sel("games","Quem pode usar os jogos"));
+  var pm=el("label","display:flex;gap:8px;align-items:center;margin:10px 0"),cb=el("input");cb.type="checkbox";cb.checked=!!S.paid_mode;pm.append(cb,el("span","","IA paga (desligado = gratuita para todos)"));
+  var lim=el("input",INP);lim.type="number";lim.min=1;lim.value=S.daily_limit;var mod=el("input",INP);mod.value=S.model;
+  var sv=el("button",BTN,"Guardar definições da IA");sv.onclick=function(){rest("bengu_ai_settings?id=eq.1","PATCH",{paid_mode:cb.checked,daily_limit:Math.max(1,parseInt(lim.value)||20),model:mod.value.trim()||"claude-haiku-5-5"},{Prefer:"return=minimal"}).then(function(){toast("Guardado")}).catch(function(){toast("Erro ao guardar")})};
+  b.append(el("h3","margin:14px 0 4px","Definições da IA"),pm,el("div","font-size:13px;opacity:.8","Limite diário por utilizador (o administrador não tem limite)"),lim,el("div","font-size:13px;opacity:.8;margin-top:8px","Modelo"),mod,el("div","margin-top:10px"));b.lastChild.append(sv);
+  b.append(el("h3","margin:16px 0 4px","Preços da IA por período"));var pl=el("div");b.append(pl);
+  function drawP(){pl.replaceChildren();P.forEach(function(p){var d=el("div","display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #2a2f66;font-size:14px",p.name+" · "+p.days+" dias · "+p.price+" "+p.currency),x=el("button","border:0;background:none;color:#ff6b6b;font-size:16px","🗑");
+    x.onclick=function(){if(!confirm("Apagar este preço?"))return;rest("bengu_ai_plans?id=eq."+p.id,"DELETE",null,{Prefer:"return=minimal"}).then(function(){P=P.filter(function(z){return z.id!==p.id});drawP()}).catch(function(){toast("Erro")})};d.append(x);pl.append(d)});if(!P.length)pl.append(el("p","opacity:.7","Ainda sem preços."))}drawP();
+  var n=el("input",INP),dd=el("input",INP),pr=el("input",INP),ad=el("button",BTN+";margin-top:6px","Adicionar preço");n.placeholder="Nome (ex.: Mensal)";dd.type=pr.type="number";dd.placeholder="Dias (ex.: 30)";pr.placeholder="Valor (MZN)";
+  ad.onclick=function(){var days=parseInt(dd.value),price=parseFloat(pr.value);if(!n.value.trim()||!(days>0)||!(price>=0)){toast("Preencha nome, dias e valor");return}
+   rest("bengu_ai_plans","POST",{name:n.value.trim(),days:days,price:price},{Prefer:"return=representation"}).then(function(a){P=P.concat(a||[]).sort(function(x,y){return x.days-y.days});n.value=dd.value=pr.value="";drawP()}).catch(function(){toast("Erro")})};
+  b.append(n,dd,pr,ad);
+  b.append(el("h3","margin:18px 0 4px","Dar acesso a um utilizador"));
+  var q=el("input",INP),res=el("div");q.placeholder="Pesquisar utilizador por nome";b.append(q,res);var tm=0;
+  q.oninput=function(){clearTimeout(tm);tm=setTimeout(function(){var v=q.value.trim();res.replaceChildren();if(v.length<2)return;rest("profiles?select=id,name&name=ilike.*"+encodeURIComponent(v)+"*&limit=6").then(function(a){(a||[]).forEach(function(p){var bt=el("button","display:block;width:100%;text-align:left;border:0;background:#1b1f48;color:#fff;border-radius:10px;padding:9px;margin:4px 0",p.name||"Sem nome");bt.onclick=function(){grant(p,res)};res.append(bt)})}).catch(function(){})},300)}})
+ .catch(function(){b.replaceChildren(el("p","","Não foi possível carregar. Já executou o SQL 4.52?"))})}
+function grant(p,res){res.replaceChildren(el("b","",p.name));
+ var pd=el("input",INP),ai=el("input",INP),vf=el("label","display:flex;gap:8px;align-items:center;margin:8px 0"),cb=el("input"),go=el("button",BTN,"Guardar acesso");pd.type=ai.type="number";pd.placeholder="Premium: dias a dar (vazio = não mudar)";ai.placeholder="IA: dias a dar (vazio = não mudar)";cb.type="checkbox";vf.append(cb,el("span","","Dar selo (marcar só quando queres dar)"));
+ go.onclick=function(){function iso(d){d=parseInt(d);return d>0?new Date(Date.now()+d*864e5).toISOString():null}
+  rest("rpc/bengu_admin_set_access","POST",{p_user:p.id,p_premium_until:iso(pd.value),p_verified:cb.checked?true:null,p_ai_until:iso(ai.value)}).then(function(){toast("Acesso guardado")}).catch(function(){toast("Erro ao guardar")})};
+ res.append(pd,ai,vf,go)}
+function toast(t){var d=el("div","position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#000c;color:#fff;padding:9px 14px;border-radius:12px;z-index:100020;font-size:13px",t);document.body.append(d);setTimeout(function(){d.remove()},1800)}
+/* botão flutuante */
+function fab(){var f=document.getElementById("bg-ia-fab");if(!tok()){if(f)f.remove();return}if(f)return;
+ f=el("button","position:fixed;right:12px;bottom:84px;z-index:9000;width:46px;height:46px;border:0;border-radius:50%;background:#f5b400;color:#14163a;font-size:22px;box-shadow:0 3px 12px rgba(0,0,0,.4)","✨");f.id="bg-ia-fab";f.setAttribute("aria-label","IA e Jogos");f.onclick=function(){open("ia")};document.body.append(f)}
+window.bengu_ia_open=open;setInterval(fab,1500);fab();
+})();
+</script>
+</body>
 </html>

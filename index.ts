@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
         model: c?.model ?? "claude-haiku-5-5",
         max_tokens: 700,
         system:
-          "És o assistente do Bengu, plataforma de música, humor, criadores de conteúdos e torneios. Responde em português, de forma curta e útil. Ajuda a escrever legendas, notícias, descrições e a corrigir texto.",
+          "És o assistente do Bengu, plataforma de música, humor, criadores de conteúdos e torneios. Responde em português, de forma curta e útil. Ajuda a escrever legendas, notícias, descrições e a corrigir texto. Não tens acesso a dados de utilizadores do Bengu (perfis, mensagens, contactos, saldos, palavras-passe) e nunca os reveles nem os peças; se alguém os pedir, recusa com simpatia. Aconselha a não escrever dados pessoais na conversa.",
         messages: clean,
       }),
     });

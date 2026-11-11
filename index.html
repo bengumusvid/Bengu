@@ -3793,7 +3793,10 @@ setInterval(fix,1200);setTimeout(fix,400)})();
 <script>/* BENGU 4.29: corretor ortográfico com IA, só para o administrador. Requer a função "bengu-corrigir" (ver bengu-corretor-ortografico.ts) */
 (function(){
 var cur=null,btn=null,hideT=null,busy=false;
-function isAdm(){return window.__bgAdm===true}
+function isAdm(){return window.__bgAdm===true||window.__bgFixOK===true}
+function tk(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
+var fixAt=0;function chk(){if(window.__bgAdm===true||!tk()||Date.now()-fixAt<60000)return Promise.resolve();fixAt=Date.now();
+ return fetch("https://cnpkgauzhoyzlhtcexiv.supabase.co/rest/v1/rpc/bengu_can_use",{method:"POST",headers:{apikey:"sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",Authorization:"Bearer "+tk(),"Content-Type":"application/json"},body:JSON.stringify({p_feature:"ai"})}).then(function(r){return r.ok?r.json():false}).then(function(v){window.__bgFixOK=v===true}).catch(function(){})}
 function okField(e){
  if(!e||!e.tagName)return false;
  if(e.getAttribute&&e.getAttribute("data-nofix")!==null)return false;
@@ -3818,16 +3821,16 @@ function ensure(){
  document.body.appendChild(btn);return btn}
 function show(){if(!isAdm())return;clearTimeout(hideT);ensure().style.display="block"}
 function hide(){clearTimeout(hideT);hideT=setTimeout(function(){if(btn&&!busy)btn.style.display="none"},2500)}
-document.addEventListener("focusin",function(ev){if(okField(ev.target)){cur=ev.target;show()}});
+document.addEventListener("focusin",function(ev){if(okField(ev.target)){cur=ev.target;chk().then(function(){if(cur===ev.target)show()})}});
 document.addEventListener("focusout",function(ev){if(ev.target===cur)hide()});
 function run(){
  var e=cur;if(!e||!e.isConnected||busy)return;
  var t=e.value||"";if(t.trim().length<2){toast("Escreva o texto primeiro.");return}
- if(!window.__sb||!window.__sb.functions){toast("Corretor indisponível.");return}
+ if(!tk()){toast("Inicie sessão.");return}
  busy=true;btn.textContent="A corrigir…";
- window.__sb.functions.invoke("bengu-corrigir",{body:{text:t}}).then(function(r){
-  if(r.error||!r.data||typeof r.data.text!=="string"){toast("Não foi possível corrigir. Confirme que a função bengu-corrigir está publicada.");return}
-  var n=r.data.text;
+ fetch("https://cnpkgauzhoyzlhtcexiv.supabase.co/functions/v1/bengu-ai",{method:"POST",headers:{apikey:"sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",Authorization:"Bearer "+tk(),"Content-Type":"application/json"},body:JSON.stringify({mode:"fix",text:t})}).then(function(r){return r.json().catch(function(){return{}})}).then(function(d){
+  if(typeof d.text!=="string"){toast(d.error||"Não foi possível corrigir agora.");return}
+  var n=d.text;
   if(n===t){toast("Sem erros encontrados.");return}
   setVal(e,n);toast("Texto corrigido.")
  }).catch(function(){toast("Não foi possível corrigir agora.")}).then(function(){busy=false;if(btn)btn.textContent="✨ Fix"})}
@@ -8420,7 +8423,14 @@ function J_() {
                       ["all", x("forYou")],
                       ["following", x("following")],
                       ["users", "Utilizadores"],
-                    ].map(([I, V]) => I === "bell" ? u.jsx("button", {
+                      ["ia", "✨ IA / Jogos"],
+                    ].map(([I, V]) => I === "ia" ? u.jsx("button", {
+                        key: "ia",
+                        onClick: () => window.bengu_ia_open && window.bengu_ia_open("ia"),
+                        className: "flex-1 py-3 text-sm font-semibold",
+                        style: { color: k.mute, borderBottom: "3px solid transparent", whiteSpace: "nowrap" },
+                        children: V,
+                      }) : I === "bell" ? u.jsx("button", {
                         key: "bell",
                         "aria-label": "Notificações",
                         onClick: () => window.bengu_notif_center && window.bengu_notif_center(),
@@ -16359,7 +16369,7 @@ function toast(t){var d=el("div","position:fixed;left:50%;bottom:90px;transform:
 /* botão flutuante */
 function fab(){var f=document.getElementById("bg-ia-fab");if(!tok()){if(f)f.remove();return}if(f)return;
  f=el("button","position:fixed;right:12px;bottom:84px;z-index:9000;width:46px;height:46px;border:0;border-radius:50%;background:#f5b400;color:#14163a;font-size:22px;box-shadow:0 3px 12px rgba(0,0,0,.4)","✨");f.id="bg-ia-fab";f.setAttribute("aria-label","IA e Jogos");f.onclick=function(){open("ia")};document.body.append(f)}
-window.bengu_ia_open=open;setInterval(fab,1500);fab();
+window.bengu_ia_open=open;
 })();
 </script>
 </body>

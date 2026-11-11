@@ -386,7 +386,7 @@ XMLHttpRequest.prototype.send=function(body){
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.53.0_11.11.2026" />
+    <meta name="bengu-build" content="4.53.1_11.11.2026" />
     <script>
       /* BENGU 4.8.1 - ANUNCIOS (Google AdSense).
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
@@ -482,7 +482,9 @@ start();
   <style>@media (orientation:landscape) and (min-width:560px){.max-w-md{max-width:100%!important}body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}img.w-full,video.w-full{max-height:88vh;object-fit:contain}nav.fixed>div{justify-content:space-around;overflow:visible}nav.fixed button{padding-top:6px!important;padding-bottom:6px!important}nav.fixed button::after{content:attr(aria-label);font-size:11px;line-height:1.1;color:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}.bg-comp{flex-direction:row-reverse!important;padding:3px 11px 3px 3px!important;gap:6px!important}.bg-comp .bg-txt{display:none!important}.bg-comp::before{font:800 11px/1.1 var(--bg-font);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.45);letter-spacing:.2px;white-space:nowrap;content:attr(data-label)}.bg-comp[data-live="1"]::after{bottom:auto!important;top:0;left:auto!important;right:4px;margin-left:0!important}header button.p-1\.5{display:inline-flex;flex-direction:row;align-items:center;gap:4px}header button.p-1\.5::after{content:attr(aria-label);font:600 10px/1.1 var(--bg-font);white-space:nowrap}.bg-pl-body{flex-direction:row!important;gap:28px!important}.bg-pl-right{flex:1;min-width:0;gap:12px!important}.bg-pl-cover img,.bg-pl-cover>div{width:min(260px,56vh)!important;height:min(260px,56vh)!important}.bg-pl-wrap{padding-top:8px!important;padding-bottom:8px!important}}</style><style id="bg-font">:root{--bg-font:"Playfair Display",Georgia,"Times New Roman",serif;--bg-sys:ui-sans-serif,system-ui,sans-serif}html{font-family:var(--bg-font);font-variant-numeric:lining-nums;font-feature-settings:"lnum" 1}.bg-ugc,.whitespace-pre-wrap{font-family:var(--bg-sys);font-variant-numeric:normal;font-feature-settings:normal}</style>
 <style id="bg-fit">
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%;font-size:clamp(87.5%,4.4vw,100%)}
-html,body{width:100%;max-width:100%;overflow-x:hidden;overscroll-behavior-x:none}
+html{width:100%;max-width:100%;overflow-x:hidden;overscroll-behavior-x:none}
+/* BENGU 4.53.1: overflow-x:hidden no body criava um contentor de rolagem e a faixa do topo (sticky) deixava de ficar presa; clip corta o excesso sem isso */
+body{width:100%;max-width:100%;overflow-x:visible;overflow-x:clip;overscroll-behavior-x:none}
 body{min-height:100vh;min-height:100dvh;padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
 #root{width:100%;max-width:100%;min-height:100vh;min-height:100dvh}
 img,video,canvas,iframe,svg{max-width:100%}

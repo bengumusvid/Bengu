@@ -2020,13 +2020,17 @@ function postCard(x,name,photo,canDel,table,again,reel){var c=card(),h=el("div",
    var tt=el("div","flex:1;min-width:0");tt.append(el("div","font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap",m.name||"Documento"),el("div","font-size:12px;color:"+C.mute,m.size||"Abrir / descarregar"));l.append(el("span","font-size:26px","📄"),tt,el("span","color:"+C.acc+";font-weight:800","Abrir"));c.append(l)}});
  if(x.body)c.append(el("div","white-space:pre-wrap;line-height:1.4",x.body));pgActions(c,x,table==="bengu_page_posts"?"page":"group",name,canDel||isAdm(),again);return c}
 /* só nas páginas: criar reel */
-function reelForm(id,again){var c=card(),vf=null,pv=el("video","width:100%;max-height:50vh;border-radius:10px;background:#000;display:none;margin:6px 0"),cap=area("Legenda do reel (opcional)","",2),
+function reelForm(id,again){var c=card(),vf=null,pv=el("video","width:100%;max-height:50vh;border-radius:10px;background:#000;display:none;margin:6px 0"),cap=area("Legenda do reel (opcional)","",2),sn=area("Série (deixe vazio se for um reel único)","",1),en=area("Número do episódio (ex.: 1)","",1),
  inpf=el("input","display:none");inpf.type="file";inpf.accept="video/*";
  var pickb=btn("🎬 Escolher ou gravar vídeo",function(){inpf.click()},"soft"),pb=btn("Publicar reel",function(){if(!vf)return toast("Escolha o vídeo do reel.");pb.disabled=true;pb.textContent="A enviar o reel…";
-  uploadAny(vf,"video").then(function(m){return api("bengu_page_posts","POST",{page_id:id,author_id:uid(),body:cap.value.trim().slice(0,300)||null,media:[m],is_reel:true})}).then(again).catch(function(e){pb.disabled=false;pb.textContent="Publicar reel";fail(e)})});
+  uploadAny(vf,"video").then(function(m){return api("bengu_page_posts","POST",{page_id:id,author_id:uid(),body:serBody(),media:[m],is_reel:true})}).then(function(){serSave();again()}).catch(function(e){pb.disabled=false;pb.textContent="Publicar reel";fail(e)})});
  inpf.onchange=function(){var f=inpf.files&&inpf.files[0];if(!f)return;if(f.size>MAXMB*1048576)return toast("O vídeo passa de "+MAXMB+" MB.");
   var u=URL.createObjectURL(f),t=document.createElement("video");t.preload="metadata";t.onloadedmetadata=function(){if(t.duration>180){toast("O reel pode ter no máximo 3 minutos.");URL.revokeObjectURL(u);return}vf=f;pv.src=u;pv.controls=true;pv.playsInline=true;pv.style.display="block"};t.onerror=function(){vf=f;pv.src=u;pv.controls=true;pv.style.display="block"};t.src=u};
- var recb=btn("🎥 Record reel (camera, music, filters, editor)",function(){if(!window.bengu_open_record)return toast("Gravador indisponível.");window.__bgReelTarget={page:id,done:function(){PT[id]="reels";again()}};window.bengu_open_record()});c.append(el("b","","🎞 Criar reel da página"),el("div","font-size:13px;color:"+C.mute+";margin:4px 0","Vídeo curto (até 3 minutos). Os reels só existem nas páginas."),recb,pickb,inpf,pv,cap,pb);return c}
+ function serName(){return sn.value.trim().replace(/\s+/g," ").slice(0,60)}
+ function serEp(){var n=parseInt(en.value,10);return n>0?n:0}
+ function serBody(){var n=serName(),t=cap.value.trim(),h=n?"📺 "+n+(serEp()?" · Ep. "+serEp():""):"";return((h?h+(t?"\n":""):"")+t).slice(0,300)||null}
+ function serSave(){try{var n=serName();if(n)localStorage.setItem("bg_series_"+id,JSON.stringify({name:n,ep:serEp()}));else localStorage.removeItem("bg_series_"+id)}catch(e){}}
+ var recb=btn("🎥 Record reel (camera, music, filters, editor)",function(){if(!window.bengu_open_record)return toast("Gravador indisponível.");window.__bgReelTarget={page:id,done:function(){PT[id]="reels";again()}};window.bengu_open_record()});try{var sv=JSON.parse(localStorage.getItem("bg_series_"+id)||"null");if(sv&&sv.name){sn.value=sv.name;en.value=String((sv.ep||0)+1)}}catch(e){}c.append(el("b","","🎞 Criar reel da página"),el("div","font-size:13px;color:"+C.mute+";margin:4px 0","Vídeo curto (até 3 minutos). Os reels só existem nas páginas."),recb,pickb,inpf,pv,sn,en,cap,pb);return c}
 var PT={};
 /* janela e navegação */
 var ov=null,body=null,ttl=null,stack=[],S={tab:"pages",mine:false,q:""};
@@ -15934,6 +15938,11 @@ window.bengu_user_suspension=function(uid,name,banned,done){
     rpc("bengu_admin_suspend_user",{p_user:uid,p_flag:flag,p_reason:why.value.trim()||null,p_name:name||null}).then(function(){m.close();if(done)done()}).catch(function(e){note(b,e.message+" (SQL 4.50?)",false)})}}
   var row=el("div","display:flex;gap:8px;flex-wrap:wrap;margin:8px 0");
   row.append(btn("⏸ Suspender perfil","#ffb020","#14163a",go(true)),btn("▶ Ligar perfil / Remover suspensão","#2fbf71","#fff",go(false)));b.append(row);
+  var pwb=el("div","margin-top:14px;padding:12px;border:1px solid #3b4ba8;border-radius:12px"),np=el("input",FLD);np.type="text";np.placeholder="Nova palavra-passe (mín. 8 caracteres)";np.autocomplete="off";
+  var gen=btn("🎲 Gerar","#3b4ba8","#fff",function(){var a="abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789",o="",r=new Uint32Array(10);crypto.getRandomValues(r);for(var i=0;i<10;i++)o+=a[r[i]%a.length];np.value=o}),
+   setp=btn("🔑 Repor palavra-passe","#2fbf71","#fff",function(){var v=np.value;if(v.length<8)return note(b,"Mínimo 8 caracteres.",false);if(!confirm("Repor a palavra-passe de "+(name||"este utilizador")+"? As sessões abertas dele serão terminadas."))return;rpc("bengu_admin_reset_password",{p_user:uid,p_new:v,p_name:name||null}).then(function(){(function(){var d=el("div","margin-top:10px;padding:10px;border-radius:8px;background:#1f5a3a;font-size:13px;line-height:1.5;word-break:break-all;user-select:all","✅ Feito. Entregue ao utilizador e peça-lhe para a trocar: "+v);pwb.append(d)})()}).catch(function(e){note(b,e.message+" (SQL 4.51?)",false)})}),
+   prow=el("div","display:flex;gap:8px;flex-wrap:wrap;margin-top:8px");prow.append(gen,setp);
+  pwb.append(el("b","","🔑 Recuperar palavra-passe"),el("p","font-size:12px;opacity:.8;margin:6px 0","Se o utilizador a esqueceu, defina uma nova e entregue-lha por um meio seguro. Só o administrador vê isto."),np,prow);b.append(pwb);
 
   var dz=el("div","margin-top:16px;padding:12px;border:1px solid #8b2c3b;border-radius:12px");
   dz.append(el("b","color:#ff9b9b","🗑 Apagar por completo (não se pode desfazer)"),el("p","font-size:12px;opacity:.8;margin:6px 0","Indique a razão. Fica registada no histórico do administrador."));

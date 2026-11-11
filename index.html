@@ -2648,7 +2648,7 @@ function tabs(box,items,draw){var row=el("div","display:flex;gap:6px;margin:8px 
 window.bengu_earnings_panel=function(){
  if(!tok()){alert("Inicie sessão.");return}
  var m=modal("💰 Ganhos estimados"),box=m.body;box.append(el("p","opacity:.7","A carregar…"));
- Promise.all([rpc("bengu_creator_stats"),rpc("bengu_my_payout_status").catch(function(){return{reached:false,approved:false}})]).then(function(zz){var s=zz[0],ps=zz[1]||{},okp=ps.approved===true;
+ Promise.all([rpc("bengu_creator_stats"),rpc("bengu_my_payout_status").catch(function(){return{reached:false,approved:false}}),rpc("bengu_my_force_payout").catch(function(){return false})]).then(function(zz){var s=zz[0],ps=zz[1]||{},okp=ps.approved===true||zz[2]===true;
   var elig=(s.eligible===true||okp),k=s.rpm*s.creator_pct/100/1000,earn=function(v){return elig?v*k:0};
   var wk=s.weeks.length?s.weeks[s.weeks.length-1].views:0,mo=s.months.length?s.months[s.months.length-1].views:0,yr=s.months.reduce(function(a,x){return a+x.views},0);
   box.replaceChildren();
@@ -2703,6 +2703,15 @@ var ib=el("button",G,BG_L("📥 Import from AdSense","📥 Importar do AdSense")
    L.forEach(function(x){var r=el("div","display:flex;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid #2a2f66"),n=el("div","flex:1;font-size:13px"),b=el("button",(x.approved?G:Y)+"padding:8px 10px;font-size:13px",x.approved?BG_L("Disable","Desativar"):BG_L("Enable withdrawal","Ativar levantamento"));
     n.append(el("b","",x.name||"Criador"),el("div","font-size:11px;opacity:.8;color:"+(x.approved?"#2fbf71":"#ff9b9b"),(x.approved?"🟢 elegível":"🔴 não elegível")+" · "+new Date(x.reached_at).toLocaleDateString("pt-PT")));
     b.onclick=function(){b.disabled=true;rpc("bengu_admin_set_payout",{p_user:x.user_id,p_approved:!x.approved}).then(function(){m.close();window.bengu_admin_earnings()}).catch(function(e){b.disabled=false;msg(ec,e.message,false)})};r.append(n,b);ec.append(r)})}).catch(function(){ec.replaceChildren(el("b","",ect),el("p","font-size:12px;opacity:.7","Execute o SQL 4.25 no Supabase."))});
+  var el2=el("div",CARD);el2.append(el("b","","🎯 Metas de elegibilidade"),el("div","font-size:12px;opacity:.8;margin:4px 0","Seguidores e visualizações em 30 dias necessários para ganhar com anúncios."));
+  var mfI=el("input",FLD),mvI=el("input",FLD),mfb=el("button",G,"Guardar metas");mfI.type=mvI.type="number";mfI.min=mvI.min="0";mfI.placeholder="Seguidores (mínimo)";mvI.placeholder="Visualizações em 30 dias (mínimo)";mfI.value=window.__bgMinF||10000;mvI.value=window.__bgMinV||50000;
+  rpc("bengu_get_eligibility").then(function(e){if(e){mfI.value=e.min_followers;mvI.value=e.min_views30;window.__bgMinF=e.min_followers;window.__bgMinV=e.min_views30}}).catch(function(){});
+  mfb.onclick=function(){var f=Math.round(Number(mfI.value)),v=Math.round(Number(mvI.value));if(!(f>=0)||!(v>=0))return msg(el2,"Valores inválidos.",false);rpc("bengu_admin_set_eligibility",{p_followers:f,p_views:v}).then(function(){window.__bgMinF=f;window.__bgMinV=v;msg(el2,"Metas guardadas.",true)}).catch(function(e){msg(el2,e.message+" (SQL 4.52?)",false)})};
+  el2.append(mfI,mvI,mfb);box.append(el2);
+  var el3=el("div",CARD),fl=el("div"),qI=el("input",FLD),qr=el("div");el3.append(el("b","","✅ Ativar levantamento (mesmo sem atingir a meta)"),el("div","font-size:12px;opacity:.8;margin:4px 0","Procure o criador pelo nome e ative ou desative o levantamento dele."),qI,qr,el("div","font-weight:700;margin-top:8px;font-size:13px","Ativados manualmente"),fl);qI.placeholder="Nome do criador…";box.append(el3);
+  function setF(uid,nm,on,after){rpc("bengu_admin_force_payout",{p_user:uid,p_approved:on,p_name:nm||null}).then(function(){return rpc("bengu_admin_set_payout",{p_user:uid,p_approved:on}).catch(function(){})}).then(function(){msg(el3,(on?"Levantamento ativado para ":"Levantamento desativado para ")+(nm||"o criador")+".",true);after&&after();loadF()}).catch(function(e){msg(el3,e.message+" (SQL 4.52?)",false)})}
+  function loadF(){rpc("bengu_admin_force_list").then(function(L){fl.replaceChildren();if(!L||!L.length){fl.append(el("div","font-size:12px;opacity:.7","Nenhum.")); return}L.forEach(function(x){var r=el("div","display:flex;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid #2a2f66"),n=el("div","flex:1;font-size:13px",(x.name||"Criador")+(x.approved?" · 🟢 ativo":" · ⚪ desativado")),b=el("button",(x.approved?G:Y)+"padding:8px 10px;font-size:13px",x.approved?"Desativar":"Ativar");b.onclick=function(){setF(x.user_id,x.name,!x.approved)};r.append(n,b);fl.append(r)})}).catch(function(){})}
+  loadF();var tq=null;qI.oninput=function(){clearTimeout(tq);var q=qI.value.trim();if(q.length<2){qr.replaceChildren();return}tq=setTimeout(function(){rest("profiles?select=id,name&name=ilike."+encodeURIComponent("*"+q+"*")+"&limit=8").then(function(R){qr.replaceChildren();(R||[]).forEach(function(u){var r=el("div","display:flex;gap:6px;align-items:center;padding:6px 0"),n=el("div","flex:1;font-size:13px",u.name||"Utilizador"),b=el("button",Y+"padding:8px 10px;font-size:13px","Ativar levantamento");b.onclick=function(){setF(u.id,u.name,true,function(){qI.value="";qr.replaceChildren()})};r.append(n,b);qr.append(r)});if(!(R||[]).length)qr.append(el("div","font-size:12px;opacity:.7","Ninguém encontrado."))}).catch(function(e){msg(el3,e.message,false)})},300)};
   var st=el("div",CARD);st.append(el("b","","Definições"));
   [["rpm_usd","US$ por 1000 visualizações",c.rpm],["commission_pct","Comissão do Bengu (%)",c.bengu_pct],["min_withdraw_usd","Levantamento mínimo (US$)",c.min_withdraw],["usd_mzn_rate","Meticais por 1 US$ (M-Pesa)",c.fx||64]].forEach(function(q){var r=el("div","display:flex;gap:6px;align-items:center;margin-top:6px"),i=el("input",FLD+"margin:0;flex:1"),b=el("button",G,"Guardar");i.type="number";i.step="0.01";i.value=q[2];
    r.append(el("span","font-size:12px;flex:1.4",q[1]),i,b);b.onclick=function(){rpc("bengu_admin_set_setting",{p_key:q[0],p_value:Number(i.value)}).then(function(){msg(st,"Guardado.",true)}).catch(function(e){msg(st,e.message,false)})};st.append(r)});box.append(st);
@@ -10245,8 +10254,8 @@ function nx({ me: e, posts: t, followers: r, onBack: n }) {
             style: { color: k.mute },
             children: x("eligibility"),
           }),
-          u.jsx(m, { label: x("followersGoal"), val: r, goal: 5e3 }),
-          u.jsx(m, { label: x("viewsGoal"), val: mv, goal: 3e4 }),
+          u.jsx(m, { label: x("followersGoal").replace("10 000", (window.__bgMinF || 1e4).toLocaleString("pt-PT")), val: r, goal: window.__bgMinF || 1e4 }),
+          u.jsx(m, { label: x("viewsGoal").replace("50 000", (window.__bgMinV || 5e4).toLocaleString("pt-PT")), val: mv, goal: window.__bgMinV || 5e4 }),
           u.jsx("p", {
             className: "text-sm font-semibold",
             style: { color: b ? k.ok : k.mute },
@@ -16000,5 +16009,10 @@ if(orig)window.bengu_pay_switches=function(uid,name){
   return r};
 })();
 </script>
-</body>
+<script>/* BENGU 4.52: metas de elegibilidade vindas do servidor */
+(function(){var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ";
+function t(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
+function load(){fetch(U+"/rest/v1/rpc/bengu_get_eligibility",{method:"POST",headers:{apikey:K,Authorization:"Bearer "+(t()||K),"Content-Type":"application/json"},body:"{}"}).then(function(r){return r.ok?r.json():null}).then(function(e){if(e&&e.min_followers>=0){window.__bgMinF=e.min_followers;window.__bgMinV=e.min_views30}}).catch(function(){})}
+load();setInterval(load,60000)})();
+</script></body>
 </html>

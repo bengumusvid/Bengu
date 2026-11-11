@@ -1,97 +1,54 @@
-// Supabase Edge Function: bengu-aviso
-// Entrega os avisos do administrador (tabela bengu_warnings) no Bate-Papo e por email,
-// em vez de os mostrar num pop-up no meio do ecrã.
-//
-// Segredos necessários (supabase secrets set ...):
-//   BENGU_ADMIN_SENDER_ID  -> id (profiles.id) da conta que "envia" o aviso no Bate-Papo
-//   RESEND_API_KEY         -> chave da Resend (https://resend.com) para enviar o email
-//   RESEND_FROM            -> ex.: "Bengu <avisos@getbengu.com>" (domínio verificado na Resend)
-// SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_ROLE_KEY já existem por defeito.
+// Edge Function "bengu-ai": a chave da Claude fica só aqui (segredo ANTHROPIC_API_KEY), nunca no index.html.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-const json = (o: unknown, status = 200) =>
-  new Response(JSON.stringify(o), { status, headers: { ...cors, "Content-Type": "application/json" } });
-
-const esc = (t: string) =>
-  t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const json = (b: unknown, s = 200) =>
+  new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  try {
+    const auth = req.headers.get("Authorization") ?? "";
+    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: auth } },
+    });
+    const { data: u } = await sb.auth.getUser();
+    if (!u?.user) return json({ error: "Inicie sessão" }, 401);
 
-  const auth = req.headers.get("Authorization") ?? "";
-  const url = Deno.env.get("SUPABASE_URL")!;
-  // cliente com o token do utilizador: o RLS só devolve os avisos dele
-  const asUser = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, {
-    global: { headers: { Authorization: auth } },
-  });
-  const { data: ures } = await asUser.auth.getUser();
-  const user = ures?.user;
-  if (!user) return json({ error: "Sessão inválida." }, 401);
+    const body = await req.json().catch(() => ({}));
+    const msgs = Array.isArray(body.messages) ? body.messages.slice(-12) : [];
+    const clean = msgs
+      .filter((m: any) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+      .map((m: any) => ({ role: m.role, content: m.content.slice(0, 2000) }));
+    if (!clean.length || clean[clean.length - 1].role !== "user") return json({ error: "Mensagem vazia" }, 400);
 
-  const { data: warns, error } = await asUser
-    .from("bengu_warnings")
-    .select("id,message,created_at")
-    .eq("seen", false)
-    .order("created_at");
-  if (error) return json({ error: error.message }, 500);
-  if (!warns || !warns.length) return json({ sent: 0 });
+    // valida acesso (gratuito/pago/administrador) e limite diário
+    const { data: c, error: ce } = await sb.rpc("bengu_ai_consume");
+    if (ce) return json({ error: ce.message }, 403);
 
-  const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-
-  // marca como entregues primeiro (evita duplicados se a função for chamada duas vezes)
-  const ids = warns.map((w) => w.id);
-  const { data: claimed } = await admin
-    .from("bengu_warnings")
-    .update({ seen: true })
-    .in("id", ids)
-    .eq("seen", false)
-    .select("id,message,created_at");
-  if (!claimed || !claimed.length) return json({ sent: 0 });
-
-  // junta mensagens iguais (evita o mesmo aviso repetido)
-  const msgs = [...new Set(claimed.map((w) => String(w.message || "").trim()).filter(Boolean))];
-  if (!msgs.length) return json({ sent: 0 });
-
-  // 1) Bate-Papo
-  const sender = Deno.env.get("BENGU_ADMIN_SENDER_ID");
-  let chat = false;
-  if (sender && sender !== user.id) {
-    const { error: e1 } = await admin.from("messages").insert(
-      msgs.map((m) => ({ sender_id: sender, receiver_id: user.id, body: "⚠️ Aviso do administrador\n" + m })),
-    );
-    chat = !e1;
-  }
-
-  // 2) Email
-  let mail = false;
-  const key = Deno.env.get("RESEND_API_KEY");
-  if (key && user.email) {
-    const html =
-      `<div style="font-family:system-ui,sans-serif;max-width:480px;margin:auto;color:#12183A">` +
-      `<h2>⚠️ Aviso do administrador</h2>` +
-      msgs.map((m) => `<p style="line-height:1.5">${esc(m)}</p>`).join("") +
-      `<p style="color:#667;font-size:13px">Bengu · https://getbengu.com</p></div>`;
-    const r = await fetch("https://api.resend.com/emails", {
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": Deno.env.get("ANTHROPIC_API_KEY")!,
+        "anthropic-version": "2023-06-01",
+      },
       body: JSON.stringify({
-        from: Deno.env.get("RESEND_FROM") ?? "Bengu <onboarding@resend.dev>",
-        to: [user.email],
-        subject: "Aviso do administrador · Bengu",
-        html,
+        model: c?.model ?? "claude-haiku-5-5",
+        max_tokens: 700,
+        system:
+          "És o assistente do Bengu, plataforma de música, humor, criadores de conteúdos e torneios. Responde em português, de forma curta e útil. Ajuda a escrever legendas, notícias, descrições e a corrigir texto.",
+        messages: clean,
       }),
     });
-    mail = r.ok;
+    const d = await r.json();
+    if (!r.ok) return json({ error: "A IA está indisponível. Tente mais tarde." }, 502);
+    const text = (d.content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n");
+    return json({ text, remaining: c?.remaining ?? null });
+  } catch (_e) {
+    return json({ error: "Erro inesperado" }, 500);
   }
-
-  // se nenhum canal funcionou, volta a marcar como não entregue para tentar mais tarde
-  if (!chat && !mail) {
-    await admin.from("bengu_warnings").update({ seen: false }).in("id", claimed.map((w) => w.id));
-    return json({ sent: 0, error: "Nenhum canal disponível (verifique os segredos)." }, 500);
-  }
-  return json({ sent: msgs.length, chat, mail });
 });

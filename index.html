@@ -3821,7 +3821,7 @@ function run(){
 (function(){
 var root=document.documentElement,last=window.pageYOffset||0,dir="",touchAt=0,touchDir="",ty=null,tx=null,tgt=null;
 var st=document.createElement("style");
-st.textContent="header.sticky.top-0,nav.fixed.bottom-0{transition:transform .12s ease-out}"+
+st.textContent="header.sticky.top-0,nav.fixed.bottom-0{transition:transform .1s ease-out}"+
  "html[data-bgbars=\"up\"] header.sticky.top-0{transform:translateY(-100%)}"+
  "html[data-bgbars=\"down\"] nav.fixed.bottom-0{transform:translateY(100%)}";
 document.head.appendChild(st);
@@ -3846,7 +3846,8 @@ window.addEventListener("scroll",function(){
  if(d<=-1){if(Date.now()-touchAt<250&&touchDir==="up")return;set("down");return}
  if(d<3)return;
  /* esconder só quando o utilizador está mesmo a deslizar para cima (saltos de layout não escondem) */
- if(Date.now()-touchAt<1500&&touchDir==="down")return;
+ /* BENGU 4.53: só esconde se o dedo (ou a roda) acabou de deslizar para cima; carregamento de imagens por cima não volta a esconder a faixa */
+ if(!(touchDir==="up"&&Date.now()-touchAt<400))return;
  set("up")},{passive:true});
 })();
 /* BENGU: pré-visualização das fotos antes de publicar (e ao tocar numa miniatura) */

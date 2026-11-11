@@ -3966,6 +3966,7 @@ var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat
 var RE=/^📺 (.+?) · Ep\. (\d+)(?: — ([^\n]*))?(?:\n([\s\S]*))?$/;
 function L(en,pt){return window.BG_L?window.BG_L(en,pt):pt}
 function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
+function uid(){try{return JSON.parse(atob(tok().split(".")[1].replace(/-/g,"+").replace(/_/g,"/"))).sub}catch(e){return null}}
 function get(p){return fetch(U+"/rest/v1/"+p,{headers:{apikey:K,Authorization:"Bearer "+(tok()||K)}}).then(function(r){if(!r.ok)throw new Error("x");return r.json()})}
 function mk(t,css,txt){var e=document.createElement(t);if(css)e.style.cssText=css;if(txt!=null)e.textContent=txt;if(t==="button")e.type="button";return e}
 var ov=null;
@@ -3989,24 +3990,42 @@ function open(name,focusEp){
   r[0].forEach(function(x){x.who=x.user_id;eps.push(x)});r[1].forEach(function(x){x.who=x.author_id;eps.push(x)});
   eps=eps.map(function(x){var m=RE.exec(x.body||"");if(!m||m[1].toLowerCase()!==name.toLowerCase())return null;x.ep=+m[2];x.et=m[3]||"";x.cap=(m[4]||"").trim();return x}).filter(Boolean);
   eps.sort(function(a,b){return a.ep-b.ep||new Date(a.created_at)-new Date(b.created_at)});
-  body.replaceChildren();
-  if(!eps.length){body.append(mk("p","opacity:.7",L("No episodes found.","Nenhum episódio encontrado.")));return}
-  body.append(mk("p","opacity:.75;margin:0 0 10px",eps.length+" "+(eps.length===1?L("episode","episódio"):L("episodes","episódios"))));
-  var ids=eps.map(function(x){return x.who}).filter(function(v,i,a){return v&&a.indexOf(v)===i}),names={};
-  var vids=[],target=null;
-  eps.forEach(function(x){
-   var c=mk("div","background:#232754;border-radius:14px;padding:12px;margin-bottom:12px"),h=mk("div","display:flex;align-items:baseline;gap:8px;margin-bottom:6px"),
-    who=mk("div","font-size:12px;opacity:.65;margin-bottom:8px",new Date(x.created_at).toLocaleDateString());x.whoEl=who;
-   h.append(mk("b","font-size:16px","Ep. "+x.ep+(x.et?" — "+x.et:"")));c.append(h,who);
-   (Array.isArray(x.media)?x.media:[]).forEach(function(m){if(m&&m.kind==="video"&&m.url){var v=mk("video","width:100%;max-height:60vh;border-radius:10px;background:#000;margin-bottom:8px");v.src=m.url;v.controls=true;v.playsInline=true;v.preload="none";v.onplay=function(){vids.forEach(function(o){if(o!==v)o.pause()})};vids.push(v);c.append(v)}});
-   if(x.cap)c.append(mk("div","white-space:pre-wrap;line-height:1.4",x.cap));
-   body.append(c);if(focusEp&&x.ep===focusEp&&!target)target=c});
-  if(target)setTimeout(function(){target.scrollIntoView({block:"start"})},50);
-  if(ids.length)get("profiles?select=id,name&id=in.("+ids.join(",")+")").then(function(ps){ps.forEach(function(p){names[p.id]=p.name});eps.forEach(function(x){if(names[x.who])x.whoEl.textContent=names[x.who]+" · "+x.whoEl.textContent})}).catch(function(){});
+  if(!eps.length){body.replaceChildren(mk("p","opacity:.7",L("No episodes found.","Nenhum episódio encontrado.")));return}
+  var ids=eps.map(function(x){return x.who}).filter(function(v,i,a){return v&&a.indexOf(v)===i});
+  return(ids.length?get("profiles?select=id,name&id=in.("+ids.join(",")+")").catch(function(){return[]}):Promise.resolve([])).then(function(ps){
+   var names={};ps.forEach(function(p){names[p.id]=p.name});
+   var me=uid(),cur=ids.indexOf(me)>=0?me:ids[0];
+   if(ids.indexOf(me)<0&&focusEp){var f=eps.filter(function(x){return x.ep===focusEp})[0];if(f)cur=f.who}
+   function draw(){
+    body.replaceChildren();var list=eps.filter(function(x){return x.who===cur}),vids=[],target=null;
+    if(ids.length>1){var chips=mk("div","display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px");
+     ids.forEach(function(id){var on=id===cur,b=mk("button","border:0;border-radius:16px;padding:6px 12px;font-size:13px;font-weight:700;"+(on?"background:#F5A623;color:#14163a":"background:#2c3068;color:#fff"),(names[id]||L("User","Utilizador"))+(id===me?" ("+L("you","você")+")":""));b.onclick=function(){cur=id;draw()};chips.append(b)});
+     body.append(mk("p","opacity:.75;margin:0 0 6px",L("This series name is used by more than one person. Choose the author:","Este nome de série é usado por mais de uma pessoa. Escolha o autor:")),chips)}
+    body.append(mk("p","opacity:.75;margin:0 0 10px",list.length+" "+(list.length===1?L("episode","episódio"):L("episodes","episódios"))));
+    list.forEach(function(x){
+     var c=mk("div","background:#232754;border-radius:14px;padding:12px;margin-bottom:12px"),h=mk("div","margin-bottom:4px");
+     h.append(mk("b","font-size:16px","Ep. "+x.ep+(x.et?" — "+x.et:"")));
+     c.append(h,mk("div","font-size:12px;opacity:.65;margin-bottom:8px",(names[x.who]?names[x.who]+" · ":"")+new Date(x.created_at).toLocaleDateString()));
+     (Array.isArray(x.media)?x.media:[]).forEach(function(m){if(m&&m.kind==="video"&&m.url){var v=mk("video","width:100%;max-height:60vh;border-radius:10px;background:#000;margin-bottom:8px");v.src=m.url;v.controls=true;v.playsInline=true;v.preload="none";v.onplay=function(){vids.forEach(function(o){if(o!==v)o.pause()})};vids.push(v);c.append(v)}});
+     if(x.cap)c.append(mk("div","white-space:pre-wrap;line-height:1.4",x.cap));
+     body.append(c);if(focusEp&&x.ep===focusEp&&!target)target=c});
+    if(target)setTimeout(function(){target.scrollIntoView({block:"start"})},50);
+   }
+   draw();
+  });
  }).catch(function(){body.replaceChildren(mk("p","opacity:.7",L("Could not load the series.","Não foi possível carregar a série.")))});
 }
 window.bgSeries=window.bgSeries||{};window.bgSeries.open=open;
 function caretNode(x,y){try{if(document.caretRangeFromPoint){var r=document.caretRangeFromPoint(x,y);return r&&{n:r.startContainer,o:r.startOffset}}if(document.caretPositionFromPoint){var p=document.caretPositionFromPoint(x,y);return p&&{n:p.offsetNode,o:p.offset}}}catch(e){}return null}
+
+/* destaque da linha 📺 */
+try{if(window.CSS&&CSS.highlights&&window.Highlight){
+ var st=document.createElement("style");st.textContent="::highlight(bg-ser){color:#F5A623;text-decoration:underline;background-color:rgba(245,166,35,.15)}";document.head.append(st);
+ var tm=0;function scan(){tm=0;var h=new Highlight(),w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){var v=n.nodeValue;return v&&v.indexOf("📺 ")===0&&(!ov||!ov.contains(n))?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT}}),n;
+  while((n=w.nextNode())){var v=n.nodeValue;if(!RE.test(v))continue;var nl=v.indexOf("\n"),r=document.createRange();r.setStart(n,0);r.setEnd(n,nl>=0?nl:v.length);h.add(r)}
+  CSS.highlights.set("bg-ser",h)}
+ function later(){if(!tm)tm=setTimeout(scan,400)}
+ new MutationObserver(later).observe(document.body,{childList:true,subtree:true,characterData:true});later()}}catch(e){}
 document.addEventListener("click",function(e){
  if(ov&&ov.contains(e.target))return;
  var c=caretNode(e.clientX,e.clientY);if(!c||!c.n||c.n.nodeType!==3)return;

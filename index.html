@@ -2010,7 +2010,7 @@ function composer(table,idField,id,ph,onDone){var c=card(),ta=area(ph,"",3),chip
 /* mostrar o conteúdo de uma publicação */
 function mediaOf(x){var m=Array.isArray(x.media)?x.media.slice():[];if(x.photo_url)m.unshift({kind:"image",url:x.photo_url});return m}
 function postCard(x,name,photo,canDel,table,again,reel){var c=card(),h=el("div","display:flex;align-items:center;gap:10px;margin-bottom:8px");h.append(av(photo,name,34));
- var t2=el("div","flex:1;min-width:0");t2.append(el("b","",name||"Utilizador"),el("div","font-size:12px;color:"+C.mute,(reel?"🎞 Reel · ":"")+when(x.created_at)));h.append(t2);
+ var t2=el("div","flex:1;min-width:0");t2.append(el("b","",name||"Utilizador"));var sd=el("div","font-size:12px;color:"+C.mute,(reel?"🎞 Reel · ":"")+when(x.created_at));if(table==="bengu_page_posts"&&window.bgBadge)window.bgBadge.nodes("page",x.id,x.created_at,mediaOf(x).some(function(m){return m&&m.kind==="video"})).forEach(function(n){sd.append(n)});t2.append(sd);h.append(t2);
  if(canDel){var d=el("button","border:0;background:none;color:#ff8a8a;font-size:18px","🗑");d.onclick=function(){if(!confirm("Apagar esta publicação?"))return;api(table+"?id=eq."+x.id,"DELETE").then(again).catch(fail)};h.append(d)}
  if(canDel&&x.body!==undefined){var ed=el("button","border:0;background:none;color:#9ecbff;font-size:18px","✏️");ed.setAttribute("aria-label",BG_L("Edit","Editar"));ed.onclick=function(){var nv=prompt(BG_L("Edit post:","Editar publicação:"),x.body||"");if(nv===null)return;nv=nv.trim();if(!nv&&!mediaOf(x).length)return toast(BG_L("The post cannot be empty.","A publicação não pode ficar vazia."));api(table+"?id=eq."+x.id,"PATCH",{body:nv||null}).then(function(){toast(BG_L("Post updated.","Publicação atualizada."));again&&again()}).catch(fail)};h.insertBefore(ed,h.lastChild===t2?null:h.lastChild)}
  c.append(h);if(x.suspended)c.append(el("div","background:#6b2330;border-radius:8px;padding:6px 10px;font-size:12px;margin-bottom:8px","⏸ Suspenso pelo administrador"+(x.suspended_reason?": "+x.suspended_reason:"")));
@@ -2280,7 +2280,7 @@ function feedCard(r,again){var K=KK(),kind=r.kind,me=uid(),st={likes:0,dislikes:
  else av2=el("div","width:40px;height:40px;border-radius:50%;background:#12183A;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0;cursor:pointer",initials(r.parent_name));
  av2.onclick=go;var nm=el("div","min-width:0;flex:1;cursor:pointer;text-align:left"),sub=el("div","font-size:12px;color:"+K.mute);nm.onclick=go;
  nm.append(el("div","font-weight:600;font-size:14px;color:"+K.ink,r.parent_name||"Página"),sub);
- function sb(){sub.textContent=(kind==="group"?"Grupo · ":"Página · ")+(r.is_reel?"🎞 Reel · ":"")+when(r.created_at)+((!window.bgCV||window.bgCV(kind,r))?" · 👀 "+num(r.views):"")}sb();hd.append(av2,nm);
+ function sb(){sub.replaceChildren(document.createTextNode((kind==="group"?"Grupo · ":"Página · ")+(r.is_reel?"🎞 Reel · ":"")+when(r.created_at)+((!window.bgCV||window.bgCV(kind,r))?" · 👀 "+num(r.views):"")));if(kind!=="group"&&window.bgBadge)window.bgBadge.nodes("page",r.id,r.created_at,mediaOf(r).some(function(m){return m&&m.kind==="video"})).forEach(function(n){sub.append(n)})}sb();var hbd=function(){if(!sub.isConnected){window.removeEventListener("bg-top-vid",hbd);return}sb()};window.addEventListener("bg-top-vid",hbd);hd.append(av2,nm);
  var HB="padding:8px;border:0;background:none;font-size:16px;color:"+K.mute;
  if(me&&r.author_id!==me){var fl=el("button",HB,"🚩");fl.setAttribute("aria-label","Denunciar");fl.onclick=function(){var t=prompt("Porque denuncia esta publicação?","Conteúdo impróprio");if(t===null)return;api("bengu_pg_reports","POST",{post_kind:kind,post_id:r.id,reporter_id:me,reason:(t||"Conteúdo impróprio").slice(0,300)}).then(function(){toast("Report sent to the administrator.")}).catch(function(e){toast(/Já existe/.test(e.message)?"Já denunciou esta publicação.":e.message)})};hd.append(fl)}
  if(isAdm()){var mb=el("button",HB,"🛡");mb.setAttribute("aria-label","Moderar");mb.onclick=function(){modSheet({kind:kind+"_post",id:r.id,owner:r.author_id,title:r.parent_name,done:again})};hd.append(mb)}
@@ -4035,6 +4035,29 @@ document.addEventListener("click",function(e){
  var m=RE.exec(t);if(!m)return;
  e.preventDefault();e.stopPropagation();open(m[1],+m[2]);
 },true);
+})();
+</script>
+<script>/* BENGU: destaque "Novo" (vermelho) nos vídeos recentes e ★ amarela nos vídeos mais assistidos */
+(function(){
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ";
+var NEW_H=48,TOP_N=10,TOP_MIN=10,TTL=300000,top={posts:{},page:{}},last=0,busy=false;
+function L(en,pt){return window.BG_L?window.BG_L(en,pt):pt}
+function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
+function get(p){return fetch(U+"/rest/v1/"+p,{headers:{apikey:K,Authorization:"Bearer "+(tok()||K)}}).then(function(r){if(!r.ok)throw 0;return r.json()})}
+var CS=encodeURIComponent('[{"kind":"video"}]');
+function q(t){return get(t+"?select=id&media=cs."+CS+"&views=gte."+TOP_MIN+"&order=views.desc&limit="+TOP_N).then(function(r){var o={};r.forEach(function(x){o[x.id]=1});return o}).catch(function(){return null})}
+function load(force){if(busy||(!force&&Date.now()-last<TTL))return;busy=true;
+ Promise.all([q("posts"),q("bengu_page_posts")]).then(function(r){if(r[0])top.posts=r[0];if(r[1])top.page=r[1];last=Date.now();busy=false;window.dispatchEvent(new Event("bg-top-vid"))}).catch(function(){busy=false})}
+function isNew(d){var t=new Date(d).getTime();return t>0&&Date.now()-t<NEW_H*3600000&&Date.now()>=t-60000}
+function isTop(kind,id){return !!(top[kind==="page"?"page":"posts"][id])}
+var NS="display:inline-block;background:#E53935;color:#fff;font-weight:800;font-size:10px;line-height:1;padding:3px 7px;border-radius:8px;margin-left:6px;vertical-align:middle;letter-spacing:.3px",
+    SS="display:inline-block;color:#F5C518;font-size:15px;line-height:1;margin-left:5px;vertical-align:middle;text-shadow:0 0 1px rgba(0,0,0,.35)";
+function nodes(kind,id,date,hasVideo){var o=[];if(!hasVideo)return o;
+ if(isNew(date)){var n=document.createElement("span");n.style.cssText=NS;n.textContent=L("New","Novo");o.push(n)}
+ if(isTop(kind,id)){var s=document.createElement("span");s.style.cssText=SS;s.textContent="★";s.title=L("Most watched","Mais assistido");s.setAttribute("aria-label",s.title);o.push(s)}
+ return o}
+window.bgBadge={load:load,isNew:isNew,isTop:isTop,nodes:nodes,NS:NS,SS:SS};
+load(true);setInterval(function(){load(false)},TTL);
 })();
 </script>
 <script type="module" crossorigin>(function(){const t=document.createElement("link").relList;if(t&&t.supports&&t.supports("modulepreload"))return;for(const s of document.querySelectorAll('link[rel="modulepreload"]'))n(s);new MutationObserver(s=>{for(const i of s)if(i.type==="childList")for(const a of i.addedNodes)a.tagName==="LINK"&&a.rel==="modulepreload"&&n(a)}).observe(document,{childList:!0,subtree:!0});function r(s){const i={};return s.integrity&&(i.integrity=s.integrity),s.referrerPolicy&&(i.referrerPolicy=s.referrerPolicy),s.crossOrigin==="use-credentials"?i.credentials="include":s.crossOrigin==="anonymous"?i.credentials="omit":i.credentials="same-origin",i}function n(s){if(s.ep)return;s.ep=!0;const i=r(s);fetch(s.href,i)}})();var $i=typeof globalThis<"u"?globalThis:typeof window<"u"?window:typeof global<"u"?global:typeof self<"u"?self:{};function ty(e){return e&&e.__esModule&&Object.prototype.hasOwnProperty.call(e,"default")?e.default:e}var yf={exports:{}},fo={},vf={exports:{}},Ee={};/**
@@ -6800,6 +6823,7 @@ function es({
                   n ? t.handle : null,
                   n ? " · " : null,
                   sg(e.createdAt),
+                  u.jsx(BgVidBadges, { id: e.id, createdAt: e.createdAt, hasVideo: F_(e).some((Q) => Q && Q.kind === "video") }),
                   e.pinnedAt && u.jsx("span", { className: "ml-1", title: "Fixada", "aria-label": "Fixada", children: "📌" }),
                   vis_ === "private" && u.jsx(pg, { size: 12, "aria-label": x("private") }),
                   vis_ === "followers" && u.jsx(Vc, { size: 12, "aria-label": x("followersOnly") }),
@@ -13213,6 +13237,34 @@ const gf = [
   ["link", "tLink", Dc, ""],
   ["live", "tLive", yg, ""],
 ];
+function BgVidBadges({ id, createdAt, hasVideo }) {
+  const [, bump] = B.useState(0);
+  B.useEffect(() => {
+    const h = () => bump((v) => v + 1);
+    window.addEventListener("bg-top-vid", h);
+    window.bgBadge && window.bgBadge.load(false);
+    return () => window.removeEventListener("bg-top-vid", h);
+  }, []);
+  const bb = window.bgBadge;
+  if (!bb || !hasVideo) return null;
+  const pt = Tu.lang === "pt";
+  return u.jsxs(u.Fragment, {
+    children: [
+      bb.isNew(createdAt) &&
+        u.jsx("span", {
+          style: Object.fromEntries(bb.NS.split(";").map((p) => p.split(":")).map(([a, b2]) => [a.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), b2])),
+          children: pt ? "Novo" : "New",
+        }),
+      bb.isTop("posts", id) &&
+        u.jsx("span", {
+          title: pt ? "Mais assistido" : "Most watched",
+          "aria-label": pt ? "Mais assistido" : "Most watched",
+          style: Object.fromEntries(bb.SS.split(";").map((p) => p.split(":")).map(([a, b2]) => [a.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), b2])),
+          children: "★",
+        }),
+    ],
+  });
+}
 function BgSeriesHost({ api, color }) {
   const r = B.useRef(null);
   B.useEffect(() => {

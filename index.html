@@ -2649,10 +2649,10 @@ window.bengu_earnings_panel=function(){
   var wk=s.weeks.length?s.weeks[s.weeks.length-1].views:0,mo=s.months.length?s.months[s.months.length-1].views:0,yr=s.months.reduce(function(a,x){return a+x.views},0);
   box.replaceChildren();
   var g=el("div","display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px");
-  [["Esta semana",earn(wk)],["Este mês",earn(mo)],["12 meses",earn(yr)]].forEach(function(q){var d=el("div","background:#1b1f48;border-radius:10px;padding:10px;text-align:center");d.append(el("div","font-size:15px;font-weight:800",usd(q[1])),el("div","font-size:11px;opacity:.7",q[0]));g.append(d)});box.append(g);
-  if(window.__bgAdm===true)box.append(el("p","font-size:11px;opacity:.65;margin:6px 0","Estimativa: visualizações das publicações de cada período × "+usd(s.rpm)+" por 1000 × "+s.creator_pct+"% para si. O valor real depende dos anúncios."));
+  [["Esta semana",earn(wk)],["Este mês",earn(mo)],["12 meses",earn(yr)]].forEach(function(q){var d=el("div","background:#1b1f48;border-radius:10px;padding:10px;text-align:center");d.append(el("div","font-size:15px;font-weight:800",usd(q[1])),el("div","font-size:11px;opacity:.7",q[0]));g.append(d)});if(window.BG_F("earnings_estimate"))box.append(g);
+  if(window.__bgAdm===true&&window.BG_F("earnings_estimate"))box.append(el("p","font-size:11px;opacity:.65;margin:6px 0","Estimativa: visualizações das publicações de cada período × "+usd(s.rpm)+" por 1000 × "+s.creator_pct+"% para si. O valor real depende dos anúncios."));
   tabs(box,[["Dias","days","day"],["Semanas","weeks","week"],["Meses","months","month"]],function(it,area){var d=s[it[1]];
-   area.append(el("div","font-weight:700;margin:6px 0 2px","Ganhos estimados"),chart(d.map(function(x){return earn(x.views)}),d.map(function(x){return lbl(x.t,it[2])}),"bar","#f5b400",usd),
+   if(window.BG_F("earnings_estimate"))area.append(el("div","font-weight:700;margin:6px 0 2px","Ganhos estimados"),chart(d.map(function(x){return earn(x.views)}),d.map(function(x){return lbl(x.t,it[2])}),"bar","#f5b400",usd));area.append(
     el("div","font-weight:700;margin:10px 0 2px","Crescimento de visualizações (acumulado)"),chart(cum(d.map(function(x){return x.views})),d.map(function(x){return lbl(x.t,it[2])}),"line","#4cc9f0",num));
    if(it[1]==="months"&&s.followers_months&&s.followers_months.length)area.append(el("div","font-weight:700;margin:10px 0 2px","Novos seguidores por mês"),chart(s.followers_months.map(function(x){return x.n}),s.followers_months.map(function(x){return lbl(x.t,"month")}),"bar","#2fbf71",num))});
   var el1=el("div",CARD);el1.append(el("b","","Elegibilidade para levantar"),bar("Seguidores",s.followers,s.min_followers),bar("Visualizações em 30 dias",s.views30,s.min_views30),el("div","font-size:12px;margin-top:6px;opacity:.8",s.eligible?"Conta elegível.":"Ainda não elegível."));if(window.__bgAdm===true)box.append(el1);
@@ -2669,7 +2669,7 @@ window.bengu_earnings_panel=function(){
   setupAcct(sel,acc,acc2,acc3);amt.placeholder="Valor em US$";amt.type="number";amt.min=s.min_withdraw;amt.step="0.01";
   if(!okp){[sel,acc,acc2,acc3,amt,go].forEach(function(x){x.disabled=true;x.style.opacity=".45"})}
   go.onclick=function(){if(!okp)return;var a;try{a=acctValue(sel,acc,acc2,acc3)}catch(e){msg(w,e.message,false);return}go.disabled=true;rpc("bengu_request_withdrawal",{p_method:sel.value,p_account:a,p_amount:Number(amt.value)}).then(function(){msg(w,"Levantamento autorizado. O pagamento é processado a seguir.",true);setTimeout(function(){m.close();window.bengu_earnings_panel()},1200)}).catch(function(e){go.disabled=false;msg(w,e.message,false)})};
-  if(window.bgAdsOn&&window.bgAdsOn()){if(!okp)w.append(el("div","font-size:12px;color:#ff9b9b;margin:6px 0",ps.reached?BG_L("You reached the goal. Waiting for the administrator to enable withdrawals.","Atingiu a meta. Aguarde a ativação do levantamento pelo administrador."):BG_L("Withdrawals unlock when you reach the goal and the administrator enables them.","O levantamento desbloqueia quando atingir a meta e o administrador o ativar.")));w.append(sel,acc,acc2,acc3,amt,go,(window.bgIsAdm&&window.bgIsAdm()?el("div","font-size:11px;opacity:.65;margin-top:6px","O levantamento é autorizado automaticamente quando há saldo disponível. O envio do dinheiro é processado a seguir. As taxas de transferência são pagas por si e descontadas do valor levantado."):""))}else{w.replaceChildren(el("b","","Levantar"),el("div","font-size:14px;font-weight:700;margin:6px 0;color:#f5b400","Saldo indisponível: os anúncios ainda não foram aprovados."),el("div","font-size:12px;opacity:.85;line-height:1.5","Os rendimentos vêm dos anúncios do Bengu. Os anúncios estão ativos, mas ainda não foram aprovados para aparecer na app, por isso não há rendimento a levantar. Quando forem aprovados, só ficam disponíveis os saldos de quem cumprir os requisitos de seguidores e visualizações. Todos os pagamentos são feitos dentro da plataforma Bengu."))};box.append(w);
+  if(window.bgAdsOn&&window.bgAdsOn()){if(!okp)w.append(el("div","font-size:12px;color:#ff9b9b;margin:6px 0",ps.reached?BG_L("You reached the goal. Waiting for the administrator to enable withdrawals.","Atingiu a meta. Aguarde a ativação do levantamento pelo administrador."):BG_L("Withdrawals unlock when you reach the goal and the administrator enables them.","O levantamento desbloqueia quando atingir a meta e o administrador o ativar.")));w.append(sel,acc,acc2,acc3,amt,go,(window.bgIsAdm&&window.bgIsAdm()?el("div","font-size:11px;opacity:.65;margin-top:6px","O levantamento é autorizado automaticamente quando há saldo disponível. O envio do dinheiro é processado a seguir. As taxas de transferência são pagas por si e descontadas do valor levantado."):""))}else{w.replaceChildren(el("b","","Levantar"),el("div","font-size:14px;font-weight:700;margin:6px 0;color:#f5b400","Saldo indisponível: os anúncios ainda não foram aprovados."),el("div","font-size:12px;opacity:.85;line-height:1.5","Os rendimentos vêm dos anúncios do Bengu. Os anúncios estão ativos, mas ainda não foram aprovados para aparecer na app, por isso não há rendimento a levantar. Quando forem aprovados, só ficam disponíveis os saldos de quem cumprir os requisitos de seguidores e visualizações. Todos os pagamentos são feitos dentro da plataforma Bengu."))};(window.BG_F("withdrawals")?box.append(w):(function(){var wo=el("div",CARD);wo.append(el("b","","Levantamentos"),el("div","font-size:13px;opacity:.8;margin-top:6px","Os levantamentos estão temporariamente desativados pelo administrador."));box.append(wo)})());
   rest("bengu_withdrawals?select=id,method,amount_usd,status,note,created_at&user_id=eq."+me()+"&order=created_at.desc&limit=20").then(function(r){if(!r||!r.length)return;var h=el("div",CARD);h.append(el("b","","Os meus pedidos"));r.forEach(function(x){h.append(el("div","font-size:13px;padding:5px 0;border-bottom:1px solid #2a2f66",usd(x.amount_usd)+" · "+x.method+" · "+(STAT[x.status]||x.status)+" · "+new Date(x.created_at).toLocaleDateString("pt-PT")+(x.note?" · "+x.note:"")))});box.append(h)}).catch(function(){});
  }).catch(function(e){box.replaceChildren(el("p","","Não foi possível carregar os ganhos. "+e.message+" (confirme que o SQL 4.17 foi executado.)"))})};
 
@@ -2688,7 +2688,7 @@ var ib=el("button",G,BG_L("📥 Import from AdSense","📥 Importar do AdSense")
   bM.onclick=function(){setMode(0)};bA.onclick=function(){if(confirm(BG_L("Turn on automatic mode? Pending PayPal requests will be paid immediately without manual review.","Ativar modo automático? Os pedidos PayPal pendentes serão pagos de imediato, sem revisão manual.")))setMode(1)};md.append(bM,bA);
   var lastErr="";function payOne(x){if(x.method==="paypal")return fetch(U+"/functions/v1/paypal-payout",{method:"POST",headers:hd(),body:JSON.stringify({id:x.id})}).then(function(r){return r.json().catch(function(){return{}}).then(function(j){if(!r.ok||!j.ok)throw new Error(j.error||"PayPal error "+r.status);return j})});return rpc("bengu_admin_set_withdrawal",{p_id:x.id,p_status:"approved",p_note:""}).then(function(){return{ok:true}})}
   function payAll(){var L=w.filter(function(x){return x.status==="pending"&&(x.amount_usd||0)>0});if(!L.length)return Promise.resolve(0);var n=0;return L.reduce(function(p,x){return p.then(function(){return payOne(x).then(function(j){if(j&&j.ok)n++}).catch(function(e){lastErr=e.message})})},Promise.resolve()).then(function(){return n})}
-  function autoPay(){if(!pa||window.__bgAutoBusy)return;window.__bgAutoBusy=true;payAll().then(function(n){window.__bgAutoBusy=false;if(n){m.close();window.bengu_admin_earnings();pollAdmin()}}).catch(function(){window.__bgAutoBusy=false})}
+  function autoPay(){if(!pa||!window.BG_F("payouts")||window.__bgAutoBusy)return;window.__bgAutoBusy=true;payAll().then(function(n){window.__bgAutoBusy=false;if(n){m.close();window.bengu_admin_earnings();pollAdmin()}}).catch(function(){window.__bgAutoBusy=false})}
   var pb2=el("button",Y+"width:100%",BG_L("💸 Process all pending requests (PayPal paid, IBAN/NIB approved)","💸 Processar todos os pedidos pendentes (PayPal pago, IBAN/NIB aprovado)"));pb2.onclick=function(){var k=w.filter(function(x){return x.status==="pending"}).length;if(!k)return msg(pp,BG_L("No pending requests.","Sem pedidos pendentes."),false);if(!confirm(BG_L("Process ","Processar ")+k+BG_L(" request(s) now? PayPal requests will be paid for real."," pedido(s) agora? Os pedidos PayPal serão pagos a sério.")))return;pb2.disabled=true;payAll().then(function(n){msg(pp,n+BG_L(" of "," de ")+k+BG_L(" processed."," processados.")+(lastErr?" "+lastErr:""),n>0);setTimeout(function(){m.close();window.bengu_admin_earnings()},1200)})};
   pp.append(q1,ib,qsx,el("div","font-size:12px;opacity:.8",BG_L("Payout mode:","Modo de pagamento:")),md,pb2,el("div","font-size:11px;opacity:.65;margin-top:6px",BG_L("Users choose PayPal, IBAN or NIB and enter their account on their earnings page. Send the transfer from the Bengu account, then mark the request as Paid.","O utilizador escolhe PayPal, IBAN ou NIB e indica a conta na sua página de ganhos. Faça a transferência a partir da conta Bengu e marque o pedido como Pago.")));box.append(pp);autoPay();
   var g=el("div","display:grid;grid-template-columns:1fr 1fr;gap:8px");
@@ -10811,11 +10811,9 @@ function Ad_({ onBack: e, say: t }) {
       t(r.error ? "Erro: falta correr o SQL 4.41.6" : "Denúncia retirada");
       w();
     },
-    delUser = async (uid) => {
-      if (!window.confirm("Apagar este perfil e todas as suas publicações? Não pode ser desfeito.")) return;
-      const r = await me.rpc("admin_delete_user", { uid });
-      t(r.error ? "Erro: " + (r.error.message || "falta correr o SQL 4.9.1") : "Perfil apagado");
-      w();
+    delUser = async (uid, name, banned) => {
+      if (window.bengu_user_suspension) window.bengu_user_suspension(uid, name, banned, w);
+      else t("Painel de suspensão indisponível");
     },
     ban = async (i, b) => {
       if (
@@ -10915,6 +10913,7 @@ function Ad_({ onBack: e, say: t }) {
       }),
       u.jsx("div", { className: "px-4 pb-2", children: u.jsx("button", { onClick: () => window.bengu_admin_earnings && window.bengu_admin_earnings(), className: "w-full rounded-xl py-3 text-sm font-bold", style: { background: k.saffron, color: k.onAccent }, children: "💰 Comissão e levantamentos" }) }),
       u.jsx("div", { className: "px-4 pb-2", children: u.jsx("button", { onClick: () => window.bengu_admin_members && window.bengu_admin_members(), className: "w-full rounded-xl py-3 text-sm font-bold", style: { background: k.card, color: k.ink, border: "1px solid " + k.line }, children: "👥 Inscritos e crescimento" }) }),
+      u.jsx("div", { className: "px-4 pb-2", children: u.jsx("button", { onClick: () => window.bengu_pay_switches && window.bengu_pay_switches(), className: "w-full rounded-xl py-3 text-sm font-bold", style: { background: k.card, color: k.ink, border: "1px solid " + k.line }, children: "💳 Interruptores de pagamentos" }) }),
       u.jsx("h2", {
         id: "bg-adm-users",
         className: "px-4 pt-3 pb-2 text-sm font-bold",
@@ -10964,7 +10963,8 @@ function Ad_({ onBack: e, say: t }) {
                           children: r.banned ? "Desbloquear" : "Bloquear",
                         }),
                         u.jsx("button", { onClick: () => warn(r.id, null), className: btn, style: { background: k.paper, color: k.ink }, children: "Avisar" }),
-                        u.jsx("button", { onClick: () => delUser(r.id), className: btn, style: { background: k.paper, color: k.like }, children: "Apagar perfil" }),
+                        u.jsx("button", { onClick: () => delUser(r.id, r.name, r.banned), className: btn, style: { background: k.paper, color: k.like }, children: "⏸ Suspender / Apagar" }),
+                         u.jsx("button", { onClick: () => window.bengu_pay_switches && window.bengu_pay_switches(r.id, r.name), className: btn, style: { background: k.paper, color: k.ink }, children: "💳 Pagamentos" }),
                           u.jsx("button", { onClick: () => window.bengu_creator_panel && window.bengu_creator_panel(r.id, r.name), className: btn, style: { background: k.saffron, color: k.onAccent }, children: "📊 Painel do criador" }),
                       ],
                     }),
@@ -11092,7 +11092,7 @@ function Ad_({ onBack: e, say: t }) {
                       u.jsx("button", { onClick: () => warn(r.author_id, r.post_id), className: btn, style: { background: k.saffron, color: k.onAccent }, children: "Avisar autor" }),
                       u.jsx("button", { onClick: () => blockPost(r.post_id, !0), className: btn, style: { background: k.paper, color: k.like }, children: "Bloquear conteúdo" }),
                       u.jsx("button", { onClick: () => blockPost(r.post_id, !1), className: btn, style: { background: k.paper, color: k.ink }, children: "Desbloquear conteúdo" }),
-                      u.jsx("button", { onClick: () => delUser(r.author_id), className: btn, style: { background: k.like, color: "#fff" }, children: "Apagar perfil" }),
+                      u.jsx("button", { onClick: () => delUser(r.author_id, r.author_name, undefined), className: btn, style: { background: k.like, color: "#fff" }, children: "⏸ Suspender / Apagar perfil" }),
                     ],
                   }),
                 ],
@@ -15875,6 +15875,79 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
   };
 })();
 
+</script>
+<script>/* BENGU 4.50: suspensão com justificação e interruptores de pagamentos (administrador). Requer o SQL 4.50 no Supabase. */
+(function(){
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ";
+function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
+function rpc(n,a){var t=tok();return fetch(U+"/rest/v1/rpc/"+n,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+(t||K),"Content-Type":"application/json"},body:JSON.stringify(a||{})}).then(function(r){return r.text().then(function(x){var j=null;try{j=x?JSON.parse(x):null}catch(e){}if(!r.ok)throw new Error((j&&j.message)||("Erro "+r.status));return j})})}
+function el(t,css,txt){var e=document.createElement(t);if(css)e.style.cssText=css;if(txt!=null)e.textContent=txt;return e}
+var FLD="width:100%;box-sizing:border-box;padding:9px;border-radius:8px;border:1px solid #2a2f6a;background:#0f1233;color:#fff;margin:6px 0;font:inherit;";
+var BTN="border:0;border-radius:10px;padding:10px 12px;font-weight:700;font-size:13px;cursor:pointer;";
+function btn(txt,bg,fg,fn){var b=el("button",BTN+"background:"+bg+";color:"+fg,txt);b.type="button";b.onclick=fn;return b}
+function sheet(title){
+  var o=el("div","position:fixed;inset:0;z-index:100010;background:rgba(0,0,0,.78);display:flex;align-items:flex-end;justify-content:center");
+  var b=el("div","background:#12183a;color:#fff;width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px;box-sizing:border-box;font:14px system-ui,sans-serif");
+  var h=el("div","display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"),x=el("button","background:none;border:0;color:#fff;font-size:22px;cursor:pointer","✕");
+  function close(){o.remove()}x.onclick=close;o.onclick=function(e){if(e.target===o)close()};
+  h.append(el("b","font-size:16px",title),x);b.append(h);o.append(b);document.body.append(o);return{body:b,close:close}
+}
+function note(box,t,ok){var m=el("div","margin:8px 0;padding:8px 10px;border-radius:8px;font-size:13px;background:"+(ok?"#1f5a3a":"#6b2330"),t);box.append(m);setTimeout(function(){m.remove()},6000)}
+
+/* ----- interruptores: lidos por todos, aplicados no ecrã de ganhos ----- */
+window.BG_FLAGS=window.BG_FLAGS||{};
+window.BG_F=function(k){var f=window.BG_FLAGS||{};if(k!=="payments"&&f.payments===false)return false;return f[k]!==false};
+function loadFlags(){if(!tok())return Promise.resolve();return rpc("bengu_flags_get").then(function(f){if(f&&typeof f==="object")window.BG_FLAGS=f}).catch(function(){})}
+loadFlags();setInterval(loadFlags,120000);
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")loadFlags()});
+var oe=window.bengu_earnings_panel;
+if(oe)window.bengu_earnings_panel=function(){var a=arguments,self=this;
+  return loadFlags().then(function(){
+    if(!window.BG_F("payments")&&window.__bgAdm!==true){var m=sheet("💰 Ganhos");m.body.append(el("p","line-height:1.5;opacity:.9","Os pagamentos estão temporariamente desativados pelo administrador."));return}
+    return oe.apply(self,a)})};
+
+/* ----- painel de interruptores (geral ou por utilizador) ----- */
+var KEYS=[["payments","💳 Todos os pagamentos (interruptor geral)","Desliga ganhos, levantamentos e pagamentos de uma só vez."],["earnings_estimate","📊 Estimativa dos ganhos","Mostra ou esconde os ganhos estimados."],["withdrawals","🏧 Levantamentos","Permite ou bloqueia pedidos de levantamento."],["payouts","💸 Pagamentos aos utilizadores","Permite ou bloqueia o pagamento aos utilizadores."]];
+window.bengu_pay_switches=function(uid,name){
+  var m=sheet(uid?("💳 Pagamentos de "+(name||"utilizador")):"💳 Pagamentos de todos os utilizadores");
+  m.body.append(el("p","font-size:12px;opacity:.75;margin:0 0 6px",uid?"Só afeta este utilizador. Os interruptores gerais continuam a valer.":"Afeta todos os utilizadores. Não é preciso publicar um index novo."));
+  var list=el("div");m.body.append(list);
+  function draw(f){list.replaceChildren();KEYS.forEach(function(k){
+    var on=f[k[0]]!==false,r=el("div","display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid #2a2f6a"),t=el("div","flex:1");
+    t.append(el("div","font-weight:700",k[1]),el("div","font-size:12px;opacity:.7",k[2]));
+    var b=btn(on?"ATIVO":"DESATIVADO",on?"#2fbf71":"#6b2330","#fff",function(){
+      var nv=!on;if(!nv&&!confirm("Desativar: "+k[1]+"?"))return;b.disabled=true;
+      rpc("bengu_admin_set_flag",{p_key:k[0],p_value:nv,p_user:uid||null}).then(function(){f[k[0]]=nv;if(!uid){window.BG_FLAGS[k[0]]=nv}draw(f)}).catch(function(e){b.disabled=false;note(m.body,e.message,false)})});
+    b.style.minWidth="108px";r.append(t,b);list.append(r)})}
+  rpc("bengu_admin_get_flags",{p_user:uid||null}).then(function(f){draw(f||{})}).catch(function(e){list.append(el("p","color:#ff9b9b","Erro: "+e.message+" (confirme que o SQL 4.50 foi executado no Supabase)"))})
+};
+
+/* ----- suspensão: nunca apaga de imediato ----- */
+var REASONS=["Violações constantes das regras da rede social","Spam, contas falsas ou fraude","Conteúdo ilegal ou que prejudica menores","Assédio, ódio ou ameaças","A pedido do próprio utilizador","Outro motivo"];
+window.bengu_user_suspension=function(uid,name,banned,done){
+  var m=sheet("⏸ Suspensão: "+(name||"utilizador")),b=m.body;
+  b.append(el("p","font-size:13px;opacity:.85;line-height:1.5;margin:0 0 10px","O perfil não é apagado de imediato. Suspenda primeiro: o utilizador pode reclamar e o perfil pode ser reposto. Só apague por completo com motivo claro."));
+  if(banned===true||banned===false)b.append(el("div","font-weight:800;margin-bottom:8px;color:"+(banned?"#ffb020":"#2fbf71"),banned?"Estado: suspenso":"Estado: ativo"));
+  var why=el("textarea",FLD+"min-height:60px");why.placeholder="Motivo da suspensão ou da reposição (opcional)";b.append(why);
+  function go(flag){return function(){
+    if(flag&&!confirm("Suspender este perfil? Pode ser reposto depois."))return;
+    rpc("bengu_admin_suspend_user",{p_user:uid,p_flag:flag,p_reason:why.value.trim()||null,p_name:name||null}).then(function(){m.close();if(done)done()}).catch(function(e){note(b,e.message+" (SQL 4.50?)",false)})}}
+  var row=el("div","display:flex;gap:8px;flex-wrap:wrap;margin:8px 0");
+  row.append(btn("⏸ Suspender perfil","#ffb020","#14163a",go(true)),btn("▶ Ligar perfil / Remover suspensão","#2fbf71","#fff",go(false)));b.append(row);
+
+  var dz=el("div","margin-top:16px;padding:12px;border:1px solid #8b2c3b;border-radius:12px");
+  dz.append(el("b","color:#ff9b9b","🗑 Apagar por completo (não se pode desfazer)"),el("p","font-size:12px;opacity:.8;margin:6px 0","Indique a razão. Fica registada no histórico do administrador."));
+  var sel=el("select",FLD);REASONS.forEach(function(r){var o=el("option","",r);o.value=r;sel.append(o)});
+  var det=el("textarea",FLD+"min-height:70px");det.placeholder="Descreva a razão (mínimo 15 caracteres)…";
+  var ck=el("input");ck.type="checkbox";var cl=el("label","display:flex;gap:8px;align-items:center;font-size:13px;margin:8px 0");cl.append(ck,document.createTextNode("Confirmo que analisei este perfil e quero apagá-lo definitivamente."));
+  var tp=el("input",FLD);tp.placeholder="Escreva APAGAR para confirmar";tp.autocomplete="off";
+  var del=btn("🗑 Apagar definitivamente","#c0334a","#fff",function(){
+    del.disabled=true;rpc("bengu_admin_delete_user",{p_user:uid,p_reason:sel.value+" — "+det.value.trim(),p_name:name||null}).then(function(){m.close();if(done)done()}).catch(function(e){del.disabled=false;note(b,e.message,false)})});
+  function chk(){var ok=ck.checked&&tp.value.trim().toUpperCase()==="APAGAR"&&det.value.trim().length>=15;del.disabled=!ok;del.style.opacity=ok?"1":".45"}
+  chk();[tp,det].forEach(function(x){x.addEventListener("input",chk)});ck.addEventListener("change",chk);
+  dz.append(sel,det,cl,tp,del);b.append(dz)
+};
+})();
 </script>
 </body>
 </html>

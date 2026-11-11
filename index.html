@@ -15949,5 +15949,47 @@ window.bengu_user_suspension=function(uid,name,banned,done){
 };
 })();
 </script>
+<script>/* BENGU 4.51: preços e taxas geridos pelo administrador (aumentar, diminuir, grátis). Só aparece ao administrador. */
+(function(){
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ";
+function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
+function hd(){return{apikey:K,Authorization:"Bearer "+(tok()||K),"Content-Type":"application/json"}}
+function rpc(n,a){return fetch(U+"/rest/v1/rpc/"+n,{method:"POST",headers:hd(),body:JSON.stringify(a||{})}).then(function(r){return r.text().then(function(x){var j=null;try{j=x?JSON.parse(x):null}catch(e){}if(!r.ok)throw new Error((j&&j.message)||("Erro "+r.status));return j})})}
+function el(t,css,txt){var e=document.createElement(t);if(css)e.style.cssText=css;if(txt!=null)e.textContent=txt;return e}
+var B="border:0;border-radius:8px;padding:8px 11px;font-weight:800;font-size:13px;cursor:pointer;color:#fff;";
+function money(v){return Number(v).toFixed(2).replace(/\.00$/,"")}
+function open(){
+  var o=el("div","position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,.78);display:flex;align-items:flex-end;justify-content:center");
+  var b=el("div","background:#12183a;color:#fff;width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px;box-sizing:border-box;font:14px system-ui,sans-serif");
+  var x=el("button","float:right;background:none;border:0;color:#fff;font-size:22px;cursor:pointer","✕");x.onclick=function(){o.remove()};o.onclick=function(e){if(e.target===o)o.remove()};
+  b.append(x,el("b","font-size:16px","💲 Preços e taxas"),el("p","font-size:12px;opacity:.75;line-height:1.5","Valores em USD. Use − para diminuir, + para aumentar ou Grátis para pôr a 0. Só o administrador vê isto. Não é preciso publicar um index novo."));
+  var list=el("div");b.append(list);o.append(b);document.body.append(o);
+  function msg(t,ok){var m=el("div","margin:8px 0;padding:8px 10px;border-radius:8px;font-size:13px;background:"+(ok?"#1f5a3a":"#6b2330"),t);b.append(m);setTimeout(function(){m.remove()},4000)}
+  list.append(el("p","","A carregar…"));
+  fetch(U+"/rest/v1/creation_fee_prices?select=zone,label,amount_usd",{headers:hd()}).then(function(r){return r.json()}).then(function(rows){
+    if(!Array.isArray(rows))throw new Error("Sem acesso");
+    var ord=["mossurize","mocambique","africa","fora_africa"];rows.sort(function(a,c){return ord.indexOf(a.zone)-ord.indexOf(c.zone)});
+    list.replaceChildren();
+    rows.forEach(function(r){
+      var val=Number(r.amount_usd)||0,row=el("div","padding:10px 0;border-top:1px solid #2a2f6a"),lab=el("div","font-weight:700;margin-bottom:6px","Taxa de criação · "+r.label),
+      inp=el("input","width:80px;text-align:center;padding:8px;border-radius:8px;border:1px solid #2a2f6a;background:#0f1233;color:#fff;font:inherit");inp.type="number";inp.min="0";inp.step="0.5";inp.value=money(val);
+      var st=el("span","font-size:12px;font-weight:800;margin-left:6px");
+      function paint(){st.textContent=Number(inp.value)===0?"GRÁTIS":"";st.style.color="#2fbf71"}
+      function save(v){v=Math.max(0,Math.round(v*100)/100);inp.value=money(v);paint();rpc("admin_set_creation_fee",{p_zone:r.zone,p_amount:v}).then(function(){msg(r.label+": "+(v===0?"grátis":v+" USD")+" guardado.",true)}).catch(function(e){msg(e.message,false)})}
+      var dn=el("button",B+"background:#6b2330","−"),up=el("button",B+"background:#2fbf71","+"),fr=el("button",B+"background:#3b4ba8","Grátis"),ok=el("button",B+"background:#43A047","Guardar");
+      dn.onclick=function(){save((Number(inp.value)||0)-0.5)};up.onclick=function(){save((Number(inp.value)||0)+0.5)};fr.onclick=function(){save(0)};ok.onclick=function(){var v=Number(inp.value);if(inp.value===""||!(v>=0))return msg("Indique um valor válido (0 ou mais).",false);save(v)};
+      var ctl=el("div","display:flex;gap:6px;align-items:center;flex-wrap:wrap");ctl.append(dn,inp,up,fr,ok,st);paint();row.append(lab,ctl);list.append(row)})
+  }).catch(function(e){list.replaceChildren(el("p","color:#ff9b9b","Não foi possível carregar: "+e.message))})
+}
+window.bengu_price_controls=open;
+/* botão dentro do painel de interruptores de pagamento (só o administrador chega a este painel) */
+var orig=window.bengu_pay_switches;
+if(orig)window.bengu_pay_switches=function(uid,name){
+  var r=orig.apply(this,arguments);
+  if(!uid)setTimeout(function(){var sh=document.querySelectorAll("div[style*='z-index:100010']"),last=sh[sh.length-1];
+    if(last&&!last.querySelector("[data-bgp]")){var bt=el("button",B+"background:#3b4ba8;width:100%;margin-top:12px","💲 Preços e taxas (aumentar / diminuir / grátis)");bt.setAttribute("data-bgp","1");bt.onclick=open;last.firstChild.append(bt)}},50);
+  return r};
+})();
+</script>
 </body>
 </html>

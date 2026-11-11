@@ -3793,7 +3793,7 @@ setInterval(fix,1200);setTimeout(fix,400)})();
 <script>/* BENGU 4.29: corretor ortográfico com IA, só para o administrador. Requer a função "bengu-corrigir" (ver bengu-corretor-ortografico.ts) */
 (function(){
 var cur=null,btn=null,hideT=null,busy=false;
-function isAdm(){return window.__bgAdm===true||window.__bgFixOK===true}
+function isAdm(){return window.BG_IA_ON===true&&(window.__bgAdm===true||window.__bgFixOK===true)}
 function tk(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
 var fixAt=0;function chk(){if(window.__bgAdm===true||!tk()||Date.now()-fixAt<60000)return Promise.resolve();fixAt=Date.now();
  return fetch("https://cnpkgauzhoyzlhtcexiv.supabase.co/rest/v1/rpc/bengu_can_use",{method:"POST",headers:{apikey:"sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",Authorization:"Bearer "+tk(),"Content-Type":"application/json"},body:JSON.stringify({p_feature:"ai"})}).then(function(r){return r.ok?r.json():false}).then(function(v){window.__bgFixOK=v===true}).catch(function(){})}
@@ -3828,7 +3828,7 @@ function run(){
  var t=e.value||"";if(t.trim().length<2){toast("Escreva o texto primeiro.");return}
  if(!tk()){toast("Inicie sessão.");return}
  busy=true;btn.textContent="A corrigir…";
- fetch("https://cnpkgauzhoyzlhtcexiv.supabase.co/functions/v1/bengu-ai",{method:"POST",headers:{apikey:"sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",Authorization:"Bearer "+tk(),"Content-Type":"application/json"},body:JSON.stringify({mode:"fix",text:t})}).then(function(r){return r.json().catch(function(){return{}})}).then(function(d){
+ fetch("https://cnpkgauzhoyzlhtcexiv.supabase.co/functions/v1/swift-task",{method:"POST",headers:{apikey:"sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",Authorization:"Bearer "+tk(),"Content-Type":"application/json"},body:JSON.stringify({mode:"fix",text:t})}).then(function(r){return r.json().catch(function(){return{}})}).then(function(d){
   if(typeof d.text!=="string"){toast(d.error||"Não foi possível corrigir agora.");return}
   var n=d.text;
   if(n===t){toast("Sem erros encontrados.");return}
@@ -8423,10 +8423,10 @@ function J_() {
                       ["all", x("forYou")],
                       ["following", x("following")],
                       ["users", "Utilizadores"],
-                      ["ia", "✨ IA / Jogos"],
+                      ["ia", "🎮 Jogos"],
                     ].map(([I, V]) => I === "ia" ? u.jsx("button", {
                         key: "ia",
-                        onClick: () => window.bengu_ia_open && window.bengu_ia_open("ia"),
+                        onClick: () => window.bengu_ia_open && window.bengu_ia_open(window.BG_IA_ON ? "ia" : "jogos"),
                         className: "flex-1 py-3 text-sm font-semibold",
                         style: { color: k.mute, borderBottom: "3px solid transparent", whiteSpace: "nowrap" },
                         children: V,
@@ -16276,8 +16276,9 @@ if(orig)window.bengu_pay_switches=function(uid,name){
 function t(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
 function load(){fetch(U+"/rest/v1/rpc/bengu_get_eligibility",{method:"POST",headers:{apikey:K,Authorization:"Bearer "+(t()||K),"Content-Type":"application/json"},body:"{}"}).then(function(r){return r.ok?r.json():null}).then(function(e){if(e&&e.min_followers>=0){window.__bgMinF=e.min_followers;window.__bgMinV=e.min_views30}}).catch(function(){})}
 load();setInterval(load,60000)})();
-</script><script>/* BENGU 4.52: IA (Claude), Jogos e painel do administrador. Botão ✨ por cima da barra de baixo. */
+</script><script>/* BENGU 4.52: IA (Claude), Jogos e painel do administrador. */
 (function(){
+window.BG_IA_ON=false; /* IA em pausa: mudar para true para voltar a ligar a IA (conversa e correção) */
 var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ";
 function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
 function me(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).user.id}catch(e){return""}}
@@ -16294,13 +16295,13 @@ function open(start){
  close();ov=el("div","position:fixed;inset:0;z-index:100010;background:rgba(0,0,0,.75);display:flex;align-items:flex-end;justify-content:center");
  var c=el("div","background:#14163a;color:#fff;border-radius:16px 16px 0 0;width:100%;max-width:520px;height:88vh;display:flex;flex-direction:column;box-sizing:border-box;font-family:inherit"),
   top=el("div","display:flex;gap:6px;align-items:center;padding:12px 12px 6px"),body=el("div","flex:1;min-height:0;overflow:auto;padding:8px 14px 14px"),
-  tabs=[["ia","🤖 IA"],["jogos","🎮 Jogos"]];if(isAdm())tabs.push(["adm","⚙️ Admin"]);
+  tabs=(window.BG_IA_ON?[["ia","🤖 IA"]]:[]).concat([["jogos","🎮 Jogos"]]);if(isAdm())tabs.push(["adm","⚙️ Admin"]);
  var bs={};tabs.forEach(function(t){var b=el("button","border:0;border-radius:16px;padding:7px 12px;font-weight:700;font-size:13px;background:#2a2f66;color:#fff",t[1]);b.onclick=function(){show(t[0])};bs[t[0]]=b;top.append(b)});
  var x=el("button",BTN,"Fechar");x.style.marginLeft="auto";x.onclick=close;top.append(x);
  c.append(top,body);ov.append(c);ov.onclick=function(e){if(e.target===ov)close()};document.body.append(ov);
  function show(k){Object.keys(bs).forEach(function(z){bs[z].style.background=z===k?"#f5b400":"#2a2f66";bs[z].style.color=z===k?"#14163a":"#fff"});body.replaceChildren();
   if(k==="ia")viewAI(body);else if(k==="jogos")viewGames(body);else viewAdmin(body)}
- show(start||"ia")}
+ show(window.BG_IA_ON?(start||"ia"):(start==="adm"?"adm":"jogos"))}
 /* ---------- IA ---------- */
 function viewAI(b){
  b.append(el("p","font-size:12px;opacity:.7;margin:0 0 8px","O que escreveres aqui é enviado à IA (Claude) para responder. Não escrevas dados pessoais nem palavras-passe. A conversa não fica guardada."));
@@ -16309,7 +16310,7 @@ function viewAI(b){
  can("ai").then(function(ok){if(!ok){log.append(el("p","opacity:.85","A IA não está disponível para a sua conta neste momento (reservada a premium ou contas com selo)."));inp.disabled=go.disabled=true}});
  function bub(t,me){var d=el("div","padding:9px 11px;border-radius:12px;max-width:88%;white-space:pre-wrap;word-break:break-word;font-size:14px;"+(me?"align-self:flex-end;background:#f5b400;color:#14163a":"align-self:flex-start;background:#26306b"),t);log.append(d);b.scrollTop=b.scrollHeight;return d}
  function send(){var t=inp.value.trim();if(!t||go.disabled)return;inp.value="";msgs.push({role:"user",content:t});bub(t,true);var w=bub("…",false);go.disabled=true;
-  fetch(U+"/functions/v1/bengu-ai",{method:"POST",headers:hd(),body:JSON.stringify({messages:msgs})}).then(function(r){return r.json().catch(function(){return{}})}).then(function(d){go.disabled=false;
+  fetch(U+"/functions/v1/swift-task",{method:"POST",headers:hd(),body:JSON.stringify({messages:msgs})}).then(function(r){return r.json().catch(function(){return{}})}).then(function(d){go.disabled=false;
    if(d.text){w.textContent=d.text;msgs.push({role:"assistant",content:d.text});if(d.remaining!=null)w.append(el("div","font-size:11px;opacity:.55;margin-top:4px","Pedidos restantes hoje: "+d.remaining))}
    else{w.textContent=d.error||"Não foi possível obter resposta.";msgs.pop()}b.scrollTop=b.scrollHeight}).catch(function(){go.disabled=false;msgs.pop();w.textContent="Sem ligação. Tente de novo."})}
  go.onclick=send;inp.onkeydown=function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}}

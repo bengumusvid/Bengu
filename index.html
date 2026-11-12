@@ -9515,7 +9515,7 @@ function X_({
             ],
           }, "bgprof"),
           e && u.jsx(A, { user: e, plus: !0, label: x("newStatus"), onClick: () => c(!0) }),
-          ...(e ? (v[e.id] && v[e.id].length ? v[e.id].map((it, ix_) => u.jsx(A, { user: e, plus: !1, st: it, label: x("myStatus"), onClick: () => o({ userId: e.id, i: ix_ }) }, "me" + it.id)) : [u.jsx(A, { user: e, plus: !1, label: x("myStatus"), onClick: () => c(!0) }, "me")]) : []),
+          ...(e ? (v[e.id] && v[e.id].length ? v[e.id].map((it, ix_) => u.jsx(A, { user: e, plus: !1, st: it, label: x("myStatus"), onClick: () => o({ userId: e.id, i: ix_ }) }, "me" + it.id)) : []) : []),
           ...g.flatMap((O) => v[O].map((it, ix_) => u.jsx(A, { user: t[O] || mt, st: it, label: (t[O] || mt).name.split(" ")[0], onClick: () => o({ userId: O, i: ix_ }) }, O + "-" + it.id))),
         ],
       }),

@@ -7883,9 +7883,12 @@ function J_() {
               media: bgWithLayout(Lr),
               allow_download: I === "live" || I === "link" ? !1 : le,
               visibility: I === "live" ? "public" : he,
+              ...(window.__bgSchedAt && I !== "live" ? { created_at: window.__bgSchedAt } : {}),
             });
             if (Oe) throw Oe;
-            (await fr(), _e(x(I === "live" ? "liveCreated" : "published")));
+            const bgSch = I !== "live" ? window.__bgSchedAt : null;
+            window.__bgSchedAt = null;
+            (await fr(), _e(bgSch ? "⏰ Publicação agendada para " + new Date(bgSch).toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : x(I === "live" ? "liveCreated" : "published")));
           } catch (Or) {
             _e(Ze(Or));
           } finally {
@@ -12980,6 +12983,25 @@ function bgMmss(t) {
   t = Math.max(0, Math.floor(t || 0));
   return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
 }
+function BgSchedPick() {
+  const h = B.createElement;
+  const k = { card: "transparent", line: "rgba(128,128,128,.4)", ink: "inherit", mute: "inherit", paper: "transparent" };
+  const [v, setV] = B.useState("");
+  B.useEffect(() => () => { window.__bgSchedAt = null; }, []);
+  if (!(window.bgIsPlus && window.bgIsPlus())) return null;
+  const off = new Date().getTimezoneOffset() * 6e4,
+    loc = (ms) => new Date(Date.now() + ms - off).toISOString().slice(0, 16);
+  const set = (val) => {
+    setV(val);
+    window.__bgSchedAt = val ? new Date(val).toISOString() : null;
+  };
+  return h("div", { style: { margin: "10px 0", padding: 12, borderRadius: 12, background: k.card, border: "1px solid " + k.line } },
+    h("div", { style: { fontWeight: 700, fontSize: 14, color: k.ink } }, "⏰ Agendar publicação (verificadas e Premium)"),
+    h("div", { style: { fontSize: 12, color: k.mute, margin: "2px 0 8px" } }, v ? "Será publicada na data escolhida." : "Deixe vazio para publicar já."),
+    h("div", { style: { display: "flex", gap: 8, alignItems: "center" } },
+      h("input", { type: "datetime-local", value: v, min: loc(5 * 6e4), max: loc(90 * 864e5), onChange: (ev) => set(ev.target.value), style: { flex: 1, minWidth: 0, padding: 10, borderRadius: 10, border: "1px solid " + k.line, background: k.paper, color: k.ink, fontSize: 15 } }),
+      v ? h("button", { type: "button", onClick: () => set(""), style: { border: "none", borderRadius: 10, padding: "10px 12px", background: k.line, color: k.ink, fontWeight: 700 } }, "Limpar") : null));
+}
 function BgMusicPick({ value, onChange, onError }) {
   const h = B.createElement,
     pt = Tu.lang === "pt",
@@ -14034,6 +14056,7 @@ function hx({ minor: e, allowDefault: t, onPublish: r, onError: n }) {
         }),
       (s === "text" || (s === "media" && d.every((Z_) => Pu(Z_.file) === "image"))) &&
         u.jsx(BgMusicPick, { value: mus, onChange: setMus, onError: n }),
+      s !== "live" && u.jsx(BgSchedPick, {}),
       s !== "live" &&
         u.jsxs(u.Fragment, {
           children: [

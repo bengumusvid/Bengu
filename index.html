@@ -16307,13 +16307,13 @@ function open(start){
  close();ov=el("div","position:fixed;inset:0;z-index:100010;background:rgba(0,0,0,.75);display:flex;align-items:flex-end;justify-content:center");
  var c=el("div","background:#14163a;color:#fff;border-radius:16px 16px 0 0;width:100%;max-width:520px;height:88vh;display:flex;flex-direction:column;box-sizing:border-box;font-family:inherit"),
   top=el("div","display:flex;gap:6px;align-items:center;padding:12px 12px 6px"),body=el("div","flex:1;min-height:0;overflow:auto;padding:8px 14px 14px"),
-  tabs=(window.BG_IA_ON?[["ia","🤖 IA"]]:[]).concat([["jogos","🎮 Jogos"],["premium","⭐ Premium"]]);if(isAdm())tabs.push(["adm","⚙️ Admin"]);
+  tabs=(window.BG_IA_ON?[["ia","🤖 IA"]]:[]).concat([["jogos","🎮 Jogos"],["premium","⭐ Premium"]]);if(isAdm()){tabs.push(["selos","🏅 Selos"]);tabs.push(["adm","⚙️ Admin"])}
  var bs={};tabs.forEach(function(t){var b=el("button","border:0;border-radius:16px;padding:7px 12px;font-weight:700;font-size:13px;background:#2a2f66;color:#fff",t[1]);b.onclick=function(){show(t[0])};bs[t[0]]=b;top.append(b)});
  var x=el("button",BTN,"Fechar");x.style.marginLeft="auto";x.onclick=close;top.append(x);
  c.append(top,body);ov.append(c);ov.onclick=function(e){if(e.target===ov)close()};document.body.append(ov);
  function show(k){Object.keys(bs).forEach(function(z){bs[z].style.background=z===k?"#f5b400":"#2a2f66";bs[z].style.color=z===k?"#14163a":"#fff"});body.replaceChildren();
-  if(k==="ia")viewAI(body);else if(k==="jogos")viewGames(body);else if(k==="premium")viewPremium(body);else viewAdmin(body)}
- show(window.BG_IA_ON?(start||"ia"):(start==="adm"||start==="premium"?start:"jogos"))}
+  if(k==="ia")viewAI(body);else if(k==="jogos")viewGames(body);else if(k==="premium")viewPremium(body);else if(k==="selos")viewBadges(body);else viewAdmin(body)}
+ show(window.BG_IA_ON?(start||"ia"):(start==="adm"||start==="premium"||start==="selos"?start:"jogos"))}
 /* ---------- IA ---------- */
 function viewAI(b){
  b.append(el("p","font-size:12px;opacity:.7;margin:0 0 8px","O que escreveres aqui é enviado à IA (Claude) para responder. Não escrevas dados pessoais nem palavras-passe. A conversa não fica guardada."));
@@ -16679,11 +16679,31 @@ function viewAdmin(b){
   ad.onclick=function(){var days=parseInt(dd.value),price=parseFloat(pr.value);if(!n.value.trim()||!(days>0)||!(price>=0)){toast("Preencha nome, dias e valor");return}
    rest("bengu_ai_plans","POST",{name:n.value.trim(),days:days,price:price},{Prefer:"return=representation"}).then(function(a){P=P.concat(a||[]).sort(function(x,y){return x.days-y.days});n.value=dd.value=pr.value="";drawP()}).catch(function(){toast("Erro")})};
   b.append(n,dd,pr,ad);
-  premiumAdmin(b);b.append(el("h3","margin:18px 0 4px","Dar acesso a um utilizador"));
-  var q=el("input",INP),res=el("div");q.placeholder="Pesquisar utilizador por nome";b.append(q,res);var tm=0;
-  q.oninput=function(){clearTimeout(tm);tm=setTimeout(function(){var v=q.value.trim();res.replaceChildren();if(v.length<2)return;rest("profiles?select=id,name&name=ilike.*"+encodeURIComponent(v)+"*&limit=6").then(function(a){(a||[]).forEach(function(p){var bt=el("button","display:block;width:100%;text-align:left;border:0;background:#1b1f48;color:#fff;border-radius:10px;padding:9px;margin:4px 0",p.name||"Sem nome");bt.onclick=function(){grant(p,res)};res.append(bt)})}).catch(function(){})},300)}})
+  premiumAdmin(b)})
  .catch(function(){b.replaceChildren(el("p","","Não foi possível carregar. Já executou o SQL 4.52?"))})}
-function grant(p,res){res.replaceChildren(el("b","",p.name));
+/* ---------- Selos: área própria para atribuir selos / acessos (só administrador) ---------- */
+function viewBadges(b){
+ if(!isAdm()){b.append(el("p","","Só o administrador."));return}
+ b.append(el("h3","margin:4px 0","🏅 Atribuir selos"),el("p","font-size:12px;opacity:.75;margin:0 0 8px","Selo verde ✓ = conta verificada. Estrela ★ = Premium. Pesquise um utilizador para dar ou tirar o selo, e dar dias de Premium ou de IA."));
+ var q=el("input",INP),res=el("div"),lst=el("div"),tm=0;
+ q.placeholder="Pesquisar utilizador por nome";
+ b.append(q,res,el("h3","margin:18px 0 4px","Contas com selo ou Premium"),lst);
+ q.oninput=function(){clearTimeout(tm);tm=setTimeout(function(){var v=q.value.trim();res.replaceChildren();if(v.length<2)return;
+  rest("profiles?select=id,name&name=ilike.*"+encodeURIComponent(v)+"*&limit=6").then(function(a){(a||[]).forEach(function(p){
+   var bt=el("button","display:block;width:100%;text-align:left;border:0;background:#1b1f48;color:#fff;border-radius:10px;padding:9px;margin:4px 0",p.name||"Sem nome");
+   bt.onclick=function(){grant(p,res,loadList)};res.append(bt)})}).catch(function(){})},300)};
+ function loadList(){lst.replaceChildren(el("p","opacity:.7;margin:0","A carregar…"));
+  rest("bengu_user_badges?select=user_id,verified,premium_until&or=(verified.eq.true,premium_until.gt."+encodeURIComponent(new Date().toISOString())+")&limit=100").then(function(rows){
+   rows=rows||[];if(!rows.length){lst.replaceChildren(el("p","opacity:.7;margin:0","Ainda não há contas com selo ou Premium."));return}
+   var ids=rows.map(function(r){return r.user_id});
+   return rest("profiles?select=id,name&id=in.("+ids.join(",")+")").catch(function(){return[]}).then(function(ps){var nm={};(ps||[]).forEach(function(x){nm[x.id]=x.name});
+    lst.replaceChildren();rows.forEach(function(r){
+     var t=(r.verified?"✅ ":"")+(isPrem(r)?"⭐ ":"")+(nm[r.user_id]||"Utilizador")+(isPrem(r)?" · Premium até "+fdate(r.premium_until):"");
+     var bt=el("button","display:block;width:100%;text-align:left;border:0;background:#1b1f48;color:#fff;border-radius:10px;padding:9px;margin:4px 0;font-size:13px",t);
+     bt.onclick=function(){res.replaceChildren();grant({id:r.user_id,name:nm[r.user_id]||"Utilizador"},res,loadList);res.scrollIntoView&&res.scrollIntoView()};lst.append(bt)})})
+  }).catch(function(){lst.replaceChildren(el("p","opacity:.85;margin:0","Não foi possível carregar a lista. Já executou o SQL 4.55?"))})}
+ loadList()}
+function grant(p,res,after){res.replaceChildren(el("b","",p.name));
  var st=el("div","font-size:13px;opacity:.85;margin:6px 0","A ler o estado…"),cur={};res.append(st);
  function txt(c){return(isPrem(c)?"⭐ Premium até "+fdate(c.premium_until):"Sem premium")+" · "+(c&&c.verified?"✅ Com selo":"Sem selo")}
  function reload(){rest("bengu_user_badges?select=verified,premium_until&user_id=eq."+p.id).then(function(r){cur=r&&r[0]||{};st.textContent=txt(cur)}).catch(function(){st.textContent="(estado indisponível: executa o SQL 4.55)"})}reload();
@@ -16695,9 +16715,9 @@ function grant(p,res){res.replaceChildren(el("b","",p.name));
   var v=sv.value===""?null:sv.value==="1",ad=parseInt(ai.value)>0?new Date(Date.now()+parseInt(ai.value)*864e5).toISOString():null;
   if(until==null&&v==null&&ad==null){toast("Nada para guardar");return}
   rest("rpc/bengu_admin_set_access","POST",{p_user:p.id,p_premium_until:until,p_verified:v,p_ai_until:ad}).then(function(){return true},function(){return false}).then(function(oldOk){
-   return badge(v,until,false).then(function(ok){toast(!oldOk&&!ok?"Erro ao guardar":ok?"Acesso guardado":"Acesso guardado, mas faltam os selos: executa o SQL 4.55");pd.value=ai.value="";reload()})})};
+   return badge(v,until,false).then(function(ok){toast(!oldOk&&!ok?"Erro ao guardar":ok?"Acesso guardado":"Acesso guardado, mas faltam os selos: executa o SQL 4.55");pd.value=ai.value="";reload();if(after)after()})})};
  rp.onclick=function(){if(!confirm("Remover o premium desta conta?"))return;var past=new Date(Date.now()-1000).toISOString();
-  rest("rpc/bengu_admin_set_access","POST",{p_user:p.id,p_premium_until:past,p_verified:null,p_ai_until:null}).catch(function(){}).then(function(){return badge(null,null,true)}).then(function(ok){toast(ok?"Premium removido":"Premium removido (selos: executa o SQL 4.55)");reload()})};
+  rest("rpc/bengu_admin_set_access","POST",{p_user:p.id,p_premium_until:past,p_verified:null,p_ai_until:null}).catch(function(){}).then(function(){return badge(null,null,true)}).then(function(ok){toast(ok?"Premium removido":"Premium removido (selos: executa o SQL 4.55)");reload();if(after)after()})};
  res.append(pd,ai,sv,go,rp)}
 function toast(t){var d=el("div","position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#000c;color:#fff;padding:9px 14px;border-radius:12px;z-index:100020;font-size:13px",t);document.body.append(d);setTimeout(function(){d.remove()},1800)}
 /* botão flutuante */

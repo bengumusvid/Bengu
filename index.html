@@ -16308,10 +16308,10 @@ function open(start){
  var c=el("div","background:#14163a;color:#fff;border-radius:16px 16px 0 0;width:100%;max-width:520px;height:88vh;display:flex;flex-direction:column;box-sizing:border-box;font-family:inherit"),
   top=el("div","display:flex;gap:6px;align-items:center;padding:12px 12px 6px"),body=el("div","flex:1;min-height:0;overflow:auto;padding:8px 14px 14px"),
   tabs=(window.BG_IA_ON?[["ia","🤖 IA"]]:[]).concat([["jogos","🎮 Jogos"],["premium","⭐ Premium"]]);if(isAdm()){tabs.push(["selos","🏅 Selos"]);tabs.push(["adm","⚙️ Admin"])}
- var bs={};tabs.forEach(function(t){var b=el("button","border:0;border-radius:16px;padding:7px 12px;font-weight:700;font-size:13px;background:#2a2f66;color:#fff",t[1]);b.onclick=function(){show(t[0])};bs[t[0]]=b;top.append(b)});
- var x=el("button",BTN,"Fechar");x.style.marginLeft="auto";x.onclick=close;top.append(x);
+ var bs={},tw=el("div","flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none");tabs.forEach(function(t){var b=el("button","border:0;border-radius:16px;padding:7px 11px;font-weight:700;font-size:13px;background:#2a2f66;color:#fff;flex-shrink:0;white-space:nowrap",t[1]);b.onclick=function(){show(t[0])};bs[t[0]]=b;tw.append(b)});top.append(tw);
+ var x=el("button",BTN,"Fechar");x.style.flexShrink="0";x.onclick=close;top.append(x);
  c.append(top,body);ov.append(c);ov.onclick=function(e){if(e.target===ov)close()};document.body.append(ov);
- function show(k){Object.keys(bs).forEach(function(z){bs[z].style.background=z===k?"#f5b400":"#2a2f66";bs[z].style.color=z===k?"#14163a":"#fff"});body.replaceChildren();
+ function show(k){Object.keys(bs).forEach(function(z){bs[z].style.background=z===k?"#f5b400":"#2a2f66";bs[z].style.color=z===k?"#14163a":"#fff"});try{bs[k].scrollIntoView({inline:"center",block:"nearest"})}catch(e){}body.replaceChildren();
   if(k==="ia")viewAI(body);else if(k==="jogos")viewGames(body);else if(k==="premium")viewPremium(body);else if(k==="selos")viewBadges(body);else viewAdmin(body)}
  show(window.BG_IA_ON?(start||"ia"):(start==="adm"||start==="premium"||start==="selos"?start:"jogos"))}
 /* ---------- IA ---------- */

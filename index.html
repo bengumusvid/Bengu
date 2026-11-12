@@ -9411,7 +9411,14 @@ function X_({
     },
     y = a ? ((P = v[a.userId]) == null ? void 0 : P[a.i]) : null,
     E = () =>
-      o((O) => (O && v[O.userId][O.i + 1] ? { ...O, i: O.i + 1 } : null)),
+      o((O) => {
+        if (!O) return null;
+        if (v[O.userId] && v[O.userId][O.i + 1]) return { ...O, i: O.i + 1 };
+        const ord = [...(e && v[e.id] && v[e.id].length ? [e.id] : []), ...g];
+        const pos = ord.indexOf(O.userId);
+        const nx = pos >= 0 ? ord[pos + 1] : undefined;
+        return nx ? { userId: nx, i: 0 } : null;
+      }),
     C = () => o((O) => (O && O.i > 0 ? { ...O, i: O.i - 1 } : O));
   const [ps, sps] = B.useState(!1), [pg, spg] = B.useState(0), vr = B.useRef(null), hdR = B.useRef(0), pgR = B.useRef(0);
   const [stV, setStV] = B.useState(0), [stRx, setStRx] = B.useState({}), [stMine, setStMine] = B.useState(0);
@@ -9467,7 +9474,7 @@ function X_({
         u.jsxs("span", { className: "absolute flex items-center text-[12px] font-bold", style: { left: 8, right: 8, bottom: 8, color: "#fff", textAlign: "left" }, children: [u.jsx("span", { className: "truncate", style: { minWidth: 0 }, children: x("profile") }), BgB(O)] }),
       ],
     });
-  const A = ({ user: O, onClick: R, label: U, plus: re, st: stt, n: sn }) => re
+  const A = ({ user: O, onClick: R, label: U, plus: re, st: stt, n: sn, add: ad }) => re
     ? u.jsxs("button", {
         onClick: R, "aria-label": U, className: "shrink-0",
         style: { ...cardBase, background: k.card, border: `1px solid ${k.line}` },
@@ -9489,6 +9496,7 @@ function X_({
             : cardPhoto(O),
           u.jsx("div", { style: { position: "absolute", left: 0, right: 0, bottom: 0, height: 70, background: shade } }),
           u.jsx("div", { style: { position: "absolute", left: 6, top: 6, borderRadius: "50%", padding: 2, background: k.saffron }, children: u.jsx("div", { style: { borderRadius: "50%", overflow: "hidden", width: 28, height: 28, background: k.card }, children: u.jsx(Ct, { user: O, size: 28 }) }) }),
+          ad && u.jsx("span", { role: "button", "aria-label": x("newStatus"), onClick: (ev) => { ev.stopPropagation(); ad(); }, className: "absolute flex items-center justify-center rounded-full", style: { left: 24, top: 24, width: 24, height: 24, background: k.saffron, color: k.onAccent, border: "2px solid #fff" }, children: u.jsx(ho, { size: 14 }) }),
           sn > 1 && u.jsx("span", { className: "absolute flex items-center justify-center rounded-full text-[10px] font-bold", style: { right: 6, top: 6, minWidth: 18, height: 18, padding: "0 4px", background: k.saffron, color: k.onAccent }, children: sn }),
           u.jsx("span", { className: "absolute text-[11px] font-semibold truncate", style: { left: 8, right: 8, bottom: 8, color: "#fff", textAlign: "left" }, children: U }),
         ],
@@ -9504,8 +9512,8 @@ function X_({
         },
         children: [
           e && opf && u.jsx(PF, { user: e, onClick: opf }, "bgprof"),
-          ...(e ? (v[e.id] && v[e.id].length ? v[e.id].map((it, ix_) => u.jsx(A, { user: e, plus: !1, st: it, label: x("myStatus"), onClick: () => o({ userId: e.id, i: ix_ }) }, "me" + it.id)) : []) : []),
-          e && u.jsx(A, { user: e, plus: !0, label: x("newStatus"), onClick: () => c(!0) }),
+          ...(e ? (v[e.id] && v[e.id].length ? v[e.id].map((it, ix_) => u.jsx(A, { user: e, plus: !1, st: it, label: x("myStatus"), add: ix_ === 0 ? () => c(!0) : void 0, onClick: () => o({ userId: e.id, i: ix_ }) }, "me" + it.id)) : []) : []),
+          e && !(v[e.id] && v[e.id].length) && u.jsx(A, { user: e, plus: !0, label: x("newStatus"), onClick: () => c(!0) }),
           ...g.flatMap((O) => v[O].map((it, ix_) => u.jsx(A, { user: t[O] || mt, st: it, label: (t[O] || mt).name.split(" ")[0], onClick: () => o({ userId: O, i: ix_ }) }, O + "-" + it.id))),
         ],
       }),

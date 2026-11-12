@@ -9464,8 +9464,7 @@ function X_({
       children: [
         cardPhoto(O),
         u.jsx("div", { style: { position: "absolute", left: 0, right: 0, bottom: 0, height: 70, background: shade } }),
-        window.__bgBadge && window.__bgBadge[O.id] ? u.jsx("span", { style: { position: "absolute", right: 6, top: 6, display: "flex", borderRadius: "50%", background: "#fff", padding: 2 }, children: BgB(O) }) : null,
-        u.jsx("span", { className: "absolute text-[12px] font-bold truncate", style: { left: 8, right: 8, bottom: 8, color: "#fff", textAlign: "left" }, children: x("profile") }),
+        u.jsxs("span", { className: "absolute flex items-center text-[12px] font-bold", style: { left: 8, right: 8, bottom: 8, color: "#fff", textAlign: "left" }, children: [u.jsx("span", { className: "truncate", style: { minWidth: 0 }, children: x("profile") }), BgB(O)] }),
       ],
     });
   const A = ({ user: O, onClick: R, label: U, plus: re, st: stt, n: sn }) => re

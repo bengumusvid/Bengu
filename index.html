@@ -8420,6 +8420,7 @@ function J_() {
                     users: E,
                     statuses: S.filter((I) => !j.includes(I.userId)),
                     onUpload: Vg,
+                    onProfile: () => { Ie("me"); at("profile"); },
                     say: _e,
                     onPosted: fr,
                   }),
@@ -9359,6 +9360,7 @@ function X_({
   onUpload: n,
   say: s,
   onPosted: i,
+  onProfile: opf,
 }) {
   var P;
   const [a, o] = B.useState(null),
@@ -9496,6 +9498,22 @@ function X_({
           scrollbarWidth: "none",
         },
         children: [
+          e && opf && u.jsxs("button", {
+            onClick: opf,
+            className: "flex flex-col items-center gap-1 shrink-0",
+            style: { width: 66 },
+            "aria-label": x("profile"),
+            children: [
+              u.jsxs("div", {
+                className: "relative",
+                children: [
+                  u.jsx("div", { style: { borderRadius: "50%", padding: 3, background: k.ink }, children: u.jsx("div", { style: { borderRadius: "50%", padding: 2, background: k.card }, children: u.jsx("div", { style: { borderRadius: "50%", overflow: "hidden", width: 54, height: 54, display: "flex", alignItems: "center", justifyContent: "center" }, children: u.jsx(Ct, { user: e, size: 54 }) }) }) }),
+                  window.__bgBadge && window.__bgBadge[e.id] ? u.jsx("span", { style: { position: "absolute", right: -4, bottom: -2, display: "flex", borderRadius: "50%", background: k.card, padding: 2 }, children: BgB(e) }) : null,
+                ],
+              }),
+              u.jsx("span", { className: "text-[11px] truncate w-full text-center font-semibold", style: { color: k.ink }, children: x("profile") }),
+            ],
+          }, "bgprof"),
           e && u.jsx(A, { user: e, plus: !0, label: x("newStatus"), onClick: () => c(!0) }),
           ...(e ? (v[e.id] && v[e.id].length ? v[e.id].map((it, ix_) => u.jsx(A, { user: e, plus: !1, st: it, label: x("myStatus"), onClick: () => o({ userId: e.id, i: ix_ }) }, "me" + it.id)) : [u.jsx(A, { user: e, plus: !1, label: x("myStatus"), onClick: () => c(!0) }, "me")]) : []),
           ...g.flatMap((O) => v[O].map((it, ix_) => u.jsx(A, { user: t[O] || mt, st: it, label: (t[O] || mt).name.split(" ")[0], onClick: () => o({ userId: O, i: ix_ }) }, O + "-" + it.id))),

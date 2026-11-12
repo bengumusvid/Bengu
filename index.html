@@ -16696,6 +16696,11 @@ function viewAdmin(b){
   b.append(n,dd,pr,ad);
   premiumAdmin(b)})
  .catch(function(){b.replaceChildren(el("p","","Não foi possível carregar. Já executou o SQL 4.52?"))})}
+/* interruptor ligar/desligar */
+function bgSwitch(on,change){var t=el("button","position:relative;flex-shrink:0;width:52px;height:30px;border-radius:15px;border:0;padding:0;transition:background .15s"),k=el("span","position:absolute;top:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .15s");t.append(k);t.setAttribute("role","switch");
+ function paint(v){on=v;t.style.background=v?"#2E9E4F":"#4a4f7a";k.style.left=v?"25px":"3px";t.setAttribute("aria-checked",v?"true":"false")}paint(!!on);
+ t.onclick=function(){var nv=!on;t.disabled=true;paint(nv);Promise.resolve(change(nv)).then(function(ok){if(ok===false)paint(!nv)},function(){paint(!nv)}).then(function(){t.disabled=false})};return t}
+window.bgSwitch=bgSwitch;
 /* helpers visuais dos selos */
 var AVC=["#12183A","#0E6B5C","#7A2E6E","#1E4DB7","#C2410C","#0F766E","#9D174D"];
 function avatarEl(p,sz){var n=(p&&p.name)||"?",ini=n.trim().split(/\s+/).slice(0,2).map(function(w){return w.charAt(0)}).join("").toUpperCase()||"?",h=0,i;for(i=0;i<(p&&p.id||"").length;i++)h=(h*31+p.id.charCodeAt(i))>>>0;
@@ -16732,7 +16737,12 @@ function grant(p,res,after){var cur={},lab=function(t){return el("div","font-siz
  var card=el("div","display:flex;align-items:center;gap:12px;background:#1b1f48;border-radius:14px;padding:12px"),info=el("div","flex:1;min-width:0"),nrow=el("div","display:flex;align-items:center;font-weight:800;font-size:16px"),nb=el("span","display:inline-flex");
  nrow.append(el("span","overflow:hidden;text-overflow:ellipsis;white-space:nowrap",p.name||"Sem nome"),nb);info.append(nrow);card.append(avatarEl(p,64),info);
  var st=el("div","font-size:13px;opacity:.85","A ler o estado…");
- res.replaceChildren(lab("Perfil"),card,lab("Estado"),st,lab("Atribuir"));
+ var wdRow=el("div","display:flex;align-items:center;gap:12px;background:#1b1f48;border-radius:14px;padding:12px"),wdL=el("div","flex:1;min-width:0"),wdT=el("div","font-size:12px;opacity:.7;margin-top:2px","A ler…");
+ wdL.append(el("div","font-weight:700;font-size:14px","Levantamento de ganhos"),wdT);wdRow.append(wdL);
+ function wdPaint(on){wdT.textContent=on?"Ativo: o utilizador pode levantar":"Desativado"}
+ Promise.all([rest("rpc/bengu_admin_force_list","POST",{}).catch(function(){return[]}),rest("rpc/bengu_admin_payout_list","POST",{}).catch(function(){return[]})]).then(function(z){var on=false;[].concat(z[0]||[],z[1]||[]).forEach(function(x){if(x&&x.user_id===p.id&&x.approved)on=true});
+  wdPaint(on);wdRow.append(bgSwitch(on,function(v){return rest("rpc/bengu_admin_force_payout","POST",{p_user:p.id,p_approved:v,p_name:p.name||null}).then(function(){return rest("rpc/bengu_admin_set_payout","POST",{p_user:p.id,p_approved:v}).catch(function(){})}).then(function(){wdPaint(v);toast(v?"Levantamento ativado":"Levantamento desativado");return true},function(){toast("Não foi possível alterar (SQL 4.52?)");return false})}))});
+ res.replaceChildren(lab("Perfil"),card,lab("Estado"),st,lab("Levantamento"),wdRow,lab("Atribuir"));
  function reload(){rest("bengu_user_badges?select=verified,premium_until&user_id=eq."+p.id).then(function(r){cur=r&&r[0]||{};st.replaceChildren(statePills(cur));nb.replaceChildren();if(cur.verified)nb.append(miniBadge(false,18));if(isPrem(cur))nb.append(miniBadge(true,18))}).catch(function(){st.textContent="(estado indisponível: executa o SQL 4.55)"})}reload();
  var pd=el("input",INP),ai=el("input",INP),sv=el("select",INP),go=el("button",BTN,"Guardar acesso"),rp=el("button",BTN+";background:#B71C1C;color:#fff;margin-left:8px","Remover premium");
  pd.type=ai.type="number";pd.placeholder="Premium: dias a dar (somam-se aos que já tem)";ai.placeholder="IA: dias a dar (vazio = não mudar)";

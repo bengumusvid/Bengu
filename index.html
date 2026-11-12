@@ -16717,7 +16717,7 @@ function viewPremium(b){var box=el("div");b.append(box);
   s.append(el("div","",isPrem(st)?"⭐ Premium ativo até "+fdate(st.premium_until):"Sem Premium"),el("div","",st.verified?"✅ Conta com selo":"Sem selo"));if(!st.verified){var vb=el("button",BTN+";margin-top:8px","✅ Pedir verificação");vb.onclick=function(){open("verificacao")};s.append(vb)}box.append(s);
   box.append(el("p","font-size:12px;opacity:.75;margin:0 0 10px","Selo verde ✓ = conta verificada pelo Bengu. Estrela dourada ★ (cor do Bengu) = conta Premium. O Premium dá acesso aos jogos e à música offline reservados."));
   if(plans===null||methods===null){box.append(el("p","opacity:.85","Os pagamentos ainda não estão preparados."))}
-  else if(!plans.length||!methods.length){box.append(el("p","opacity:.85","O Premium ainda não está disponível. Volta em breve!"))}
+  else if(!plans.length||!methods.length){box.append(el("p","opacity:.85",isAdm()?"[Admin] Para aparecerem opções ao utilizador falta ligar: "+(!plans.length?"pelo menos 1 plano":"")+(!plans.length&&!methods.length?" e ":"")+(!methods.length?"pelo menos 1 forma de pagamento":"")+". Se já os ligaste, é permissão (RLS) no Supabase.":"O Premium ainda não está disponível. Volta em breve!"))}
   else{var pl=null,mt=null,pw=el("div","display:flex;flex-direction:column;gap:6px;margin:6px 0 12px"),mw=el("div","display:flex;flex-direction:column;gap:6px;margin:6px 0 12px"),
    ins=el("div","padding:10px;border-radius:10px;background:#1b1f48;font-size:13px;line-height:1.5;white-space:pre-wrap;display:none;margin-bottom:8px"),ref=el("input",INP+";margin-bottom:8px");
    ref.placeholder="Código da transação ou número com que pagaste";

@@ -16681,6 +16681,14 @@ function viewAdmin(b){
   b.append(n,dd,pr,ad);
   premiumAdmin(b)})
  .catch(function(){b.replaceChildren(el("p","","Não foi possível carregar. Já executou o SQL 4.52?"))})}
+/* helpers visuais dos selos */
+var AVC=["#12183A","#0E6B5C","#7A2E6E","#1E4DB7","#C2410C","#0F766E","#9D174D"];
+function avatarEl(p,sz){var n=(p&&p.name)||"?",ini=n.trim().split(/\s+/).slice(0,2).map(function(w){return w.charAt(0)}).join("").toUpperCase()||"?",h=0,i;for(i=0;i<(p&&p.id||"").length;i++)h=(h*31+p.id.charCodeAt(i))>>>0;
+ var d=el("div","width:"+sz+"px;height:"+sz+"px;border-radius:50%;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:"+Math.round(sz*.36)+"px;background:"+AVC[h%AVC.length],ini);
+ if(p&&p.avatar_url){var im=el("img","width:100%;height:100%;object-fit:cover;display:block");im.alt=n;im.onload=function(){d.textContent="";d.append(im)};im.src=p.avatar_url}return d}
+function miniBadge(prem,sz){sz=sz||16;return el("span","display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:"+sz+"px;height:"+sz+"px;margin-left:5px;border-radius:50%;font-weight:900;font-size:"+Math.round(sz*.62)+"px;line-height:1;background:"+(prem?"#FFB020":"#2E9E4F")+";color:"+(prem?"#12183A":"#fff"),prem?"★":"✓")}
+function pill(on,txt,prem){return el("span","display:inline-flex;align-items:center;gap:5px;border-radius:14px;padding:5px 11px;font-size:12.5px;font-weight:700;"+(on?"background:"+(prem?"#FFB020;color:#12183A":"#2E9E4F;color:#fff"):"background:#2a2f66;color:#98A1C6"),txt)}
+function statePills(c){var d=el("div","display:flex;gap:6px;flex-wrap:wrap");d.append(pill(!!(c&&c.verified),(c&&c.verified?"✓ Selo verificado":"Sem selo"),false),pill(isPrem(c),isPrem(c)?"★ Premium até "+fdate(c.premium_until):"Sem Premium",true));return d}
 /* ---------- Selos: área própria para atribuir selos / acessos (só administrador) ---------- */
 function viewBadges(b){
  if(!isAdm()){b.append(el("p","","Só o administrador."));return}
@@ -16689,24 +16697,28 @@ function viewBadges(b){
  q.placeholder="Pesquisar utilizador por nome";
  b.append(q,res,el("h3","margin:18px 0 4px","Contas com selo ou Premium"),lst);
  q.oninput=function(){clearTimeout(tm);tm=setTimeout(function(){var v=q.value.trim();res.replaceChildren();if(v.length<2)return;
-  rest("profiles?select=id,name&name=ilike.*"+encodeURIComponent(v)+"*&limit=6").then(function(a){(a||[]).forEach(function(p){
-   var bt=el("button","display:block;width:100%;text-align:left;border:0;background:#1b1f48;color:#fff;border-radius:10px;padding:9px;margin:4px 0",p.name||"Sem nome");
+  rest("profiles?select=id,name,avatar_url&name=ilike.*"+encodeURIComponent(v)+"*&limit=6").then(function(a){(a||[]).forEach(function(p){
+   var bt=el("button","display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:#1b1f48;color:#fff;border-radius:12px;padding:8px 10px;margin:4px 0;font-size:14px");bt.append(avatarEl(p,36),el("span","flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap",p.name||"Sem nome"));
    bt.onclick=function(){grant(p,res,loadList)};res.append(bt)})}).catch(function(){})},300)};
  function loadList(){lst.replaceChildren(el("p","opacity:.7;margin:0","A carregar…"));
   rest("bengu_user_badges?select=user_id,verified,premium_until&or=(verified.eq.true,premium_until.gt."+encodeURIComponent(new Date().toISOString())+")&limit=100").then(function(rows){
    rows=rows||[];if(!rows.length){lst.replaceChildren(el("p","opacity:.7;margin:0","Ainda não há contas com selo ou Premium."));return}
    var ids=rows.map(function(r){return r.user_id});
-   return rest("profiles?select=id,name&id=in.("+ids.join(",")+")").catch(function(){return[]}).then(function(ps){var nm={};(ps||[]).forEach(function(x){nm[x.id]=x.name});
+   return rest("profiles?select=id,name,avatar_url&id=in.("+ids.join(",")+")").catch(function(){return[]}).then(function(ps){var nm={},pf={};(ps||[]).forEach(function(x){nm[x.id]=x.name;pf[x.id]=x});
     lst.replaceChildren();rows.forEach(function(r){
-     var t=(r.verified?"✅ ":"")+(isPrem(r)?"⭐ ":"")+(nm[r.user_id]||"Utilizador")+(isPrem(r)?" · Premium até "+fdate(r.premium_until):"");
-     var bt=el("button","display:block;width:100%;text-align:left;border:0;background:#1b1f48;color:#fff;border-radius:10px;padding:9px;margin:4px 0;font-size:13px",t);
-     bt.onclick=function(){res.replaceChildren();grant({id:r.user_id,name:nm[r.user_id]||"Utilizador"},res,loadList);res.scrollIntoView&&res.scrollIntoView()};lst.append(bt)})})
+     var P0=pf[r.user_id]||{id:r.user_id,name:"Utilizador"},bt=el("button","display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:#1b1f48;color:#fff;border-radius:12px;padding:8px 10px;margin:4px 0;font-size:14px"),mid=el("span","flex:1;min-width:0"),nr=el("div","display:flex;align-items:center;font-weight:700;overflow:hidden");
+     nr.append(el("span","overflow:hidden;text-overflow:ellipsis;white-space:nowrap",P0.name||"Utilizador"));if(r.verified)nr.append(miniBadge(false));if(isPrem(r))nr.append(miniBadge(true));
+     mid.append(nr);if(isPrem(r))mid.append(el("div","font-size:11.5px;opacity:.7","Premium até "+fdate(r.premium_until)));
+     bt.append(avatarEl(P0,40),mid);
+     bt.onclick=function(){res.replaceChildren();grant(P0,res,loadList);res.scrollIntoView&&res.scrollIntoView()};lst.append(bt)})})
   }).catch(function(){lst.replaceChildren(el("p","opacity:.85;margin:0","Não foi possível carregar a lista. Já executou o SQL 4.55?"))})}
  loadList()}
-function grant(p,res,after){res.replaceChildren(el("b","",p.name));
- var st=el("div","font-size:13px;opacity:.85;margin:6px 0","A ler o estado…"),cur={};res.append(st);
- function txt(c){return(isPrem(c)?"⭐ Premium até "+fdate(c.premium_until):"Sem premium")+" · "+(c&&c.verified?"✅ Com selo":"Sem selo")}
- function reload(){rest("bengu_user_badges?select=verified,premium_until&user_id=eq."+p.id).then(function(r){cur=r&&r[0]||{};st.textContent=txt(cur)}).catch(function(){st.textContent="(estado indisponível: executa o SQL 4.55)"})}reload();
+function grant(p,res,after){var cur={},lab=function(t){return el("div","font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;opacity:.6;margin:12px 0 5px",t)};
+ var card=el("div","display:flex;align-items:center;gap:12px;background:#1b1f48;border-radius:14px;padding:12px"),info=el("div","flex:1;min-width:0"),nrow=el("div","display:flex;align-items:center;font-weight:800;font-size:16px"),nb=el("span","display:inline-flex");
+ nrow.append(el("span","overflow:hidden;text-overflow:ellipsis;white-space:nowrap",p.name||"Sem nome"),nb);info.append(nrow);card.append(avatarEl(p,64),info);
+ var st=el("div","font-size:13px;opacity:.85","A ler o estado…");
+ res.replaceChildren(lab("Perfil"),card,lab("Estado"),st,lab("Atribuir"));
+ function reload(){rest("bengu_user_badges?select=verified,premium_until&user_id=eq."+p.id).then(function(r){cur=r&&r[0]||{};st.replaceChildren(statePills(cur));nb.replaceChildren();if(cur.verified)nb.append(miniBadge(false,18));if(isPrem(cur))nb.append(miniBadge(true,18))}).catch(function(){st.textContent="(estado indisponível: executa o SQL 4.55)"})}reload();
  var pd=el("input",INP),ai=el("input",INP),sv=el("select",INP),go=el("button",BTN,"Guardar acesso"),rp=el("button",BTN+";background:#B71C1C;color:#fff;margin-left:8px","Remover premium");
  pd.type=ai.type="number";pd.placeholder="Premium: dias a dar (somam-se aos que já tem)";ai.placeholder="IA: dias a dar (vazio = não mudar)";
  [["","Selo: não mudar"],["1","Dar selo ✓ (verde)"],["0","Tirar selo"]].forEach(function(o){var op=el("option","",o[1]);op.value=o[0];sv.append(op)});

@@ -16109,6 +16109,16 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     var nx = btn("", ICON.next, function () { next(false); });
     el.rp = btn("tg", ICON.repeat, function () { rep = (rep + 1) % 3; ui(); toast(rep === 2 ? T.rep1 : rep === 1 ? T.repAll : T.repOff); });
     [el.sh, pv, el.pp, nx, el.rp].forEach(function (b) { ct.appendChild(b); });
+    /* tocar no título/artista da música atual -> vai até à posição dela na lista */
+    function locateCur() {
+      if (cur < 0 || !tracks[cur]) return;
+      var vi = view.indexOf(cur);
+      if (vi < 0) { onlyFav = false; q = ""; if (el.qi) el.qi.value = ""; applyFilter(true); vi = view.indexOf(cur); }
+      if (vi < 0) return;
+      var top = Math.max(0, vi * RH - Math.max(0, ((el.list.clientHeight || 400) - RH) / 2));
+      try { el.list.scrollTo({ top: top, behavior: "smooth" }); } catch (e) { el.list.scrollTop = top; }
+    }
+    [el.nt, el.na].forEach(function (n) { n.style.cursor = "pointer"; n.setAttribute("role", "button"); n.onclick = locateCur; });
     np.appendChild(el.nt); np.appendChild(el.na); np.appendChild(skw); np.appendChild(ct);
 
     /* menu ☰ : tudo o que estava em cima e em baixo */

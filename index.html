@@ -16758,7 +16758,7 @@ function premiumAdmin(b){var box=el("div");b.append(box);
   var ed=null,kf=selOf(KINDS),nf=field("Nome (ex.: M-Pesa Bengu)"),af=field("Número / conta para receber"),hf=field("Em nome de (titular)"),tf=el("textarea",INP+";margin-top:6px;height:60px"),sf=field("Ordem (1, 2, 3…)","number"),sv;
   tf.placeholder="Instruções para o cliente (opcional)";
   function saveM(){var r={kind:kf.value,name:nf.value.trim(),account:af.value.trim(),holder:hf.value.trim(),instructions:tf.value.trim(),sort:parseInt(sf.value)||0};if(r.name.length<2){toast("Escreve o nome");return}
-   (ed?rest("bengu_payment_methods?id=eq."+ed,"PATCH",r,{Prefer:"return=minimal"}):rest("bengu_payment_methods","POST",r,{Prefer:"return=minimal"})).then(done()).catch(fail)}
+   (ed?rest("bengu_payment_methods?id=eq."+ed,"PATCH",r,{Prefer:"return=minimal"}):rest("bengu_payment_methods","POST",Object.assign({active:true},r),{Prefer:"return=minimal"})).then(done()).catch(fail)}
   sv=btn("Adicionar forma de pagamento",saveM);
   if(!methods.length)box.append(el("p","opacity:.7;margin:0","Ainda sem formas de pagamento."));
   methods.forEach(function(m){
@@ -16772,7 +16772,7 @@ function premiumAdmin(b){var box=el("div");b.append(box);
   var pe=null,pn=field("Nome (ex.: Mensal)"),pdd=field("Dias (ex.: 30)","number"),pp=field("Preço (ex.: 150)","number"),pc=selOf([["MZN","MZN"],["USD","USD"],["EUR","EUR"]]),ps;
   function saveP(){var days=parseInt(pdd.value),price=parseFloat(pp.value);if(pn.value.trim().length<2||!(days>0)||!(price>=0)){toast("Preenche nome, dias e preço");return}
    var r={name:pn.value.trim(),days:days,price:price,currency:pc.value};
-   (pe?rest("bengu_premium_plans?id=eq."+pe,"PATCH",r,{Prefer:"return=minimal"}):rest("bengu_premium_plans","POST",r,{Prefer:"return=minimal"})).then(done()).catch(fail)}
+   (pe?rest("bengu_premium_plans?id=eq."+pe,"PATCH",r,{Prefer:"return=minimal"}):rest("bengu_premium_plans","POST",Object.assign({active:true},r),{Prefer:"return=minimal"})).then(done()).catch(fail)}
   ps=btn("Adicionar plano",saveP);
   if(!plans.length)box.append(el("p","opacity:.7;margin:0","Ainda sem planos."));
   plans.forEach(function(p){

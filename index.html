@@ -398,6 +398,8 @@ window.bgIsPlus=function(){try{var t=JSON.parse(localStorage.getItem("sb-cnpkgau
 /* PRIORIDADE NO FEED: horas de avanço que as publicações de contas verificadas (v) e Premium (p) ganham na ordenação. Altere aqui. */
 window.BG_BOOST={v:12,p:24};
 window.bgBoost=function(list){var m=window.__bgBadge||{},B=window.BG_BOOST,t=function(p){var b=m[p.userId],c=new Date(p.createdAt).getTime()||0;return c+(b&&B[b]?B[b]*36e5:0)};return list.map(function(p){return[p,t(p)]}).sort(function(a,b){return b[1]-a[1]}).map(function(x){return x[0]})};
+/* PESQUISA E LISTAS DE PESSOAS: Premium (p) primeiro, depois verificadas (v), depois as outras; dentro de cada grupo mantém a ordem original. */
+window.bgPlusFirst=function(list){var m=window.__bgBadge||{},R={p:0,v:1};return list.map(function(x,i){return[x,i]}).sort(function(a,b){var ra=R[m[a[0].id]],rb=R[m[b[0].id]];ra=ra===undefined?2:ra;rb=rb===undefined?2:rb;return ra-rb||a[1]-b[1]}).map(function(x){return x[0]})};
 window.bgLim=function(k){var L=window.bgIsPlus()?window.BG_LIM.plus:window.BG_LIM.base;return L[k]};
 function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
 function refresh(force){if(navigator.onLine===false||!tok())return;var c2=null;try{c2=JSON.parse(localStorage.getItem(KEY))}catch(e){}
@@ -9995,7 +9997,7 @@ function BenguUsers({ me: e, following: f, onToggle: tg, onOpen: op, addUsers: a
         return;
       }
       (au(r.data),
-        setRows((p) => (from === 0 ? r.data.map(Xr) : [...p, ...r.data.map(Xr)])),
+        setRows((p) => window.bgPlusFirst(from === 0 ? r.data.map(Xr) : [...p, ...r.data.map(Xr)])),
         setMore(r.data.length === PAGE),
         setBusy(!1));
     };
@@ -10104,7 +10106,7 @@ function rx({
         .ilike("name", `%${y}%`)
         .neq("id", e.id)
         .limit(15);
-      C.error || (a(C.data), f(C.data.map(Xr)));
+      C.error || (a(C.data), f(window.bgPlusFirst(C.data.map(Xr))));
     }, 300);
     return () => clearTimeout(E);
   }, [v]);
@@ -11419,7 +11421,7 @@ function ax({
           .ilike("name", `%${b}%`)
           .neq("id", e.id)
           .limit(15);
-        h.error || (n(h.data), w(h.data.map(Xr)));
+        h.error || (n(h.data), w(window.bgPlusFirst(h.data.map(Xr))));
       }, 300);
       return () => clearTimeout(m);
     }, [c]),

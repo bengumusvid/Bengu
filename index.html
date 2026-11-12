@@ -10700,8 +10700,8 @@ function Tg_(t) {
 function St_({ size: e = 22 }) {
   return u.jsxs("svg", { width: e, height: e, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, children: [u.jsx("circle", { cx: 12, cy: 12, r: 9, strokeDasharray: "4 3" }), u.jsx("circle", { cx: 12, cy: 12, r: 4 })] });
 }
-function Mr_({ value: e, onChange: t, style: r, className: n }) {
-  return u.jsxs("select", { value: e, onChange: (s) => t(s.target.value), "aria-label": BG_L("Marital status","Estado civil"), className: n, style: r, children: [
+function Mr_({ value: e, onChange: t, style: r, className: n, disabled: dis }) {
+  return u.jsxs("select", { value: e, onChange: (s) => t(s.target.value), "aria-label": BG_L("Marital status","Estado civil"), disabled: !!dis, className: n, style: dis ? { ...r, opacity: 0.75 } : r, children: [
     u.jsx("option", { value: "", children: BG_L("Marital status","Estado civil") }),
     u.jsx("option", { value: "casado", children: BG_L("Married","Casado(a)") }),
     u.jsx("option", { value: "solteiro", children: BG_L("Single","Solteiro(a)") }),
@@ -12191,20 +12191,23 @@ function lx({
             children: [
               u.jsx(Rg, {
                 value: e.gender || "",
-                onChange: (R) => R && b({ gender: R }, "gender", R),
+                disabled: !!e.gender,
+                onChange: (R) => !e.gender && R && b({ gender: R }, "gender", R),
                 className: "w-full px-3 py-2.5 rounded-lg text-sm outline-none",
                 style: { background: k.paper, color: k.ink },
               }),
               u.jsx(Pg, {
                 lang: r,
                 value: e.country || "",
-                onChange: (R) => R && b({ country: R }, "country", R),
+                disabled: !!e.country,
+                onChange: (R) => !e.country && R && b({ country: R }, "country", R),
                 className: "w-full px-3 py-2.5 rounded-lg text-sm outline-none",
                 style: { background: k.paper, color: k.ink },
               }),
               u.jsx(Mr_, {
                 value: e.marital || "",
-                onChange: (R) => R && b({ marital: R }, "marital", R),
+                disabled: !!e.marital,
+                onChange: (R) => !e.marital && R && b({ marital: R }, "marital", R),
                 className: "w-full px-3 py-2.5 rounded-lg text-sm outline-none",
                 style: { background: k.paper, color: k.ink },
               }),
@@ -14595,27 +14598,29 @@ function fx({
     ],
   });
 }
-function Pg({ lang: e, value: t, onChange: r, style: n, className: s }) {
+function Pg({ lang: e, value: t, onChange: r, style: n, className: s, disabled: dis }) {
   const i = f_(e);
   return u.jsxs("select", {
     value: t,
     onChange: (a) => r(a.target.value),
     "aria-label": x("countryLbl"),
+    disabled: !!dis,
     className: s,
-    style: n,
+    style: dis ? { ...n, opacity: 0.75 } : n,
     children: [
       u.jsx("option", { value: "", children: x("chooseCountry") }),
       i.map(([a, o]) => u.jsx("option", { value: a, children: o }, a)),
     ],
   });
 }
-function Rg({ value: e, onChange: t, style: r, className: n }) {
+function Rg({ value: e, onChange: t, style: r, className: n, disabled: dis }) {
   return u.jsxs("select", {
     value: e,
     onChange: (s) => t(s.target.value),
     "aria-label": x("genderLbl"),
+    disabled: !!dis,
     className: n,
-    style: r,
+    style: dis ? { ...r, opacity: 0.75 } : r,
     children: [
       u.jsx("option", { value: "", children: x("chooseGender") }),
       u.jsx("option", { value: "m", children: x("male") }),

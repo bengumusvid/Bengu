@@ -9452,42 +9452,48 @@ function X_({
   }, [y == null ? void 0 : y.id, ps]);
   B.useEffect(() => { const v_ = vr.current; if (!v_ || !y || y.kind !== "video") return; ps ? v_.pause() : v_.play().catch(() => {}); }, [ps]);
   const lastSt = (arr) => (arr && arr.length ? arr.reduce((a, b) => (String(a.createdAt) > String(b.createdAt) ? a : b)) : null);
-  const A = ({ user: O, onClick: R, label: U, plus: re, st: stt, n: sn }) =>
+  const CW = 88, CH = 140;
+  const cardBase = { width: CW, height: CH, borderRadius: 14, overflow: "hidden", position: "relative", flexShrink: 0, padding: 0, border: "none", background: k.line, display: "block" };
+  const shade = "linear-gradient(to top, rgba(0,0,0,.75) 0%, rgba(0,0,0,0) 100%)";
+  const cardPhoto = (O) => O && O.avatar
+    ? u.jsx("img", { src: O.avatar, alt: "", loading: "lazy", style: { width: "100%", height: "100%", objectFit: "cover", display: "block" } })
+    : u.jsx("div", { style: { width: "100%", height: "100%", background: (O && O.color) || k.strong, display: "flex", alignItems: "center", justifyContent: "center" }, children: u.jsx(Ct, { user: O, size: 56 }) });
+  const PF = ({ user: O, onClick: R }) =>
     u.jsxs("button", {
-      onClick: R,
-      className: "flex flex-col items-center gap-1 shrink-0",
-      style: { width: 66 },
-      "aria-label": U,
+      onClick: R, "aria-label": x("profile"), className: "shrink-0", style: cardBase,
       children: [
-        u.jsxs("div", {
-          className: "relative",
-          children: [
-            u.jsx("div", { style: { clipPath: BGHEX, padding: 3, background: re ? k.line : k.saffron }, children: u.jsx("div", { style: { clipPath: BGHEX, padding: 2, background: k.card }, children: u.jsx("div", { style: { clipPath: BGHEX, overflow: "hidden", width: 54, height: 54, display: "flex", alignItems: "center", justifyContent: "center" }, children: stt ? (stt.kind === "text" ? u.jsx("div", { style: { width: 54, height: 54, background: bgStText(stt.url).bg, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, padding: 6, textAlign: "center", overflow: "hidden", lineHeight: 1.1 }, children: bgStText(stt.url).t.slice(0, 28) }) : stt.kind === "image" ? u.jsx("img", { src: stt.url, alt: "", loading: "lazy", style: { width: 54, height: 54, objectFit: "cover" } }) : u.jsx("video", { src: stt.url + "#t=0.5", muted: !0, playsInline: !0, preload: "metadata", style: { width: 54, height: 54, objectFit: "cover", pointerEvents: "none" } })) : u.jsx(Ct, { user: O, size: 54 }) }) }) }),
-            sn > 1 && u.jsx("span", { className: "absolute flex items-center justify-center rounded-full text-[10px] font-bold", style: { right: -2, top: -2, minWidth: 18, height: 18, padding: "0 4px", background: k.saffron, color: k.onAccent, border: `2px solid ${k.card}` }, children: sn }),
-            re &&
-              u.jsx("span", {
-                className:
-                  "absolute flex items-center justify-center rounded-full",
-                style: {
-                  right: -2,
-                  bottom: -2,
-                  width: 22,
-                  height: 22,
-                  background: k.saffron,
-                  color: k.onAccent,
-                  border: `2px solid ${k.card}`,
-                },
-                children: u.jsx(ho, { size: 13 }),
-              }),
-          ],
-        }),
-        u.jsx("span", {
-          className: "text-[11px] truncate w-full text-center",
-          style: { color: k.ink },
-          children: U,
-        }),
+        cardPhoto(O),
+        u.jsx("div", { style: { position: "absolute", left: 0, right: 0, bottom: 0, height: 70, background: shade } }),
+        window.__bgBadge && window.__bgBadge[O.id] ? u.jsx("span", { style: { position: "absolute", right: 6, top: 6, display: "flex", borderRadius: "50%", background: "#fff", padding: 2 }, children: BgB(O) }) : null,
+        u.jsx("span", { className: "absolute text-[12px] font-bold truncate", style: { left: 8, right: 8, bottom: 8, color: "#fff", textAlign: "left" }, children: x("profile") }),
       ],
     });
+  const A = ({ user: O, onClick: R, label: U, plus: re, st: stt, n: sn }) => re
+    ? u.jsxs("button", {
+        onClick: R, "aria-label": U, className: "shrink-0",
+        style: { ...cardBase, background: k.card, border: `1px solid ${k.line}` },
+        children: [
+          u.jsx("div", { style: { position: "absolute", left: 0, right: 0, top: 0, height: 98 }, children: cardPhoto(O) }),
+          u.jsx("span", { className: "absolute flex items-center justify-center rounded-full", style: { left: "50%", top: 83, transform: "translateX(-50%)", width: 30, height: 30, background: k.saffron, color: k.onAccent, border: `3px solid ${k.card}` }, children: u.jsx(ho, { size: 16 }) }),
+          u.jsx("span", { className: "absolute text-[11px] font-semibold", style: { left: 4, right: 4, bottom: 6, color: k.ink, textAlign: "center", lineHeight: 1.15 }, children: U }),
+        ],
+      })
+    : u.jsxs("button", {
+        onClick: R, "aria-label": U, className: "shrink-0", style: cardBase,
+        children: [
+          stt
+            ? (stt.kind === "text"
+                ? u.jsx("div", { style: { width: "100%", height: "100%", background: bgStText(stt.url).bg, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, padding: 8, textAlign: "center", overflow: "hidden", lineHeight: 1.15 }, children: bgStText(stt.url).t.slice(0, 60) })
+                : stt.kind === "image"
+                  ? u.jsx("img", { src: stt.url, alt: "", loading: "lazy", style: { width: "100%", height: "100%", objectFit: "cover", display: "block" } })
+                  : u.jsx("video", { src: stt.url + "#t=0.5", muted: !0, playsInline: !0, preload: "metadata", style: { width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" } }))
+            : cardPhoto(O),
+          u.jsx("div", { style: { position: "absolute", left: 0, right: 0, bottom: 0, height: 70, background: shade } }),
+          u.jsx("div", { style: { position: "absolute", left: 6, top: 6, borderRadius: "50%", padding: 2, background: k.saffron }, children: u.jsx("div", { style: { borderRadius: "50%", overflow: "hidden", width: 28, height: 28, background: k.card }, children: u.jsx(Ct, { user: O, size: 28 }) }) }),
+          sn > 1 && u.jsx("span", { className: "absolute flex items-center justify-center rounded-full text-[10px] font-bold", style: { right: 6, top: 6, minWidth: 18, height: 18, padding: "0 4px", background: k.saffron, color: k.onAccent }, children: sn }),
+          u.jsx("span", { className: "absolute text-[11px] font-semibold truncate", style: { left: 8, right: 8, bottom: 8, color: "#fff", textAlign: "left" }, children: U }),
+        ],
+      });
   return u.jsxs(u.Fragment, {
     children: [
       u.jsxs("div", {
@@ -9498,24 +9504,9 @@ function X_({
           scrollbarWidth: "none",
         },
         children: [
-          e && opf && u.jsxs("button", {
-            onClick: opf,
-            className: "flex flex-col items-center gap-1 shrink-0",
-            style: { width: 66 },
-            "aria-label": x("profile"),
-            children: [
-              u.jsxs("div", {
-                className: "relative",
-                children: [
-                  u.jsx("div", { style: { borderRadius: "50%", padding: 3, background: k.ink }, children: u.jsx("div", { style: { borderRadius: "50%", padding: 2, background: k.card }, children: u.jsx("div", { style: { borderRadius: "50%", overflow: "hidden", width: 54, height: 54, display: "flex", alignItems: "center", justifyContent: "center" }, children: u.jsx(Ct, { user: e, size: 54 }) }) }) }),
-                  window.__bgBadge && window.__bgBadge[e.id] ? u.jsx("span", { style: { position: "absolute", right: -4, bottom: -2, display: "flex", borderRadius: "50%", background: k.card, padding: 2 }, children: BgB(e) }) : null,
-                ],
-              }),
-              u.jsx("span", { className: "text-[11px] truncate w-full text-center font-semibold", style: { color: k.ink }, children: x("profile") }),
-            ],
-          }, "bgprof"),
-          e && u.jsx(A, { user: e, plus: !0, label: x("newStatus"), onClick: () => c(!0) }),
+          e && opf && u.jsx(PF, { user: e, onClick: opf }, "bgprof"),
           ...(e ? (v[e.id] && v[e.id].length ? v[e.id].map((it, ix_) => u.jsx(A, { user: e, plus: !1, st: it, label: x("myStatus"), onClick: () => o({ userId: e.id, i: ix_ }) }, "me" + it.id)) : []) : []),
+          e && u.jsx(A, { user: e, plus: !0, label: x("newStatus"), onClick: () => c(!0) }),
           ...g.flatMap((O) => v[O].map((it, ix_) => u.jsx(A, { user: t[O] || mt, st: it, label: (t[O] || mt).name.split(" ")[0], onClick: () => o({ userId: O, i: ix_ }) }, O + "-" + it.id))),
         ],
       }),

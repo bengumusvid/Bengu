@@ -16500,7 +16500,7 @@ function swipe(node,cb){var sx=0,sy=0;node.addEventListener("touchstart",functio
  node.addEventListener("touchend",function(e){var t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(Math.max(Math.abs(dx),Math.abs(dy))<20)return;cb(Math.abs(dx)>Math.abs(dy)?(dx>0?2:0):(dy>0?3:1))},{passive:true})}
 function keys(cb){function kh(e){var m={ArrowLeft:0,ArrowUp:1,ArrowRight:2,ArrowDown:3}[e.key];if(m==null)return;e.preventDefault();cb(m)}document.addEventListener("keydown",kh);return function(){document.removeEventListener("keydown",kh)}}
 function topbar(G,menu){var d=el("div","display:flex;align-items:center;gap:8px;margin:2px 0 8px"),b=el("button",BTN+";padding:7px 11px","← Jogos");b.onclick=menu;d.append(b,el("b","font-size:16px",G[1]+" "+G[2]));return d}
-function GAMES(){return[["cobra","🐍","Cobra",snake],["tetris","🧱","Tetris",tetris],["galo","❌","Jogo do galo",galo],["2048","🔢","2048",g2048],["minas","💣","Campo minado",minas],["toupeira","🔨","Caça à toupeira",toupeira],["puzzle","🧩","Puzzle 8",puzzle],["simon","🎨","Simon (cores)",simon],["ppt","✂️","Pedra, papel, tesoura",ppt],["numero","🎯","Adivinha o número",numero],["memoria","🧠","Jogo da memória",memory,1]]}
+function GAMES(){return[["cobra","🐍","Cobra 3D",snake],["tetris","🧱","Tetris",tetris],["galo","❌","Jogo do galo",galo],["2048","🔢","2048",g2048],["minas","💣","Campo minado",minas],["toupeira","🔨","Caça à toupeira",toupeira],["puzzle","🧩","Puzzle 8",puzzle],["simon","🎨","Simon (cores)",simon],["ppt","✂️","Pedra, papel, tesoura",ppt],["numero","🎯","Adivinha o número",numero],["forca","🔤","Forca",forca],["contas","➕","Contas rápidas",contas],["reacao","⚡","Teste de reação",reacao],["quiz","❓","Quiz",quiz],["cores","🌈","Cores",cores],["memoria","🧠","Jogo da memória",memory,1]]}
 function viewGames(b){stopGame();var box=el("div"),inMenu=false;b.append(box);menu();refreshAcc(function(){if(inMenu)menu()});
  function menu(){stopGame();inMenu=true;box.replaceChildren(el("h3","margin:4px 0","🎮 Jogos"),el("p","font-size:12px;opacity:.7;margin:0 0 10px","Jogas sem internet e sem gastar dados. Todos os jogos têm níveis (1, 2, 3… sem limite) e ficam mais difíceis a cada nível."));
   var mu=el("button",CARD+";flex-direction:row;justify-content:center;width:100%;margin-bottom:10px;background:#3a3f90"),tx=el("span","text-align:left");tx.append(el("div","","Música offline"),el("div","font-size:11px;font-weight:400;opacity:.75","As músicas do teu telemóvel · sem internet"));
@@ -16513,29 +16513,58 @@ function viewGames(b){stopGame();var box=el("div"),inMenu=false;b.append(box);me
   inMenu=false;var w=el("div");box.replaceChildren(topbar(G,menu),w);var r=G[3](w);if(typeof r==="function")window.__bgGameStop=r}}
 /* ---- 1. Cobra ---- */
 function snake(w){
- var cols=22,rows=28,CW=Math.max(220,(w.clientWidth||320)-2),cs=Math.floor(CW/cols),W=cs*cols,H=cs*rows;
+ var cols=22,rows=28,W=Math.max(220,Math.min(520,(w.clientWidth||320)-2));
+ /* Câmara 3D: perspectiva com inclinação (sem bibliotecas, funciona offline) */
+ var PH=74*Math.PI/180,sP=Math.sin(PH),cP=Math.cos(PH),CH=30,CD=8,F=W*.99*((CD*cP+CH*sP))/cols;
+ function pj(gx,gy,z){var u=gx-cols/2,rz=z-CH,rv=rows-gy+CD,f=rv*cP-rz*sP,up=rz*cP+rv*sP;return{x:F*u/f,y:F*up/f,f:f}}
+ var yTop=pj(cols/2,0,1.4).y+6,H=Math.ceil(yTop-pj(cols/2,rows,0).y+18);
+ function SX(p){return W/2+p.x}function SY(p){return yTop-p.y}
  var cv=document.createElement("canvas");cv.width=W;cv.height=H;cv.style.cssText="display:block;margin:6px auto;border-radius:12px;background:#0d0f2b;touch-action:none;max-width:100%";
- var cx=cv.getContext("2d"),info=el("div","text-align:center;font-size:14px;font-weight:700"),act=el("div","text-align:center;margin-top:8px"),holder=el("div","margin-top:12px"),sn,dir,nd,food,score,foods,tm,alive,ob;
+ var cx=cv.getContext("2d"),info=el("div","text-align:center;font-size:14px;font-weight:700"),act=el("div","text-align:center;margin-top:8px"),holder=el("div","margin-top:12px"),sn,prev,stepT=0,dir,nd,food,score,foods,tm,alive,ob,raf=0;
  function lv(){return 1+Math.floor(foods/3)}
  function spd(){return Math.max(80,Math.round(420*Math.pow(.94,lv()-1)))}
  function hit(a,x,y){return a.some(function(s){return s.x===x&&s.y===y})}
  function head(){info.textContent="Nível "+lv()+" · Pontos: "+score+(ob.length?" · Obstáculos: "+ob.length:"")}
  function place(){do{food={x:Math.floor(Math.random()*cols),y:Math.floor(Math.random()*rows)}}while(hit(sn,food.x,food.y)||hit(ob,food.x,food.y))}
  function addOb(){for(var t=0;t<60;t++){var x=Math.floor(Math.random()*cols),y=Math.floor(Math.random()*rows),h=sn[0];if(Math.abs(x-h.x)+Math.abs(y-h.y)<6||hit(sn,x,y)||hit(ob,x,y)||(food.x===x&&food.y===y))continue;ob.push({x:x,y:y});return}}
- function draw(){cx.fillStyle="#0d0f2b";cx.fillRect(0,0,W,H);cx.fillStyle="#78909c";ob.forEach(function(s){cx.fillRect(s.x*cs+1,s.y*cs+1,cs-2,cs-2)});
-  cx.fillStyle="#ef5350";cx.beginPath();cx.arc(food.x*cs+cs/2,food.y*cs+cs/2,cs*.38,0,7);cx.fill();
-  sn.forEach(function(s,i){cx.fillStyle=i?"#66bb6a":"#f5b400";cx.fillRect(s.x*cs+1,s.y*cs+1,cs-2,cs-2)})}
- function init(){sn=[{x:11,y:14},{x:10,y:14},{x:9,y:14}];ob=[];dir=nd=DIRS[2];score=0;foods=0;alive=false;place();head();holder.replaceChildren();act.replaceChildren(btn("▶ Começar",start));draw()}
- function start(){act.replaceChildren();alive=true;clearInterval(tm);tm=setInterval(step,spd())}
+ function poly(pts,fill,stroke){cx.beginPath();pts.forEach(function(q,i){var p=pj(q[0],q[1],q[2]);if(i)cx.lineTo(SX(p),SY(p));else cx.moveTo(SX(p),SY(p))});cx.closePath();if(fill){cx.fillStyle=fill;cx.fill()}if(stroke){cx.strokeStyle=stroke;cx.lineWidth=1;cx.stroke()}}
+ function line(a,b,c){var p=pj(a[0],a[1],a[2]),q=pj(b[0],b[1],b[2]);cx.strokeStyle=c;cx.lineWidth=1;cx.beginPath();cx.moveTo(SX(p),SY(p));cx.lineTo(SX(q),SY(q));cx.stroke()}
+ function ball(gx,gy,z,r,c1,c2){var g0=pj(gx,gy,0),p=pj(gx,gy,z),rad=F*r/p.f,sx=SX(p),sy=SY(p);
+  cx.fillStyle="rgba(0,0,0,.35)";cx.beginPath();cx.ellipse(SX(g0),SY(g0),rad*1.05,rad*.5,0,0,7);cx.fill();
+  var g=cx.createRadialGradient(sx-rad*.35,sy-rad*.4,rad*.1,sx,sy,rad);g.addColorStop(0,c1);g.addColorStop(1,c2);cx.fillStyle=g;cx.beginPath();cx.arc(sx,sy,rad,0,7);cx.fill();return{x:sx,y:sy,r:rad}}
+ function cube(x,y){var L=x+.5<cols/2;
+  poly([[x,y+1,0],[x+1,y+1,0],[x+1,y+1,1],[x,y+1,1]],"#607d8b","#37474f");
+  if(L)poly([[x+1,y,0],[x+1,y+1,0],[x+1,y+1,1],[x+1,y,1]],"#455a64","#37474f");else poly([[x,y,0],[x,y+1,0],[x,y+1,1],[x,y,1]],"#455a64","#37474f");
+  poly([[x,y,1],[x+1,y,1],[x+1,y+1,1],[x,y+1,1]],"#b0bec5","#78909c")}
+ function render(now){
+  var bg=cx.createLinearGradient(0,0,0,H);bg.addColorStop(0,"#1a1e52");bg.addColorStop(1,"#0a0c24");cx.fillStyle=bg;cx.fillRect(0,0,W,H);
+  poly([[0,0,0],[cols,0,0],[cols,rows,0],[0,rows,0]],"#151a45");
+  for(var i=0;i<=cols;i++)line([i,0,0],[i,rows,0],"rgba(255,255,255,.06)");for(var j=0;j<=rows;j++)line([0,j,0],[cols,j,0],"rgba(255,255,255,.06)");
+  poly([[0,0,0],[cols,0,0],[cols,0,.7],[0,0,.7]],"#2a2f78","#f5b400");
+  poly([[0,0,0],[0,rows,0],[0,rows,.7],[0,0,.7]],"#23286a","#f5b400");
+  poly([[cols,0,0],[cols,rows,0],[cols,rows,.7],[cols,0,.7]],"#23286a","#f5b400");
+  var fr=1;if(alive&&prev){fr=Math.min(1,(now-stepT)/spd())}
+  var items=[],n=sn.length,pn=prev?prev.length:0;
+  ob.forEach(function(s){items.push({y:s.y+.5,d:function(){cube(s.x,s.y)}})});
+  items.push({y:food.y+.5,d:function(){var b=ball(food.x+.5,food.y+.5,.55+.12*Math.sin(now/180),.46,"#ff8a80","#b71c1c");cx.fillStyle="rgba(255,255,255,.55)";cx.beginPath();cx.arc(b.x-b.r*.35,b.y-b.r*.4,b.r*.2,0,7);cx.fill()}});
+  sn.forEach(function(s,k){var a=prev&&pn?prev[Math.min(k,pn-1)]:s,gx=a.x+(s.x-a.x)*fr,gy=a.y+(s.y-a.y)*fr,t=k/Math.max(1,n-1);
+   items.push({y:gy+.5,d:function(){
+    if(k===0){var b=ball(gx+.5,gy+.5,.62,.66,"#ffe082","#f5b400"),d=dir,px=-d.y,py=d.x;
+     [-1,1].forEach(function(sg){var e=pj(gx+.5+d.x*.3+px*.22*sg,gy+.5+d.y*.3+py*.22*sg,.85),er=F*.13/e.f,ex=SX(e),ey=SY(e);cx.fillStyle="#fff";cx.beginPath();cx.arc(ex,ey,er,0,7);cx.fill();cx.fillStyle="#111";cx.beginPath();cx.arc(ex+d.x*er*.35,ey+d.y*er*.2,er*.5,0,7);cx.fill()})}
+    else ball(gx+.5,gy+.5,.56,.6-.16*t,"hsl(125,55%,"+(64-t*22)+"%)","hsl(125,60%,"+(30-t*10)+"%)")}})});
+  items.sort(function(a,b){return a.y-b.y}).forEach(function(it){it.d()})}
+ function draw(){render(performance.now())}
+ function loop(){raf=requestAnimationFrame(loop);render(performance.now())}
+ function init(){sn=[{x:11,y:14},{x:10,y:14},{x:9,y:14}];prev=null;ob=[];dir=nd=DIRS[2];score=0;foods=0;alive=false;place();head();holder.replaceChildren();act.replaceChildren(btn("▶ Começar",start));draw()}
+ function start(){act.replaceChildren();alive=true;prev=sn.slice();stepT=performance.now();clearInterval(tm);tm=setInterval(step,spd())}
  function turn(c){if(!alive)return;var d=DIRS[c];if(d.x===-dir.x&&d.y===-dir.y)return;nd=d}
  function over(){alive=false;clearInterval(tm);info.textContent="💀 Fim! Nível "+lv()+" · Pontos: "+score;act.replaceChildren(btn("Jogar outra vez",init));submit("cobra",score,holder)}
  function step(){dir=nd;var h={x:sn[0].x+dir.x,y:sn[0].y+dir.y};
   if(h.x<0||h.y<0||h.x>=cols||h.y>=rows||hit(sn,h.x,h.y)||hit(ob,h.x,h.y))return over();
-  sn.unshift(h);
-  if(h.x===food.x&&h.y===food.y){var l0=lv();score+=10*l0;foods++;place();if(lv()!==l0){if(lv()>=4&&ob.length<50)addOb();toast("⬆ Nível "+lv());clearInterval(tm);tm=setInterval(step,spd())}head()}else sn.pop();
-  draw()}
- var rs=swipeDoc(turn,function(){return alive}),rk=keys(turn);w.append(info,cv,dpad(turn),act,holder);init();
- return function(){alive=false;clearInterval(tm);rs();rk()}}
+  prev=sn.slice();stepT=performance.now();sn.unshift(h);
+  if(h.x===food.x&&h.y===food.y){var l0=lv();score+=10*l0;foods++;place();if(lv()!==l0){if(lv()>=4&&ob.length<50)addOb();toast("⬆ Nível "+lv());clearInterval(tm);tm=setInterval(step,spd())}head()}else sn.pop()}
+ var rs=swipeDoc(turn,function(){return alive}),rk=keys(turn);w.append(info,cv,dpad(turn),act,holder);init();loop();
+ return function(){alive=false;clearInterval(tm);cancelAnimationFrame(raf);rs();rk()}}
 /* ---- Tetris ---- */
 function tetris(w){
  var C=10,R=20,cs=Math.min(24,Math.floor(((w.clientWidth||320)-8)/C)),W=C*cs,H=R*cs,
@@ -16698,6 +16727,119 @@ function memory(w){clearTimeout(window.__bgMemT);
  function end(){var s=Math.round((Date.now()-t0)/1000),pts=lv*20+Math.max(0,1000-moves*10-s*2);info.textContent="🎉 Terminaste! Jogadas: "+moves+" · "+s+" s · Pontos: "+pts;setLvl("memoria",lv+1);
   var again=el("button",BTN+";margin-top:8px","Continuar já");again.onclick=function(){memory(w)};w.append(again);submit("memoria",pts,rank);window.__bgMemT=setTimeout(function(){memory(w)},2200)}
  board("memoria",rank);return function(){clearTimeout(window.__bgMemT)}}
+/* ---- BENGU: jogos novos (offline, com níveis): Forca, Contas rápidas, Teste de reação, Quiz, Cores ---- */
+function rndI(a,b){return a+Math.floor(Math.random()*(b-a+1))}
+function shuf(a){return a.slice().sort(function(){return Math.random()-.5})}
+var HEAD="text-align:center;font-weight:700;font-size:14px;margin-bottom:8px";
+/* ---- Forca ---- */
+function forca(w){var WORDS=["CAJU","XIMA","BOLA","GATO","RATO","MAPA","FOGO","CASA","VENTO","MANGA","PRAIA","LIMAO","MAPUTO","BEIRA","BANANA","MATAPA","MUSICA","ESCOLA","FAMILIA","NAMPULA","ZAMBEZE","LIMPOPO","FUTEBOL","GIRAFA","AMIZADE","BATUQUE","ELEFANTE","AMENDOIM","MANDIOCA","CROCODILO","LEOPARDO","CAMARAO","COQUEIRO","TELEMOVEL","MARRABENTA","COMPUTADOR","HIPOPOTAMO","CAPULANA","INHAMBANE","XIPAMANINE"],
+ lv,word,got,wrong,max=7,done,tmA,
+ info=el("div",HEAD+";font-size:15px"),wd=el("div","text-align:center;font-size:30px;letter-spacing:4px;font-weight:800;margin:14px 0;word-break:break-all"),kb=el("div","display:grid;grid-template-columns:repeat(7,1fr);gap:6px"),act=el("div","text-align:center;margin-top:10px"),holder=el("div","margin-top:12px");
+ function show(){wd.textContent=word.split("").map(function(c){return got.indexOf(c)>=0||done===2?c:"_"}).join(" ");if(!done)info.textContent="Nível "+lv+" · "+new Array(max-wrong+1).join("❤️")+new Array(wrong+1).join("🖤")}
+ function pickL(c,b){if(done||b.disabled)return;b.disabled=true;
+  if(word.indexOf(c)>=0){got+=c;b.style.background="#2e7d32"}else{wrong++;b.style.background="#8e1a1a"}
+  var all=word.split("").every(function(x){return got.indexOf(x)>=0});
+  if(all){done=1;show();var pts=lv*20+(max-wrong)*30+word.length*5;info.textContent="🎉 Acertaste! Pontos: "+pts;setLvl("forca",lv+1);act.replaceChildren(btn("Continuar já",init));submit("forca",pts,holder);tmA=setTimeout(init,2200);return}
+  if(wrong>=max){done=2;show();info.textContent="😅 Era: "+word;act.replaceChildren(btn("Tentar outra palavra",init));return}
+  show()}
+ function init(){clearTimeout(tmA);lv=lvl("forca");var len=Math.min(12,4+Math.floor(lv/2)),pool=WORDS.filter(function(x){return x.length<=len&&x.length>=len-3});if(!pool.length)pool=WORDS;
+  word=pool[rndI(0,pool.length-1)];got="";wrong=0;done=0;kb.replaceChildren();
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(function(c){var b=el("button",KB+";padding:10px 0;font-size:16px;font-weight:700",c);b.onclick=function(){pickL(c,b)};kb.append(b)});
+  act.replaceChildren();board("forca",holder);show()}
+ w.append(el("p","font-size:12px;opacity:.7;margin:0 0 8px;text-align:center","Adivinha a palavra. Tens 7 vidas."),info,wd,kb,act,holder);init();return function(){clearTimeout(tmA)}}
+/* ---- Contas rápidas ---- */
+function contas(w){var sc,left,run,tmT,ans,
+ info=el("div",HEAD),q=el("div","text-align:center;font-size:40px;font-weight:800;margin:14px 0"),opts=el("div","display:grid;grid-template-columns:repeat(2,1fr);gap:10px;max-width:320px;margin:0 auto"),act=el("div","text-align:center;margin-top:10px"),holder=el("div","margin-top:12px");
+ function lv(){return 1+Math.floor(sc/5)}
+ function upd(){info.textContent="Nível "+lv()+" · ⏱ "+left+" s · Certas: "+sc}
+ function gen(){var L=lv(),a,b,r,ops=L<3?["+","-"]:L<6?["+","-","×"]:["+","-","×","×"],op=ops[rndI(0,ops.length-1)];
+  if(op==="+"){a=rndI(2,8+L*6);b=rndI(2,8+L*6);r=a+b}
+  else if(op==="-"){a=rndI(5,12+L*6);b=rndI(1,a);r=a-b}
+  else{a=rndI(2,Math.min(12,3+L));b=rndI(2,Math.min(12,3+L));r=a*b}
+  q.textContent=a+" "+op+" "+b;ans=r;var set=[r],t=0;while(set.length<4&&t++<60){var d=r+rndI(-5,5);if(d>=0&&set.indexOf(d)<0)set.push(d)}while(set.length<4)set.push(r+10+set.length);
+  opts.replaceChildren();shuf(set).forEach(function(v){var x=el("button",CARD+";font-size:22px;padding:16px 8px",String(v));x.onclick=function(){pickA(v)};opts.append(x)})}
+ function pickA(v){if(!run)return;if(v===ans){sc++;if(sc%5===0)toast("⬆ Nível "+lv())}else left=Math.max(0,left-2);upd();if(left<=0){end();return}gen()}
+ function end(){run=false;clearInterval(tmT);opts.replaceChildren();q.textContent="⏰ Acabou! "+sc+" certas";info.textContent="Pontos: "+sc*10;act.replaceChildren(btn("Jogar outra vez",init));submit("contas",sc*10,holder)}
+ function start(){sc=0;left=30;run=true;holder.replaceChildren();act.replaceChildren();upd();gen();tmT=setInterval(function(){left--;upd();if(left<=0)end()},1000)}
+ function init(){run=false;clearInterval(tmT);q.textContent="➕ ➖ ✖️";opts.replaceChildren();info.textContent="Resolve o máximo de contas em 30 segundos. Errar custa 2 segundos.";act.replaceChildren(btn("▶ Começar",start));board("contas",holder)}
+ w.append(info,q,opts,act,holder);init();return function(){run=false;clearInterval(tmT)}}
+/* ---- Teste de reação ---- */
+function reacao(w){var N=5,lv,round,times,state,tmW,t0,decoy,
+ box=el("button","width:100%;height:220px;border:0;border-radius:16px;font-size:18px;font-weight:800;color:#fff;background:#2a2f66;touch-action:manipulation;padding:10px"),info=el("div",HEAD),act=el("div","text-align:center;margin-top:10px"),holder=el("div","margin-top:12px");
+ function red(){box.style.background="#b71c1c";box.textContent="Espera pela cor verde…"}
+ function go(d){tmW=setTimeout(function(){state=2;decoy=false;box.style.background="#2e7d32";box.textContent="TOCA JÁ!";t0=Date.now()},d)}
+ function next(){state=1;decoy=false;red();info.textContent="Nível "+lv+" · Ronda "+(round+1)+" de "+N;var d=1000+Math.random()*2500;
+  if(lv>=3&&Math.random()<.5){tmW=setTimeout(function(){decoy=true;box.style.background="#f9a825";box.textContent="Amarelo: NÃO toques!";tmW=setTimeout(function(){decoy=false;red();go(600+Math.random()*1500)},500+Math.random()*400)},d*.6)}
+  else go(d)}
+ function finish(){state=5;var s=0;times.forEach(function(t){s+=t});var avg=Math.round(s/N),pts=Math.max(0,Math.round((1000-avg)*2))+lv*10;
+  box.style.background="#2a2f66";box.textContent="Média: "+avg+" ms";info.textContent="🎉 Pontos: "+pts+" · Média "+avg+" ms";setLvl("reacao",lv+1);act.replaceChildren(btn("Continuar já",init));submit("reacao",pts,holder)}
+ function tap(){
+  if(state===0||state===3){next();return}
+  if(state===1){clearTimeout(tmW);state=3;box.style.background="#2a2f66";box.textContent="Cedo demais! Toca para repetir a ronda";return}
+  if(state===2){var ms=Date.now()-t0;times.push(ms);round++;if(round>=N){finish();return}state=3;box.style.background="#2a2f66";box.textContent=ms+" ms · toca para a próxima ronda"}}
+ box.onclick=tap;
+ function init(){clearTimeout(tmW);lv=lvl("reacao");round=0;times=[];state=0;box.style.background="#2a2f66";box.textContent="Toca para começar";info.textContent="Nível "+lv+" · "+N+" rondas. Toca quando ficar verde."+(lv>=3?" Cuidado com o amarelo!":"");act.replaceChildren();board("reacao",holder)}
+ w.append(info,box,act,holder);init();return function(){clearTimeout(tmW)}}
+/* ---- Quiz ---- */
+function quiz(w){var Q=[
+ [1,"Qual é a capital de Moçambique?","Maputo","Beira","Nampula","Matola"],
+ [1,"Que oceano banha a costa de Moçambique?","Índico","Atlântico","Pacífico","Ártico"],
+ [1,"Qual é a moeda de Moçambique?","Metical","Kwanza","Rand","Euro"],
+ [1,"Quantos dias tem uma semana?","7","5","6","8"],
+ [1,"Qual é o maior animal terrestre?","Elefante","Girafa","Leão","Hipopótamo"],
+ [1,"Que cor se obtém misturando azul e amarelo?","Verde","Roxo","Laranja","Castanho"],
+ [1,"Quantos lados tem um triângulo?","3","4","5","2"],
+ [1,"Em que planeta vivemos?","Terra","Marte","Vénus","Júpiter"],
+ [1,"Quantas horas tem um dia?","24","12","48","60"],
+ [1,"Qual é o rio que atravessa a província de Tete?","Zambeze","Limpopo","Save","Rovuma"],
+ [1,"Quantos meses tem um ano?","12","10","11","13"],
+ [1,"Qual é a língua oficial de Moçambique?","Português","Inglês","Suaíli","Francês"],
+ [2,"Em que ano Moçambique ficou independente?","1975","1960","1980","1990"],
+ [2,"Quem foi o primeiro presidente de Moçambique?","Samora Machel","Joaquim Chissano","Eduardo Mondlane","Armando Guebuza"],
+ [2,"Que país faz fronteira com Moçambique a norte?","Tanzânia","Quénia","Angola","Namíbia"],
+ [2,"Qual é a capital de Angola?","Luanda","Benguela","Huambo","Lobito"],
+ [2,"Qual é a capital de Portugal?","Lisboa","Porto","Coimbra","Faro"],
+ [2,"Qual é o planeta mais próximo do Sol?","Mercúrio","Vénus","Marte","Terra"],
+ [2,"Quantos jogadores de cada equipa estão em campo no futebol?","11","9","10","12"],
+ [2,"Que gás precisamos de respirar para viver?","Oxigénio","Hélio","Azoto","Hidrogénio"],
+ [2,"Qual é o maior oceano do mundo?","Pacífico","Atlântico","Índico","Ártico"],
+ [2,"Qual é a capital do Brasil?","Brasília","Rio de Janeiro","São Paulo","Salvador"],
+ [2,"Quem pintou a Mona Lisa?","Leonardo da Vinci","Picasso","Van Gogh","Miguel Ângelo"],
+ [2,"Quantos graus tem um ângulo recto?","90","45","180","60"],
+ [3,"Qual é a capital da Zâmbia?","Lusaka","Harare","Lilongwe","Gaborone"],
+ [3,"Qual é o símbolo químico do ouro?","Au","Ag","Or","Go"],
+ [3,"Qual é a raiz quadrada de 144?","12","14","11","16"],
+ [3,"Em que ano o ser humano pisou a Lua pela primeira vez?","1969","1959","1975","1981"],
+ [3,"Qual é o maior país de África em área?","Argélia","Nigéria","Egipto","África do Sul"],
+ [3,"Em que província fica o Parque Nacional da Gorongosa?","Sofala","Gaza","Niassa","Cabo Delgado"],
+ [3,"Qual é a capital da Etiópia?","Adis Abeba","Nairobi","Cartum","Kampala"],
+ [3,"Qual é o planeta com os anéis mais visíveis?","Saturno","Júpiter","Úrano","Marte"],
+ [3,"Quantos ossos tem o corpo de um adulto?","206","180","250","300"],
+ [3,"Qual é o rio mais longo de África?","Nilo","Congo","Zambeze","Níger"],
+ [3,"Qual era o antigo nome da cidade de Maputo?","Lourenço Marques","Vila Pery","Porto Amélia","Vila Cabral"],
+ [3,"Qual é a capital da província de Cabo Delgado?","Pemba","Lichinga","Quelimane","Chimoio"]],
+ lv,idx,sc,list,locked,tmA,
+ info=el("div",HEAD),qe=el("div","font-size:18px;font-weight:700;margin:6px 0 12px;line-height:1.35"),opts=el("div","display:flex;flex-direction:column;gap:8px"),act=el("div","text-align:center;margin-top:12px"),holder=el("div","margin-top:12px");
+ function nextQ(){if(idx>=list.length){fin();return}var q=list[idx];locked=false;info.textContent="Nível "+lv+" · Pergunta "+(idx+1)+" de "+list.length+" · Certas: "+sc;qe.textContent=q[1];opts.replaceChildren();
+  var bs=shuf(q.slice(2).map(function(t,i){return{t:t,ok:i===0}})).map(function(o){var b=el("button","border:0;border-radius:10px;padding:12px;text-align:left;background:#2a2f66;color:#fff;font-size:15px;width:100%",o.t);b.__ok=o.ok;opts.append(b);return b});
+  bs.forEach(function(b){b.onclick=function(){if(locked)return;locked=true;if(b.__ok){sc++;b.style.background="#2e7d32"}else{b.style.background="#8e1a1a";bs.forEach(function(x){if(x.__ok)x.style.background="#2e7d32"})}
+   tmA=setTimeout(function(){idx++;nextQ()},900)}})}
+ function fin(){opts.replaceChildren();var pts=sc*10+lv*5+(sc===list.length?50:0);qe.textContent="🎉 Acertaste "+sc+" de "+list.length+"!";info.textContent="Pontos: "+pts;setLvl("quiz",lv+1);act.replaceChildren(btn("Continuar já",init));submit("quiz",pts,holder)}
+ function init(){clearTimeout(tmA);lv=lvl("quiz");var dmax=Math.min(3,1+Math.floor((lv-1)/3));list=shuf(Q.filter(function(x){return x[0]<=dmax})).slice(0,10);idx=0;sc=0;act.replaceChildren();board("quiz",holder);nextQ()}
+ w.append(info,qe,opts,act,holder);init();return function(){clearTimeout(tmA)}}
+/* ---- Cores (toca na cor da letra, não no que está escrito) ---- */
+function cores(w){var C=[["Vermelho","#e53935"],["Azul","#1e88e5"],["Verde","#43a047"],["Amarelo","#fdd835"],["Roxo","#8e24aa"],["Laranja","#fb8c00"]],sc,left,run,tmT,ink,
+ info=el("div",HEAD),word=el("div","text-align:center;font-size:44px;font-weight:900;margin:16px 0;min-height:56px"),opts=el("div","display:grid;grid-template-columns:repeat(2,1fr);gap:10px;max-width:320px;margin:0 auto"),act=el("div","text-align:center;margin-top:10px"),holder=el("div","margin-top:12px");
+ function lv(){return 1+Math.floor(sc/5)}
+ function upd(){info.textContent="Nível "+lv()+" · ⏱ "+left+" s · Certas: "+sc}
+ function gen(){var k=lv()<3?4:6,wi=rndI(0,k-1),ii=rndI(0,k-1);if(Math.random()<.8)while(ii===wi)ii=rndI(0,k-1);
+  word.textContent=C[wi][0].toUpperCase();word.style.color=C[ii][1];ink=ii;opts.replaceChildren();
+  for(var i=0;i<k;i++)(function(i){var b=el("button","border:0;border-radius:12px;height:56px;background:"+C[i][1]);b.onclick=function(){pickC(i)};opts.append(b)})(i)}
+ function pickC(i){if(!run)return;if(i===ink){sc++;if(sc%5===0)toast("⬆ Nível "+lv())}else left=Math.max(0,left-2);upd();if(left<=0){end();return}gen()}
+ function end(){run=false;clearInterval(tmT);opts.replaceChildren();word.style.color="#fff";word.textContent="⏰ Acabou! "+sc+" certas";info.textContent="Pontos: "+sc*10;act.replaceChildren(btn("Jogar outra vez",init));submit("cores",sc*10,holder)}
+ function start(){sc=0;left=30;run=true;holder.replaceChildren();act.replaceChildren();upd();gen();tmT=setInterval(function(){left--;upd();if(left<=0)end()},1000)}
+ function init(){run=false;clearInterval(tmT);word.style.color="#fff";word.textContent="🌈";opts.replaceChildren();info.textContent="Toca no quadrado com a COR DA LETRA, não no que está escrito. 30 segundos. Errar custa 2 segundos.";act.replaceChildren(btn("▶ Começar",start));board("cores",holder)}
+ w.append(info,word,opts,act,holder);init();return function(){run=false;clearInterval(tmT)}}
 /* ---------- Premium e selos ---------- */
 /* Selo verde ✓ = conta verificada. Estrela ★ na cor do Bengu (#FFB020) = conta Premium. */
 var KINDS=[["mpesa","M-Pesa"],["emola","e-Mola"],["mkesh","mKesh"],["paypal","PayPal"],["bank","Banco (NIB/IBAN)"],["other","Outra forma"]],

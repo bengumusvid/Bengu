@@ -3883,17 +3883,22 @@ st.textContent="header.sticky.top-0,nav.fixed.bottom-0{transition:transform .1s 
  "html[data-bgbars=\"down\"] nav.fixed.bottom-0{transform:translateY(100%)}";
 document.head.appendChild(st);
 /* BENGU 4.55: a faixa dos ESTADOS sai no mesmo instante em que se desliza o feed (não espera chegar ao topo); volta ao chegar ao topo */
-var sst=document.createElement("style");sst.textContent="html.bg-st-hide .bg-st{display:none!important}";document.head.appendChild(sst);
+var sst=document.createElement("style");sst.textContent="html.bg-st-hide .bg-st{display:none!important}"+
+ "@keyframes bgStIn{from{transform:translateY(-14px);opacity:0}to{transform:none;opacity:1}}"+
+ "html.bg-st-hide.bg-st-float .bg-st{display:flex!important;position:fixed;left:0;right:0;top:var(--bgst-top,56px);z-index:40;animation:bgStIn .12s ease-out}";document.head.appendChild(sst);
 function stEl(){var e=document.querySelector(".bg-st");if(!e||!e.offsetHeight)return null;var p=e.previousElementSibling;if(p&&p.tagName==="H1")return null;return e}
 function stHide(){if(root.classList.contains("bg-st-hide"))return;var e=stEl();if(!e)return;
  var a=e.nextElementSibling;while(a&&getComputedStyle(a).position==="fixed")a=a.nextElementSibling;
  var t0=a?a.getBoundingClientRect().top:0;root.classList.add("bg-st-hide");
  if(a){var t1=a.getBoundingClientRect().top;if(t1!==t0)window.scrollBy(0,t1-t0)}}
-function stShow(){if(root.classList.contains("bg-st-hide"))root.classList.remove("bg-st-hide")}
+function stShow(){root.classList.remove("bg-st-float");if(root.classList.contains("bg-st-hide"))root.classList.remove("bg-st-hide")}
+/* BENGU 4.56: ao deslizar de volta para cima, a faixa dos estados reaparece logo por baixo do cabeçalho (sem esperar chegar ao topo) */
+function stFloat(){if(!root.classList.contains("bg-st-hide")||root.classList.contains("bg-st-float")||(tgt&&inner(tgt)))return;
+ var h=document.querySelector("header.sticky.top-0");root.style.setProperty("--bgst-top",(h?Math.max(0,Math.round(h.getBoundingClientRect().bottom)):0)+"px");root.classList.add("bg-st-float")}
 function stSync(){if((window.pageYOffset||root.scrollTop||0)<=4)stShow()}
 document.addEventListener("touchstart",stSync,{passive:true,capture:true});
 document.addEventListener("click",function(){setTimeout(stSync,60)},true);
-function set(d){if(d==="up")stHide();dir=d;if(root.getAttribute("data-bgbars")===d)return;root.setAttribute("data-bgbars",d)}
+function set(d){if(d==="up"){root.classList.remove("bg-st-float");stHide()}else if(d==="down"&&(window.pageYOffset||root.scrollTop||0)>8)stFloat();dir=d;if(root.getAttribute("data-bgbars")===d)return;root.setAttribute("data-bgbars",d)}
 function inner(t){/* o gesto é dentro de uma lista com rolagem própria (modais, reels, chat)? */
  while(t&&t!==document.body&&t.nodeType===1){var cs=getComputedStyle(t);
   if(/(auto|scroll)/.test(cs.overflowY)&&t.scrollHeight>t.clientHeight+2)return true;

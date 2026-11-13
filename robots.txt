@@ -2,4 +2,3 @@ User-agent: *
 Allow: /
 
 Sitemap: https://getbengu.com/sitemap.xml
-Sitemap: https://getbengu.com/sitemap-noticias.xml

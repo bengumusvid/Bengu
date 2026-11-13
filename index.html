@@ -1267,7 +1267,7 @@ function bgEng(kind,n,o){o=o||{};var id=String(n.id),st={likes:0,comments:0,like
  lk.addEventListener("click",function(){if(!uid()){alert("Entre na sua conta para gostar.");return}var was=st.liked;st.liked=!was;st.likes=Math.max(0,st.likes+(was?-1:1));paint();
   (was?api("bengu_content_likes?kind=eq."+kind+"&content_id=eq."+encodeURIComponent(id)+"&user_id=eq."+uid(),"DELETE"):api("bengu_content_likes","POST",{kind:kind,content_id:id})).catch(function(e){if(!/duplicate|23505|unique/i.test((e&&e.message)||"")){st.liked=was;st.likes=Math.max(0,st.likes+(was?1:-1));paint();alert("Não foi possível gostar. Tente novamente mais tarde.")}})});
  cm.addEventListener("click",function(){bgComments(kind,id,o.title||n.title,function(c){st.comments=c;paint()})});
- sh.addEventListener("click",function(){shareNews(o.title||n.title,o.text||"",o.url||(kind==="news"?location.origin+"/s/n/"+id:location.origin+location.pathname))});
+ sh.addEventListener("click",function(){shareNews(o.title||n.title,o.text||"",o.url||(kind==="news"&&window.bgShareUrl?window.bgShareUrl("n",id):location.origin+location.pathname))});
  bar.append(lk,cm,sh);
  if(o.use){var us=B("🎼","Usar áudio");us.addEventListener("click",function(){window.bengu_use_audio&&window.bengu_use_audio(o.use.url,o.use.title)});bar.append(us)}
  if(o.dl){var dw=B("⏬","Descarregar");dw.addEventListener("click",function(){bgDl(o.dl)});bar.append(dw)}
@@ -17621,8 +17621,10 @@ function el(t,css,txt){var e=document.createElement(t);if(css)e.style.cssText=cs
 function fmt(d){try{return new Date(d).toLocaleString("pt-PT",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}catch(e){return""}}
 function https(u){return /^https:\/\//.test(u||"")}
 
+/* Sem Cloudflare: o link abre a app directamente na notícia (#ver-...). Quando as páginas /s/ existirem, pôr window.BENGU_SHARE_PAGES=true. */
+window.bgShareUrl=function(kind,id){return window.BENGU_SHARE_PAGES===true?location.origin+"/s/"+kind+"/"+id:location.origin+"/#ver-"+kind+"-"+id};
 window.bgShareLink=function(kind,id){
- var url=location.origin+"/s/"+kind+"/"+id;
+ var url=window.bgShareUrl(kind,id);
  if(navigator.share){navigator.share({title:"Bengu",url:url}).catch(function(){});return}
  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(function(){alert("Link copiado.")}).catch(function(){prompt("Copie o link:",url)});
  else prompt("Copie o link:",url);

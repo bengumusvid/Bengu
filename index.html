@@ -7217,8 +7217,22 @@ function J_() {
         );
       });
   B.useEffect(() => {
-    me.auth.getSession().then(({ data: V }) => {
-      (m(V.session), g(!0));
+    /* Sem dados/sem internet: nunca terminar sessão. Se a renovação do token falhar por falta de rede, usa a sessão guardada no telemóvel. */
+    const bgStored = (Eg) => {
+      try {
+        if (window.__bgUserOut === !0) return null;
+        const off = navigator.onLine === !1 || (window.bgOffline && window.bgOffline()) || (Eg && (Eg.name === "AuthRetryableFetchError" || Eg.status === 0 || /fetch|network|timeout|load failed/i.test(String(Eg.message || ""))));
+        if (!off) return null;
+        const raw = localStorage.getItem(me.auth.storageKey || "");
+        const st = raw && JSON.parse(raw);
+        return st && st.access_token && st.user ? st : null;
+      } catch (e) { return null; }
+    };
+    me.auth.getSession().then(({ data: V, error: Eg }) => {
+      const S = (V && V.session) || bgStored(Eg);
+      (m(S), g(!0));
+    }, (Eg) => {
+      (m(bgStored(Eg || { name: "AuthRetryableFetchError" })), g(!0));
     });
     const { data: I } = me.auth.onAuthStateChange((V, Z) => {
       if (Z) {
@@ -16500,7 +16514,7 @@ function swipe(node,cb){var sx=0,sy=0;node.addEventListener("touchstart",functio
  node.addEventListener("touchend",function(e){var t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(Math.max(Math.abs(dx),Math.abs(dy))<20)return;cb(Math.abs(dx)>Math.abs(dy)?(dx>0?2:0):(dy>0?3:1))},{passive:true})}
 function keys(cb){function kh(e){var m={ArrowLeft:0,ArrowUp:1,ArrowRight:2,ArrowDown:3}[e.key];if(m==null)return;e.preventDefault();cb(m)}document.addEventListener("keydown",kh);return function(){document.removeEventListener("keydown",kh)}}
 function topbar(G,menu){var d=el("div","display:flex;align-items:center;gap:8px;margin:2px 0 8px"),b=el("button",BTN+";padding:7px 11px","← Jogos");b.onclick=menu;d.append(b,el("b","font-size:16px",G[1]+" "+G[2]));return d}
-function GAMES(){return[["cobra","🐍","Cobra 3D",snake],["tetris","🧱","Tetris",tetris],["galo","❌","Jogo do galo",galo],["2048","🔢","2048",g2048],["minas","💣","Campo minado",minas],["toupeira","🔨","Caça à toupeira",toupeira],["puzzle","🧩","Puzzle 8",puzzle],["simon","🎨","Simon (cores)",simon],["ppt","✂️","Pedra, papel, tesoura",ppt],["numero","🎯","Adivinha o número",numero],["forca","🔤","Forca",forca],["contas","➕","Contas rápidas",contas],["reacao","⚡","Teste de reação",reacao],["quiz","❓","Quiz",quiz],["cores","🌈","Cores",cores],["memoria","🧠","Jogo da memória",memory,1]]}
+function GAMES(){return[["cobra","🐍","Cobra 3D",snake],["tetris","🧱","Tetris",tetris],["galo","❌","Jogo do galo",galo],["2048","🔢","2048",g2048],["minas","💣","Campo minado",minas],["toupeira","🔨","Caça à toupeira",toupeira],["puzzle","🧩","Puzzle 8",puzzle],["simon","🎨","Simon (cores)",simon],["ppt","✂️","Pedra, papel, tesoura",ppt],["numero","🎯","Adivinha o número",numero],["forca","🔤","Forca",forca],["contas","➕","Contas rápidas",contas],["reacao","⚡","Teste de reação",reacao],["quiz","❓","Quiz",quiz],["cores","🌈","Cores",cores],["flappy","🐤","Flappy Bengu",flappy],["corrida","🏎️","Corrida",corrida],["domino","🎲","Dominó",domino],["memoria","🧠","Jogo da memória",memory,1]]}
 function viewGames(b){stopGame();var box=el("div"),inMenu=false;b.append(box);menu();refreshAcc(function(){if(inMenu)menu()});
  function menu(){stopGame();inMenu=true;box.replaceChildren(el("h3","margin:4px 0","🎮 Jogos"),el("p","font-size:12px;opacity:.7;margin:0 0 10px","Jogas sem internet e sem gastar dados. Todos os jogos têm níveis (1, 2, 3… sem limite) e ficam mais difíceis a cada nível."));
   var mu=el("button",CARD+";flex-direction:row;justify-content:center;width:100%;margin-bottom:10px;background:#3a3f90"),tx=el("span","text-align:left");tx.append(el("div","","Música offline"),el("div","font-size:11px;font-weight:400;opacity:.75","As músicas do teu telemóvel · sem internet"));
@@ -16817,7 +16831,110 @@ function quiz(w){var Q=[
  [3,"Quantos ossos tem o corpo de um adulto?","206","180","250","300"],
  [3,"Qual é o rio mais longo de África?","Nilo","Congo","Zambeze","Níger"],
  [3,"Qual era o antigo nome da cidade de Maputo?","Lourenço Marques","Vila Pery","Porto Amélia","Vila Cabral"],
- [3,"Qual é a capital da província de Cabo Delgado?","Pemba","Lichinga","Quelimane","Chimoio"]],
+ [3,"Qual é a capital da província de Cabo Delgado?","Pemba","Lichinga","Quelimane","Chimoio"],
+ [1,"Qual é a capital da província de Sofala?","Beira","Chimoio","Tete","Quelimane"],
+ [1,"Qual é a capital da província de Inhambane?","Inhambane","Xai-Xai","Maxixe","Vilankulo"],
+ [1,"Qual é a capital da província de Tete?","Tete","Songo","Moatize","Chimoio"],
+ [1,"Qual é a capital da província de Nampula?","Nampula","Nacala","Angoche","Monapo"],
+ [1,"Que prato moçambicano é feito com folhas de mandioca?","Matapa","Xima","Caril de amendoim","Piri-piri"],
+ [1,"A capulana é...","Um pano tradicional","Um prato típico","Um instrumento musical","Uma dança"],
+ [1,"A marrabenta é um estilo de...","Música e dança","Prato típico","Bebida","Desporto"],
+ [1,"Em que país nasceu o futebolista Eusébio?","Moçambique","Portugal","Angola","Brasil"],
+ [1,"Qual é o maior continente do mundo?","Ásia","África","Europa","América"],
+ [1,"Qual é o animal terrestre mais rápido?","Chita","Leão","Cavalo","Avestruz"],
+ [1,"Qual é a capital de França?","Paris","Lyon","Marselha","Nice"],
+ [1,"Quantas cores tem o arco-íris?","7","5","6","8"],
+ [1,"Como se chama o satélite natural da Terra?","Lua","Sol","Marte","Estrela"],
+ [1,"Quantas pernas tem uma aranha?","8","6","10","4"],
+ [1,"Qual é o maior mamífero do mundo?","Baleia-azul","Elefante","Tubarão","Girafa"],
+ [1,"Que produto fabricam as abelhas?","Mel","Leite","Açúcar","Seda"],
+ [1,"Quanto é 7 x 8?","56","54","49","64"],
+ [1,"Quanto é 9 x 9?","81","72","99","90"],
+ [1,"Quanto é 100 - 37?","63","67","73","57"],
+ [1,"Qual é o último mês do ano?","Dezembro","Novembro","Janeiro","Outubro"],
+ [1,"Em que país fica a Torre Eiffel?","França","Itália","Inglaterra","Espanha"],
+ [1,"Qual é o órgão que bombeia o sangue?","Coração","Pulmão","Fígado","Estômago"],
+ [1,"Qual é o contrário de grande?","Pequeno","Alto","Largo","Forte"],
+ [1,"Qual é o feminino de rei?","Rainha","Princesa","Dama","Senhora"],
+ [1,"Quantos minutos tem uma hora?","60","30","100","90"],
+ [1,"Quantos minutos dura um jogo de futebol (sem prolongamento)?","90","60","80","120"],
+ [1,"Que cor tem o cartão que expulsa um jogador?","Vermelho","Amarelo","Azul","Verde"],
+ [1,"Qual é o desporto de Usain Bolt?","Atletismo","Futebol","Natação","Ténis"],
+ [2,"Qual é a capital da província de Gaza?","Xai-Xai","Chókwè","Chibuto","Macia"],
+ [2,"Qual é a capital da província da Zambézia?","Quelimane","Mocuba","Gurué","Alto Molócuè"],
+ [2,"Qual é a capital da província de Manica?","Chimoio","Gondola","Manica","Sussundenga"],
+ [2,"Qual é a capital da província do Niassa?","Lichinga","Cuamba","Mandimba","Metangula"],
+ [2,"Qual é a capital da província de Maputo?","Matola","Boane","Marracuene","Manhiça"],
+ [2,"Em que dia se celebra a Independência de Moçambique?","25 de Junho","3 de Fevereiro","7 de Abril","1 de Maio"],
+ [2,"Qual é a maior barragem de Moçambique?","Cahora Bassa","Massingir","Corumana","Chicamba"],
+ [2,"Em que rio fica a barragem de Cahora Bassa?","Zambeze","Limpopo","Save","Licungo"],
+ [2,"Como se chama o lago moçambicano na fronteira com o Malawi?","Niassa","Vitória","Chiuta","Tanganica"],
+ [2,"Qual é a ilha moçambicana Património Mundial da UNESCO?","Ilha de Moçambique","Inhaca","Ilha de Benguerra","Ilha de Ibo"],
+ [2,"Que arquipélago moçambicano fica junto a Vilankulo?","Bazaruto","Quirimbas","Primeiras","Inhaca"],
+ [2,"Como é conhecida a selecção nacional de futebol de Moçambique?","Mambas","Leões","Estrelas","Águias"],
+ [2,"Mia Couto é famoso como...","Escritor","Cantor","Futebolista","Pintor"],
+ [2,"A timbila é um instrumento parecido com...","Xilofone","Guitarra","Tambor","Flauta"],
+ [2,"Qual é a capital do Zimbabwe?","Harare","Bulawayo","Mutare","Gweru"],
+ [2,"Qual é a capital do Malawi?","Lilongwe","Blantyre","Zomba","Mzuzu"],
+ [2,"Qual é a capital do Quénia?","Nairobi","Mombaça","Kisumu","Nakuru"],
+ [2,"Qual é a capital de Cabo Verde?","Praia","Mindelo","Sal Rei","Assomada"],
+ [2,"Qual é a capital do Egipto?","Cairo","Alexandria","Luxor","Gizé"],
+ [2,"Qual é a capital do Japão?","Tóquio","Quioto","Osaka","Hiroshima"],
+ [2,"Qual é a capital da Alemanha?","Berlim","Munique","Hamburgo","Frankfurt"],
+ [2,"Qual é a capital de Itália?","Roma","Milão","Nápoles","Veneza"],
+ [2,"Qual é a capital da Argentina?","Buenos Aires","Córdoba","Rosário","Montevideu"],
+ [2,"Qual é a capital da China?","Pequim","Xangai","Hong Kong","Cantão"],
+ [2,"Qual é a montanha mais alta do mundo?","Evereste","K2","Monte Branco","Aconcágua"],
+ [2,"Qual é a montanha mais alta de África?","Quilimanjaro","Monte Quénia","Monte Binga","Atlas"],
+ [2,"Qual é o maior país do mundo em área?","Rússia","Canadá","China","Estados Unidos"],
+ [2,"Qual é a fórmula química da água?","H2O","CO2","O2","NaCl"],
+ [2,"Quantos dentes tem um adulto (completo)?","32","28","30","36"],
+ [2,"Que vitamina obtemos principalmente do Sol?","Vitamina D","Vitamina C","Vitamina A","Vitamina B12"],
+ [2,"Qual é o maior órgão do corpo humano?","Pele","Fígado","Coração","Pulmão"],
+ [2,"Quantos planetas tem o Sistema Solar?","8","9","7","10"],
+ [2,"Quem formulou a teoria da relatividade?","Einstein","Newton","Galileu","Darwin"],
+ [2,"Que parte da planta faz a fotossíntese?","Folhas","Raízes","Caule","Flores"],
+ [2,"Quantos lados tem um hexágono?","6","5","7","8"],
+ [2,"Quanto somam os ângulos de um triângulo?","180°","90°","360°","270°"],
+ [2,"Quanto é 12 x 12?","144","124","132","154"],
+ [2,"Qual é o valor aproximado de pi?","3,14","2,71","1,62","3,41"],
+ [2,"Quantos jogadores tem uma equipa de basquetebol em campo?","5","6","7","11"],
+ [2,"De quantos em quantos anos se realizam os Jogos Olímpicos?","4","2","3","5"],
+ [2,"Que selecção ganhou o Mundial de futebol de 2022?","Argentina","França","Brasil","Croácia"],
+ [2,"Que país organizou o Mundial de futebol de 2010?","África do Sul","Brasil","Alemanha","Nigéria"],
+ [2,"Que desporto se joga em Wimbledon?","Ténis","Golfe","Críquete","Râguebi"],
+ [2,"Quem escreveu Os Lusíadas?","Luís de Camões","Fernando Pessoa","Eça de Queirós","José Saramago"],
+ [2,"O que significa a sigla www?","World Wide Web","World Web Window","Wide Web World","Web World Wide"],
+ [2,"Quantas letras tem o alfabeto português actual?","26","23","28","24"],
+ [3,"Qual é o ponto mais alto de Moçambique?","Monte Binga","Monte Namuli","Monte Mabu","Monte Yao"],
+ [3,"Em que dia se celebra o Dia dos Heróis Moçambicanos?","3 de Fevereiro","25 de Setembro","7 de Abril","25 de Junho"],
+ [3,"Em que dia se celebra o Dia da Mulher Moçambicana?","7 de Abril","8 de Março","3 de Fevereiro","16 de Junho"],
+ [3,"Em que ano foi assinado o Acordo Geral de Paz, em Roma?","1992","1975","1986","2000"],
+ [3,"Em que ano se realizaram as primeiras eleições multipartidárias em Moçambique?","1994","1990","1999","1986"],
+ [3,"Eduardo Mondlane foi o primeiro presidente de que organização?","FRELIMO","RENAMO","MDM","OUA"],
+ [3,"A timbila é típica de que povo/província?","Chopi, em Inhambane","Macua, em Nampula","Ajaua, no Niassa","Sena, em Sofala"],
+ [3,"Como se chama a ponte sobre o rio Zambeze na cidade de Tete?","Ponte Samora Machel","Ponte Armando Guebuza","Ponte da Katembe","Ponte Eduardo Mondlane"],
+ [3,"Qual foi o primeiro presidente de Angola?","Agostinho Neto","Jonas Savimbi","José Eduardo dos Santos","Holden Roberto"],
+ [3,"Em que ano Nelson Mandela saiu da prisão?","1990","1985","1994","1976"],
+ [3,"Qual é a capital da Tanzânia (oficial)?","Dodoma","Dar es Salaam","Arusha","Zanzibar"],
+ [3,"Qual é a capital da Namíbia?","Windhoek","Walvis Bay","Swakopmund","Lüderitz"],
+ [3,"Qual é a capital da Guiné-Bissau?","Bissau","Bafatá","Gabu","Bolama"],
+ [3,"Qual é a capital de São Tomé e Príncipe?","São Tomé","Santo António","Neves","Trindade"],
+ [3,"Qual é a capital de Marrocos?","Rabat","Casablanca","Marraquexe","Fez"],
+ [3,"Qual é a capital do Canadá?","Ottawa","Toronto","Vancouver","Montreal"],
+ [3,"Qual é a capital da Austrália?","Camberra","Sydney","Melbourne","Perth"],
+ [3,"Qual é o maior lago de África?","Lago Vitória","Lago Niassa","Lago Tanganica","Lago Chade"],
+ [3,"Qual é o país mais populoso de África?","Nigéria","Egipto","Etiópia","África do Sul"],
+ [3,"Qual é o metal que é líquido à temperatura ambiente?","Mercúrio","Chumbo","Ferro","Alumínio"],
+ [3,"Qual é a velocidade aproximada da luz?","300 000 km/s","150 000 km/s","30 000 km/s","3 000 km/s"],
+ [3,"Qual é o gás mais abundante na atmosfera da Terra?","Azoto","Oxigénio","Dióxido de carbono","Árgon"],
+ [3,"Qual é a unidade de medida da força no Sistema Internacional?","Newton","Joule","Watt","Pascal"],
+ [3,"Quantos cromossomas tem uma célula humana normal?","46","23","48","44"],
+ [3,"Quanto é 15% de 200?","30","15","20","35"],
+ [3,"Quanto é 2 elevado a 5?","32","25","16","64"],
+ [3,"Qual é o número primo a seguir ao 7?","11","9","13","10"],
+ [3,"Quantos bytes tem 1 KB (valor tradicional)?","1024","1000","512","2048"],
+ [3,"Que países organizaram o Mundial de futebol de 2026?","EUA, Canadá e México","Brasil, Argentina e Chile","Espanha e Portugal","Japão e Coreia do Sul"]],
  lv,idx,sc,list,locked,tmA,
  info=el("div",HEAD),qe=el("div","font-size:18px;font-weight:700;margin:6px 0 12px;line-height:1.35"),opts=el("div","display:flex;flex-direction:column;gap:8px"),act=el("div","text-align:center;margin-top:12px"),holder=el("div","margin-top:12px");
  function nextQ(){if(idx>=list.length){fin();return}var q=list[idx];locked=false;info.textContent="Nível "+lv+" · Pergunta "+(idx+1)+" de "+list.length+" · Certas: "+sc;qe.textContent=q[1];opts.replaceChildren();
@@ -16825,7 +16942,7 @@ function quiz(w){var Q=[
   bs.forEach(function(b){b.onclick=function(){if(locked)return;locked=true;if(b.__ok){sc++;b.style.background="#2e7d32"}else{b.style.background="#8e1a1a";bs.forEach(function(x){if(x.__ok)x.style.background="#2e7d32"})}
    tmA=setTimeout(function(){idx++;nextQ()},900)}})}
  function fin(){opts.replaceChildren();var pts=sc*10+lv*5+(sc===list.length?50:0);qe.textContent="🎉 Acertaste "+sc+" de "+list.length+"!";info.textContent="Pontos: "+pts;setLvl("quiz",lv+1);act.replaceChildren(btn("Continuar já",init));submit("quiz",pts,holder)}
- function init(){clearTimeout(tmA);lv=lvl("quiz");var dmax=Math.min(3,1+Math.floor((lv-1)/3));list=shuf(Q.filter(function(x){return x[0]<=dmax})).slice(0,10);idx=0;sc=0;act.replaceChildren();board("quiz",holder);nextQ()}
+ function init(){clearTimeout(tmA);lv=lvl("quiz");var dmax=Math.min(3,1+Math.floor((lv-1)/3));var seen=[];try{seen=JSON.parse(localStorage.getItem("bg_quiz_seen"))||[]}catch(e){}var pl=Q.filter(function(x){return x[0]<=dmax}),fresh=shuf(pl.filter(function(x){return seen.indexOf(Q.indexOf(x))<0})),old=shuf(pl.filter(function(x){return seen.indexOf(Q.indexOf(x))>=0}));list=shuf(fresh.concat(old).slice(0,10));try{localStorage.setItem("bg_quiz_seen",JSON.stringify(seen.concat(list.map(function(x){return Q.indexOf(x)})).slice(-90)))}catch(e){}idx=0;sc=0;act.replaceChildren();board("quiz",holder);nextQ()}
  w.append(info,qe,opts,act,holder);init();return function(){clearTimeout(tmA)}}
 /* ---- Cores (toca na cor da letra, não no que está escrito) ---- */
 function cores(w){var C=[["Vermelho","#e53935"],["Azul","#1e88e5"],["Verde","#43a047"],["Amarelo","#fdd835"],["Roxo","#8e24aa"],["Laranja","#fb8c00"]],sc,left,run,tmT,ink,
@@ -16840,6 +16957,113 @@ function cores(w){var C=[["Vermelho","#e53935"],["Azul","#1e88e5"],["Verde","#43
  function start(){sc=0;left=30;run=true;holder.replaceChildren();act.replaceChildren();upd();gen();tmT=setInterval(function(){left--;upd();if(left<=0)end()},1000)}
  function init(){run=false;clearInterval(tmT);word.style.color="#fff";word.textContent="🌈";opts.replaceChildren();info.textContent="Toca no quadrado com a COR DA LETRA, não no que está escrito. 30 segundos. Errar custa 2 segundos.";act.replaceChildren(btn("▶ Começar",start));board("cores",holder)}
  w.append(info,word,opts,act,holder);init();return function(){run=false;clearInterval(tmT)}}
+/* ---- Flappy Bengu ---- */
+function flappy(w){
+ var W=Math.max(220,Math.min(360,(w.clientWidth||320)-2)),H=Math.round(W*1.3),k=H/440,cv=document.createElement("canvas");
+ cv.width=W;cv.height=H;cv.style.cssText="display:block;margin:6px auto;border-radius:12px;background:#4fc3f7;touch-action:none;max-width:100%";
+ var cx=cv.getContext("2d"),info=el("div",HEAD),act=el("div","text-align:center;margin-top:8px"),holder=el("div","margin-top:12px"),
+ bird,vy,pipes,score,state,raf=0,last=0,gnd=Math.round(54*k),R=12*k,PW=52*k,SP=190*k,bx=W*.28;
+ function lv(){return 1+Math.floor(score/5)}
+ function speed(){return Math.min(230,110+lv()*10)*k}
+ function gap(){return Math.max(112,172-lv()*6)*k}
+ function reset(){bird=H*.42;vy=0;pipes=[];score=0;state=0;last=performance.now();holder.replaceChildren();act.replaceChildren();info.textContent="Toca no ecrã para voar e passa pelos tubos!";board("flappy",holder)}
+ function addPipe(){var g=gap(),lo=Math.round(50*k),hi=Math.round(H-gnd-50*k-g);pipes.push({x:W+10,top:rndI(lo,Math.max(lo,hi)),g:g,ok:false})}
+ function flap(){if(state===2)return;if(state===0){state=1;last=performance.now();addPipe()}vy=-370*k}
+ function die(){if(state===2)return;state=2;info.textContent="💥 Fim! Nível "+lv()+" · Pontos: "+score*10;act.replaceChildren(btn("Jogar outra vez",reset));submit("flappy",score*10,holder)}
+ function upd(dt){if(state!==1)return;vy+=1450*k*dt;bird+=vy*dt;var sp=speed();
+  pipes.forEach(function(p){p.x-=sp*dt});if(pipes.length&&pipes[0].x<-PW)pipes.shift();
+  var lp=pipes[pipes.length-1];if(!lp||lp.x<W-SP)addPipe();
+  pipes.forEach(function(p){if(!p.ok&&p.x+PW<bx-R){p.ok=true;score++;info.textContent="Nível "+lv()+" · Pontos: "+score*10;if(score%5===0)toast("⬆ Nível "+lv())}
+   if(bx+R>p.x&&bx-R<p.x+PW&&(bird-R<p.top||bird+R>p.top+p.g))die()});
+  if(bird+R>H-gnd||bird-R<0)die()}
+ function pipe(p){var cap=14*k,e=4*k;cx.fillStyle="#43a047";cx.fillRect(p.x,0,PW,p.top);cx.fillRect(p.x,p.top+p.g,PW,H-gnd-p.top-p.g);
+  cx.fillStyle="#2e7d32";cx.fillRect(p.x-e,p.top-cap,PW+2*e,cap);cx.fillRect(p.x-e,p.top+p.g,PW+2*e,cap);
+  cx.fillStyle="rgba(255,255,255,.25)";cx.fillRect(p.x+5*k,0,6*k,p.top-cap);cx.fillRect(p.x+5*k,p.top+p.g+cap,6*k,H-gnd-p.top-p.g-cap)}
+ function render(now){var g=cx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#4fc3f7");g.addColorStop(1,"#b3e5fc");cx.fillStyle=g;cx.fillRect(0,0,W,H);
+  cx.fillStyle="rgba(255,255,255,.8)";[[.2,.15],[.65,.08],[.85,.28]].forEach(function(c){var X=c[0]*W,Y=c[1]*H;cx.beginPath();cx.arc(X,Y,16*k,0,7);cx.arc(X+16*k,Y+4*k,12*k,0,7);cx.arc(X-16*k,Y+4*k,12*k,0,7);cx.fill()});
+  pipes.forEach(pipe);
+  cx.fillStyle="#8d6e63";cx.fillRect(0,H-gnd,W,gnd);cx.fillStyle="#7cb342";cx.fillRect(0,H-gnd,W,10*k);
+  var yb=state===0?H*.42+Math.sin(now/200)*6*k:bird,ang=state===0?0:Math.max(-.5,Math.min(1.1,vy/(600*k)));
+  cx.save();cx.translate(bx,yb);cx.rotate(ang);cx.fillStyle="rgba(0,0,0,.2)";cx.beginPath();cx.ellipse(2*k,3*k,R*1.05,R*.9,0,0,7);cx.fill();
+  var bg=cx.createRadialGradient(-R*.3,-R*.4,R*.1,0,0,R*1.1);bg.addColorStop(0,"#ffe082");bg.addColorStop(1,"#f5b400");cx.fillStyle=bg;cx.beginPath();cx.arc(0,0,R,0,7);cx.fill();
+  cx.fillStyle="#fff";cx.beginPath();cx.arc(R*.35,-R*.3,R*.38,0,7);cx.fill();cx.fillStyle="#111";cx.beginPath();cx.arc(R*.48,-R*.3,R*.17,0,7);cx.fill();
+  cx.fillStyle="#ef6c00";cx.beginPath();cx.moveTo(R*.8,-R*.05);cx.lineTo(R*1.6,R*.2);cx.lineTo(R*.8,R*.45);cx.closePath();cx.fill();
+  cx.fillStyle="#f9a825";cx.beginPath();cx.ellipse(-R*.35,R*.2,R*.5,R*.3,-.4,0,7);cx.fill();cx.restore();
+  cx.fillStyle="#fff";cx.strokeStyle="#14163a";cx.lineWidth=4*k;cx.font="800 "+Math.round(34*k)+"px sans-serif";cx.textAlign="center";cx.strokeText(String(score),W/2,52*k);cx.fillText(String(score),W/2,52*k)}
+ function loop(){raf=requestAnimationFrame(loop);var now=performance.now(),dt=Math.min(.04,Math.max(0,(now-last)/1000));last=now;upd(dt);render(now)}
+ cv.addEventListener("touchstart",function(e){e.preventDefault();flap()},{passive:false});cv.addEventListener("mousedown",flap);
+ function kd(e){if(e.key===" "||e.key==="ArrowUp"){e.preventDefault();flap()}}document.addEventListener("keydown",kd);
+ w.append(info,cv,act,holder);reset();loop();
+ return function(){state=2;cancelAnimationFrame(raf);document.removeEventListener("keydown",kd)}}
+/* ---- Corrida ---- */
+function corrida(w){
+ var W=Math.max(220,Math.min(360,(w.clientWidth||320)-2)),H=Math.round(W*1.3),k=H/440,mx=W*.1,RW=W-2*mx,LW=RW/3,CW2=LW*.5,CH2=CW2*1.75,py=H-CH2-18*k,cv=document.createElement("canvas");
+ cv.width=W;cv.height=H;cv.style.cssText="display:block;margin:6px auto;border-radius:12px;background:#2e7d32;touch-action:none;max-width:100%";
+ var cx=cv.getContext("2d"),info=el("div",HEAD),act=el("div","text-align:center;margin-top:8px"),holder=el("div","margin-top:12px"),
+ lane,px,en,off,passed,score,state,raf=0,last=0,spawnD,COL=["#1e88e5","#fdd835","#8e24aa","#fb8c00","#00acc1","#6d4c41"];
+ function lv(){return 1+Math.floor(passed/10)}
+ function spd(){return Math.min(520,190+lv()*26)*k}
+ function laneX(i){return mx+LW*i+LW/2}
+ function head(){info.textContent="Nível "+lv()+" · Pontos: "+score}
+ function reset(){lane=1;px=laneX(1);en=[];off=0;passed=0;score=0;spawnD=0;state=0;last=performance.now();holder.replaceChildren();act.replaceChildren();info.textContent="Toca (ou desliza) para mudar de faixa e evita os carros!";board("corrida",holder)}
+ function move(d){if(state===2)return;if(state===0){state=1;last=performance.now();head()}lane=Math.max(0,Math.min(2,lane+d))}
+ function spawn(){var l=rndI(0,2);en.push({lane:l,y:-CH2,c:COL[rndI(0,COL.length-1)],ok:false});if(lv()>=3&&Math.random()<.35){en.push({lane:(l+1+rndI(0,1))%3,y:-CH2,c:COL[rndI(0,COL.length-1)],ok:false})}}
+ function crash(){if(state===2)return;state=2;info.textContent="💥 Batida! Nível "+lv()+" · Pontos: "+score;act.replaceChildren(btn("Jogar outra vez",reset));submit("corrida",score,holder)}
+ function upd(dt){if(state!==1)return;var v=spd();off=(off+v*dt)%(48*k);px+=(laneX(lane)-px)*Math.min(1,dt*14);spawnD+=v*dt;if(spawnD>=Math.max(170,330-lv()*14)*k){spawnD=0;spawn()}
+  en.forEach(function(e){e.y+=v*dt;if(!e.ok&&e.y>py+CH2){e.ok=true;passed++;score+=10;head();if(passed%10===0)toast("⬆ Nível "+lv())}
+   if(Math.abs(laneX(e.lane)-px)<CW2*.9&&e.y+CH2>py+5*k&&e.y<py+CH2-5*k)crash()});
+  en=en.filter(function(e){return e.y<H+10})}
+ function rr(x,y,w2,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.lineTo(x+w2-r,y);cx.quadraticCurveTo(x+w2,y,x+w2,y+r);cx.lineTo(x+w2,y+h-r);cx.quadraticCurveTo(x+w2,y+h,x+w2-r,y+h);cx.lineTo(x+r,y+h);cx.quadraticCurveTo(x,y+h,x,y+h-r);cx.lineTo(x,y+r);cx.quadraticCurveTo(x,y,x+r,y);cx.closePath()}
+ function car(cxp,y,c,me2){var x=cxp-CW2/2;cx.fillStyle="rgba(0,0,0,.3)";rr(x+3*k,y+4*k,CW2,CH2,8*k);cx.fill();
+  cx.fillStyle="#111";cx.fillRect(x-3*k,y+CH2*.14,4*k,CH2*.2);cx.fillRect(x+CW2-1*k,y+CH2*.14,4*k,CH2*.2);cx.fillRect(x-3*k,y+CH2*.66,4*k,CH2*.2);cx.fillRect(x+CW2-1*k,y+CH2*.66,4*k,CH2*.2);
+  cx.fillStyle=c;rr(x,y,CW2,CH2,8*k);cx.fill();cx.fillStyle="rgba(255,255,255,.22)";rr(x+CW2*.1,y+CH2*.04,CW2*.8,CH2*.1,4*k);cx.fill();
+  cx.fillStyle="#263238";rr(x+CW2*.15,y+CH2*(me2?.22:.5),CW2*.7,CH2*.24,4*k);cx.fill();rr(x+CW2*.15,y+CH2*(me2?.62:.18),CW2*.7,CH2*.14,4*k);cx.fill();
+  cx.fillStyle=me2?"#fff59d":"#ef5350";cx.fillRect(x+2*k,y+(me2?0:CH2-4*k),CW2*.25,4*k);cx.fillRect(x+CW2*.73,y+(me2?0:CH2-4*k),CW2*.25,4*k)}
+ function render(){cx.fillStyle="#2e7d32";cx.fillRect(0,0,W,H);cx.fillStyle="#37474f";cx.fillRect(mx,0,RW,H);cx.fillStyle="#fff";cx.fillRect(mx-3*k,0,3*k,H);cx.fillRect(mx+RW,0,3*k,H);
+  for(var i=1;i<3;i++)for(var y=-48*k+off;y<H;y+=48*k)cx.fillRect(mx+LW*i-2*k,y,4*k,26*k);
+  en.forEach(function(e){car(laneX(e.lane),e.y,e.c,false)});car(px,py,"#e53935",true)}
+ function loop(){raf=requestAnimationFrame(loop);var now=performance.now(),dt=Math.min(.04,Math.max(0,(now-last)/1000));last=now;upd(dt);render()}
+ var sx=0,st=0;cv.addEventListener("touchstart",function(e){e.preventDefault();sx=e.touches[0].clientX;st=1},{passive:false});
+ cv.addEventListener("touchend",function(e){e.preventDefault();if(!st)return;st=0;var dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>25)move(dx>0?1:-1);else{var r=cv.getBoundingClientRect();move(e.changedTouches[0].clientX-r.left<r.width/2?-1:1)}},{passive:false});
+ cv.addEventListener("mousedown",function(e){var r=cv.getBoundingClientRect();move(e.clientX-r.left<r.width/2?-1:1)});
+ function kd(e){if(e.key==="ArrowLeft"){e.preventDefault();move(-1)}else if(e.key==="ArrowRight"){e.preventDefault();move(1)}}document.addEventListener("keydown",kd);
+ var row=el("div","display:flex;gap:12px;justify-content:center;margin-top:8px");[["◀",-1],["▶",1]].forEach(function(p){var b=el("button",KB+";width:110px;height:48px",p[0]);b.onclick=function(){move(p[1])};b.addEventListener("touchstart",function(e){e.preventDefault();move(p[1])},{passive:false});row.append(b)});
+ w.append(info,cv,row,act,holder);reset();loop();
+ return function(){state=2;cancelAnimationFrame(raf);document.removeEventListener("keydown",kd)}}
+/* ---- Dominó (contra o computador) ---- */
+function domino(w){
+ var lv,mine,cpu,yard,chain,msg,over,turn,pending,passes,tm,P=[[],[4],[0,8],[0,4,8],[0,2,6,8],[0,2,4,6,8],[0,2,3,5,6,8]],
+ info=el("div",HEAD),tbl=el("div","display:flex;flex-wrap:wrap;gap:4px;justify-content:center;align-items:center;min-height:70px;padding:8px;background:#1b1f48;border-radius:12px"),
+ st=el("div","text-align:center;font-size:13px;margin:8px 0;min-height:36px"),acts=el("div","display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:6px 0"),hand=el("div","display:flex;flex-wrap:wrap;gap:6px;justify-content:center"),holder=el("div","margin-top:12px");
+ function half(n,s){var h=el("div","display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);width:"+s+"px;height:"+s+"px;padding:2px;box-sizing:border-box;gap:1px");for(var i=0;i<9;i++)h.append(el("div","border-radius:50%;background:"+(P[n].indexOf(i)>=0?"#14163a":"transparent")));return h}
+ function tileEl(a,b,vert,s){var t=el("div","display:inline-flex;flex-direction:"+(vert?"column":"row")+";background:#f5f0e1;border-radius:6px;border:1px solid #bbb;box-shadow:0 2px 3px rgba(0,0,0,.4)");t.append(half(a,s),el("div",vert?"height:1px;background:#999;margin:0 3px":"width:1px;background:#999;margin:3px 0"),half(b,s));return t}
+ function ends(){return chain.length?[chain[0][0],chain[chain.length-1][1]]:null}
+ function sides(t){var e=ends();if(!e)return["r"];var s=[];if(t[0]===e[0]||t[1]===e[0])s.push("l");if(t[0]===e[1]||t[1]===e[1])s.push("r");return s}
+ function place(t,side){if(!chain.length){chain.push([t[0],t[1]]);return}
+  if(side==="r"){var e=chain[chain.length-1][1];chain.push(t[0]===e?[t[0],t[1]]:[t[1],t[0]])}else{var L=chain[0][0];chain.unshift(t[1]===L?[t[0],t[1]]:[t[1],t[0]])}}
+ function pips(a){return a.reduce(function(s,t){return s+t[0]+t[1]},0)}
+ function draw(){tbl.replaceChildren();if(!chain.length)tbl.append(el("span","opacity:.6;font-size:13px","Mesa vazia: joga a primeira peça"));chain.forEach(function(t){tbl.append(tileEl(t[0],t[1],false,24))});
+  hand.replaceChildren();mine.forEach(function(t,i){var ok=turn==="me"&&!over&&sides(t).length>0,b=el("button","border:0;border-radius:8px;padding:4px;background:"+(ok?"#f5b400":"#2a2f66")+";opacity:"+(ok||turn!=="me"||over?1:.55));b.append(tileEl(t[0],t[1],true,26));b.onclick=function(){tap(i)};hand.append(b)});
+  info.textContent="Nível "+lv+" · Tu: "+mine.length+" peças · Computador: "+cpu.length+" · Monte: "+yard.length;st.textContent=msg}
+ function showActs(){acts.replaceChildren();if(over||pending!=null||turn!=="me"||!chain.length)return;if(!mine.some(function(t){return sides(t).length}))acts.append(yard.length?btn("🎴 Comprar peça",buy):btn("⏭ Passar",passMe))}
+ function buy(){if(!yard.length||turn!=="me"||over)return;mine.push(yard.pop());msg="Compraste uma peça.";draw();showActs()}
+ function passMe(){passes++;msg="Passaste a vez.";if(passes>=2){blocked();return}turn="cpu";draw();acts.replaceChildren();tm=setTimeout(cpuMove,800)}
+ function tap(i){if(turn!=="me"||over)return;var t=mine[i],s=sides(t);if(!s.length){msg="Essa peça não encaixa.";draw();return}
+  var e=ends();if(s.length===1||e[0]===e[1]){play(i,s[0]);return}
+  pending=i;acts.replaceChildren(btn("⬅ Esquerda ("+e[0]+")",function(){play(i,"l")}),btn("Direita ("+e[1]+") ➡",function(){play(i,"r")}),btn("Cancelar",function(){pending=null;showActs()},";background:#2a2f66;color:#fff"))}
+ function play(i,side){var t=mine.splice(i,1)[0];place(t,side);passes=0;pending=null;acts.replaceChildren();msg="Jogaste "+t[0]+"|"+t[1]+".";if(!mine.length){finish("me");return}turn="cpu";draw();tm=setTimeout(cpuMove,800)}
+ function find(){var best=-1,bs=0;cpu.forEach(function(t,i){if(sides(t).length){var sc=lv>=3?t[0]+t[1]+Math.random()*.5:Math.random();if(best<0||sc>bs){best=i;bs=sc}}});return best}
+ function cpuMove(){if(over)return;var i=find();while(i<0&&yard.length){cpu.push(yard.pop());i=find()}
+  if(i>=0){var t=cpu.splice(i,1)[0],s=sides(t),side=s.length>1?(Math.random()<.5?"l":"r"):s[0];place(t,side);passes=0;msg="O computador jogou "+t[0]+"|"+t[1]+".";if(!cpu.length){finish("cpu");return}}
+  else{passes++;msg="O computador passou.";if(passes>=2){blocked();return}}
+  turn="me";draw();showActs()}
+ function blocked(){var a=pips(mine),b=pips(cpu);finish(a<b?"me":b<a?"cpu":"tie")}
+ function finish(who){over=true;turn="";acts.replaceChildren();draw();
+  if(who==="me"){var pts=100+lv*10+pips(cpu);msg="🎉 Ganhaste! Pontos: "+pts;setLvl("domino",lv+1);submit("domino",pts,holder)}
+  else msg=who==="cpu"?"😅 O computador ganhou desta vez.":"🤝 Empate!";
+  st.textContent=msg;acts.append(btn("Jogar outra vez",init))}
+ function init(){clearTimeout(tm);lv=lvl("domino");var d=[];for(var a=0;a<=6;a++)for(var b=a;b<=6;b++)d.push([a,b]);d=shuf(d);mine=d.slice(0,7);cpu=d.slice(7,14);yard=d.slice(14);chain=[];turn="me";over=false;passes=0;pending=null;msg="Tu começas: toca numa peça para a jogar.";holder.replaceChildren();board("domino",holder);draw();showActs()}
+ w.append(info,tbl,st,acts,hand,holder);init();return function(){clearTimeout(tm)}}
 /* ---------- Premium e selos ---------- */
 /* Selo verde ✓ = conta verificada. Estrela ★ na cor do Bengu (#FFB020) = conta Premium. */
 var KINDS=[["mpesa","M-Pesa"],["emola","e-Mola"],["mkesh","mKesh"],["paypal","PayPal"],["bank","Banco (NIB/IBAN)"],["other","Outra forma"]],

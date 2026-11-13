@@ -7615,6 +7615,13 @@ function J_() {
       let cnm = null;
       try { cnm = new Intl.DisplayNames(["pt-PT"], { type: "region" }).of(cty); } catch (e) {}
       gg = gg || {};
+      if (em) {
+        /* Um email = uma conta: normaliza (minúsculas; Gmail ignora pontos e +alias) e pergunta ao servidor. */
+        try {
+          const { data: tk } = await me.rpc("bengu_email_taken", { p_email: em });
+          if (tk === true) return { error: x("errExists") };
+        } catch (e) {}
+      }
       for (let Ce = 0; Ce < 4; Ce++) {
         const { data: De, error: Ne } = await me.rpc("next_username", {
           p_base: Z,
@@ -12199,6 +12206,33 @@ function lx({
                 ],
               }),
             ],
+          }),
+        ],
+      }),
+      u.jsxs("section", {
+        className: C,
+        style: { background: k.card },
+        children: [
+          u.jsx("h2", { className: A, style: { color: k.mute }, children: BG_L("My account", "A minha conta") }),
+          u.jsx("div", {
+            className: "flex flex-col",
+            children: [
+              ["premium", "⭐", BG_L("Premium", "Premium")],
+              ["verificacao", "✅", BG_L("Verifications", "Verificações")],
+              ["visitas", "👁", BG_L("Visits", "Visitas")],
+              ["agendadas", "⏰", BG_L("Schedules", "Agendas")],
+            ].map((it) =>
+              u.jsxs("button", {
+                key: it[0],
+                onClick: () => window.bengu_ia_open && window.bengu_ia_open(it[0]),
+                className: "w-full flex items-center justify-between gap-3 px-1 py-3 text-sm font-semibold text-left",
+                style: { color: k.ink },
+                children: [
+                  u.jsx("span", { children: it[1] + "  " + it[2] }),
+                  u.jsx("span", { style: { color: k.mute }, children: "›" }),
+                ],
+              }),
+            ),
           }),
         ],
       }),

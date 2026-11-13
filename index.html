@@ -3882,7 +3882,18 @@ st.textContent="header.sticky.top-0,nav.fixed.bottom-0{transition:transform .1s 
  "html[data-bgbars=\"up\"] header.sticky.top-0{transform:translateY(-100%)}"+
  "html[data-bgbars=\"down\"] nav.fixed.bottom-0{transform:translateY(100%)}";
 document.head.appendChild(st);
-function set(d){dir=d;if(root.getAttribute("data-bgbars")===d)return;root.setAttribute("data-bgbars",d)}
+/* BENGU 4.55: a faixa dos ESTADOS sai no mesmo instante em que se desliza o feed (não espera chegar ao topo); volta ao chegar ao topo */
+var sst=document.createElement("style");sst.textContent="html.bg-st-hide .bg-st{display:none!important}";document.head.appendChild(sst);
+function stEl(){var e=document.querySelector(".bg-st");if(!e||!e.offsetHeight)return null;var p=e.previousElementSibling;if(p&&p.tagName==="H1")return null;return e}
+function stHide(){if(root.classList.contains("bg-st-hide"))return;var e=stEl();if(!e)return;
+ var a=e.nextElementSibling;while(a&&getComputedStyle(a).position==="fixed")a=a.nextElementSibling;
+ var t0=a?a.getBoundingClientRect().top:0;root.classList.add("bg-st-hide");
+ if(a){var t1=a.getBoundingClientRect().top;if(t1!==t0)window.scrollBy(0,t1-t0)}}
+function stShow(){if(root.classList.contains("bg-st-hide"))root.classList.remove("bg-st-hide")}
+function stSync(){if((window.pageYOffset||root.scrollTop||0)<=4)stShow()}
+document.addEventListener("touchstart",stSync,{passive:true,capture:true});
+document.addEventListener("click",function(){setTimeout(stSync,60)},true);
+function set(d){if(d==="up")stHide();dir=d;if(root.getAttribute("data-bgbars")===d)return;root.setAttribute("data-bgbars",d)}
 function inner(t){/* o gesto é dentro de uma lista com rolagem própria (modais, reels, chat)? */
  while(t&&t!==document.body&&t.nodeType===1){var cs=getComputedStyle(t);
   if(/(auto|scroll)/.test(cs.overflowY)&&t.scrollHeight>t.clientHeight+2)return true;
@@ -3899,7 +3910,7 @@ window.addEventListener("scroll",function(){
  var c=window.pageYOffset||root.scrollTop||0,max=root.scrollHeight-window.innerHeight;
  if(c<0||c>max+1)return;
  var d=c-last;last=c;
- if(c<=4){set("down");return}
+ if(c<=4){set("down");stShow();return}
  if(d<=-1){if(Date.now()-touchAt<250&&touchDir==="up")return;set("down");return}
  if(d<3)return;
  /* esconder só quando o utilizador está mesmo a deslizar para cima (saltos de layout não escondem) */
@@ -16531,14 +16542,18 @@ function snake(w){
  /* Câmara 3D: perspectiva com inclinação (sem bibliotecas, funciona offline) */
  var PH=74*Math.PI/180,sP=Math.sin(PH),cP=Math.cos(PH),CH=30,CD=8,F=W*.99*((CD*cP+CH*sP))/cols;
  function pj(gx,gy,z){var u=gx-cols/2,rz=z-CH,rv=rows-gy+CD,f=rv*cP-rz*sP,up=rz*cP+rv*sP;return{x:F*u/f,y:F*up/f,f:f}}
- var yTop=pj(cols/2,0,1.4).y+6,H=Math.ceil(yTop-pj(cols/2,rows,0).y+18);
+ var yTop=0,H=0;
+ function dims(r){rows=r;yTop=pj(cols/2,0,1.4).y+6;H=Math.ceil(yTop-pj(cols/2,rows,0).y+18);return H}
+ /* BENGU 4.55: o tabuleiro cresce (mais linhas) até preencher o ecrã, sem precisar de rolar */
+ (function(){var vh=(window.visualViewport&&window.visualViewport.height)||window.innerHeight||700,tp=0;try{tp=w.getBoundingClientRect().top}catch(e){}
+  tp=Math.max(0,Math.min(tp,vh*.5));var avail=vh-tp-216,r=18;dims(r);while(r<46){if(dims(r+1)>avail)break;r++}dims(r)})();
  function SX(p){return W/2+p.x}function SY(p){return yTop-p.y}
  var cv=document.createElement("canvas");cv.width=W;cv.height=H;cv.style.cssText="display:block;margin:6px auto;border-radius:12px;background:#0d0f2b;touch-action:none;max-width:100%";
- var cx=cv.getContext("2d"),info=el("div","text-align:center;font-size:14px;font-weight:700"),act=el("div","text-align:center;margin-top:8px"),holder=el("div","margin-top:12px"),sn,prev,stepT=0,dir,nd,food,score,foods,tm,alive,ob,raf=0;
+ var cx=cv.getContext("2d"),info=el("div","text-align:center;font-size:14px;font-weight:700"),act=el("div","text-align:center;margin-top:8px"),holder=el("div","margin-top:12px"),sn,prev,stepT=0,dir,nd,food,score,foods,tm,alive,ob,raf=0,paused=false;
  function lv(){return 1+Math.floor(foods/3)}
  function spd(){return Math.max(80,Math.round(420*Math.pow(.94,lv()-1)))}
  function hit(a,x,y){return a.some(function(s){return s.x===x&&s.y===y})}
- function head(){info.textContent="Nível "+lv()+" · Pontos: "+score+(ob.length?" · Obstáculos: "+ob.length:"")}
+ function head(){info.textContent="Nível "+lv()+" · Pontos: "+score+(ob.length?" · Obstáculos: "+ob.length:"")+(paused?" · ⏸ Em pausa":"")}
  function place(){do{food={x:Math.floor(Math.random()*cols),y:Math.floor(Math.random()*rows)}}while(hit(sn,food.x,food.y)||hit(ob,food.x,food.y))}
  function addOb(){for(var t=0;t<60;t++){var x=Math.floor(Math.random()*cols),y=Math.floor(Math.random()*rows),h=sn[0];if(Math.abs(x-h.x)+Math.abs(y-h.y)<6||hit(sn,x,y)||hit(ob,x,y)||(food.x===x&&food.y===y))continue;ob.push({x:x,y:y});return}}
  function poly(pts,fill,stroke){cx.beginPath();pts.forEach(function(q,i){var p=pj(q[0],q[1],q[2]);if(i)cx.lineTo(SX(p),SY(p));else cx.moveTo(SX(p),SY(p))});cx.closePath();if(fill){cx.fillStyle=fill;cx.fill()}if(stroke){cx.strokeStyle=stroke;cx.lineWidth=1;cx.stroke()}}
@@ -16569,16 +16584,24 @@ function snake(w){
   items.sort(function(a,b){return a.y-b.y}).forEach(function(it){it.d()})}
  function draw(){render(performance.now())}
  function loop(){raf=requestAnimationFrame(loop);render(performance.now())}
- function init(){sn=[{x:11,y:14},{x:10,y:14},{x:9,y:14}];prev=null;ob=[];dir=nd=DIRS[2];score=0;foods=0;alive=false;place();head();holder.replaceChildren();act.replaceChildren(btn("▶ Começar",start));draw()}
- function start(){act.replaceChildren();alive=true;prev=sn.slice();stepT=performance.now();clearInterval(tm);tm=setInterval(step,spd())}
- function turn(c){if(!alive)return;var d=DIRS[c];if(d.x===-dir.x&&d.y===-dir.y)return;nd=d}
+ function init(){sn=[{x:11,y:Math.floor(rows/2)},{x:10,y:Math.floor(rows/2)},{x:9,y:Math.floor(rows/2)}];prev=null;ob=[];dir=nd=DIRS[2];score=0;foods=0;alive=false;paused=false;place();head();holder.replaceChildren();setAct("idle");draw()}
+ function setAct(m){var r=el("div","display:flex;gap:10px;justify-content:center;align-items:center");
+  if(m==="idle"){var p0=btn("⏸ Pausar",function(){},";opacity:.45");p0.disabled=true;r.append(btn("▶ Começar",start),p0)}
+  else if(m==="play")r.append(btn("⏸ Pausar",pause));
+  else r.append(btn("▶ Continuar",resume),btn("🔄 Recomeçar",function(){init();start()},";background:#2a2f66;color:#fff"));
+  act.replaceChildren(r)}
+ function pause(){if(!alive||paused)return;paused=true;clearInterval(tm);prev=sn.slice();head();setAct("pause")}
+ function resume(){if(!alive||!paused)return;paused=false;stepT=performance.now();clearInterval(tm);tm=setInterval(step,spd());head();setAct("play")}
+ function vis(){if(document.hidden)pause()}
+ function start(){paused=false;alive=true;setAct("play");prev=sn.slice();stepT=performance.now();clearInterval(tm);tm=setInterval(step,spd())}
+ function turn(c){if(!alive||paused)return;var d=DIRS[c];if(d.x===-dir.x&&d.y===-dir.y)return;nd=d}
  function over(){alive=false;clearInterval(tm);info.textContent="💀 Fim! Nível "+lv()+" · Pontos: "+score;act.replaceChildren(btn("Jogar outra vez",init));submit("cobra",score,holder)}
  function step(){dir=nd;var h={x:sn[0].x+dir.x,y:sn[0].y+dir.y};
   if(h.x<0||h.y<0||h.x>=cols||h.y>=rows||hit(sn,h.x,h.y)||hit(ob,h.x,h.y))return over();
   prev=sn.slice();stepT=performance.now();sn.unshift(h);
   if(h.x===food.x&&h.y===food.y){var l0=lv();score+=10*l0;foods++;place();if(lv()!==l0){if(lv()>=4&&ob.length<50)addOb();toast("⬆ Nível "+lv());clearInterval(tm);tm=setInterval(step,spd())}head()}else sn.pop()}
- var rs=swipeDoc(turn,function(){return alive}),rk=keys(turn);w.append(info,cv,dpad(turn),act,holder);init();loop();
- return function(){alive=false;clearInterval(tm);cancelAnimationFrame(raf);rs();rk()}}
+ var rs=swipeDoc(turn,function(){return alive&&!paused}),rk=keys(turn);document.addEventListener("visibilitychange",vis);w.append(info,cv,dpad(turn),act,holder);init();loop();
+ return function(){alive=false;clearInterval(tm);cancelAnimationFrame(raf);document.removeEventListener("visibilitychange",vis);rs();rk()}}
 /* ---- Tetris ---- */
 function tetris(w){
  var C=10,R=20,cs=Math.min(24,Math.floor(((w.clientWidth||320)-8)/C)),W=C*cs,H=R*cs,

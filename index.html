@@ -1807,16 +1807,16 @@ window.bengu_news_open=function(){var b=sheet(BG_L("📰 News","📰 Notícias")
  var mast=h("div",{class:"bgn-mast",style:"position:sticky;top:56px;z-index:5;margin:8px 0 0;padding:5px 0;border-radius:8px;overflow:hidden;white-space:nowrap;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.45);font:900 15px Georgia,serif;letter-spacing:2px;background:linear-gradient(90deg,#E53935,#FB8C00,#FDD835 50%,#43A047,#1E88E5)"},h("span",{},"BENGU NOTÍCIAS  \u2605  BENGU NOTÍCIAS  \u2605  BENGU NOTÍCIAS  \u2605")),
  tabs=h("div",{style:"display:flex;gap:8px;overflow-x:auto;padding:12px 0"}),list=h("div");b.append(mast,tabs,list);var hd0=b.parentNode.firstChild;if(hd0&&hd0.offsetHeight)mast.style.top=hd0.offsetHeight+"px";
  function drawTabs(){tabs.replaceChildren.apply(tabs,FEEDS.map(function(f,i){var on=i==cur,bt=h("button",{style:"flex:none;position:relative;padding:8px 16px;border:2px solid #12183A;border-radius:999px;font-family:var(--bg-font);font-weight:700;font-size:17px;letter-spacing:.4px;background:"+(on?"#12183A":"#fff")+";color:"+(on?"#fff":"#12183A")},f.n);if(!on&&isNew(f))bt.append(h("span",{style:"position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:#E53935;border:2px solid #FBF6E9"}));bt.addEventListener("click",function(){show(i)});return bt}))}
- function card(n,f){var mine=uid()&&n.author_id==uid(),rep=n.reports||0,c=h("div",{style:"background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;border-left:5px solid "+(rep?"#E53935":"#1E88E5")});
+ function card(n,f){if(n.auto_hidden&&!(uid()&&n.author_id==uid())&&!admin){return h("div",{style:"background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;border-left:5px solid #9aa0b5;font-size:13px;opacity:.75"},"Notícia ocultada temporariamente: em análise após denúncias.")}var mine=uid()&&n.author_id==uid(),rep=n.reports||0,c=h("div",{style:"background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;border-left:5px solid "+(rep?"#E53935":"#1E88E5")});
   if(n.photo_url&&String(n.photo_url).indexOf(U+"/storage/")==0)c.append(h("img",{src:n.photo_url,style:"width:100%;border-radius:10px;margin-bottom:8px",loading:"lazy"}));
   c.append(h("div",{style:"font-weight:800;line-height:1.3"},n.title));if(n.body)c.append(h("p",{style:"margin:6px 0;white-space:pre-wrap"},n.body));
-  var vwn=n.views!=null?" · 👀 "+n.views:"",au=h("div",{style:"font-size:12px;opacity:.65"},"Por "+(n.author_name||"Membro")+" · "+when(n.created_at)+vwn);c.append(au);bgNV("news",n,c);
-  if(!n.author_name)api("profiles?select=name&id=eq."+n.author_id).then(function(r){if(r&&r[0]&&r[0].name)au.textContent="Por "+r[0].name+" · "+when(n.created_at)+vwn}).catch(function(){});
+  var vwn=n.views!=null?" · 👀 "+n.views:"",au=h("div",{style:"font-size:12px;opacity:.65"},"Por "+(n.author_name||"Membro")+" · "+when(n.created_at)+(window.bgTm?window.bgTm(n):"")+vwn);c.append(au);if(window.bgNewsBadge)window.bgNewsBadge(n,c);bgNV("news",n,c);
+  if(!n.author_name)api("profiles?select=name&id=eq."+n.author_id).then(function(r){if(r&&r[0]&&r[0].name)au.textContent="Por "+r[0].name+" · "+when(n.created_at)+(window.bgTm?window.bgTm(n):"")+vwn}).catch(function(){});
   var bar=h("div",{style:"display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"}),sb=function(t,fn,col){var x=h("button",{style:"padding:6px 12px;border:0;border-radius:8px;font-weight:700;background:"+(col||"#eef0f6")+";color:"+(col?"#fff":"#12183A")},t);x.addEventListener("click",fn);return x};
     if(rep)bar.append(h("span",{style:"color:#E53935;font-weight:800;align-self:center"},"⚠ "+rep+" denúncia"+(rep>1?"s":"")));
   if(uid()&&!mine)bar.append(sb(BG_L("🚩 Report false information","🚩 Denunciar informação falsa"),function(){var r=prompt(BG_L("Why is this news false?","Porque é que esta notícia é falsa?"),BG_L("False information","Informação falsa"));if(r===null)return;api("bengu_news_reports","POST",{news_id:n.id,reporter_id:uid(),reason:(r||BG_L("False information","Informação falsa")).slice(0,300)}).then(function(){alert(BG_L("Report sent to the administrator.","Denúncia enviada ao administrador."));show(cur)}).catch(function(e){alert(/duplicate|unique/i.test((e&&e.message)||"")?BG_L("You already reported this news item.","Já denunciou esta notícia."):nmsg(e))})}));
   if(admin&&rep)bar.append(sb("View reports",function(){api("bengu_news_reports?select=reason,created_at&news_id=eq."+n.id+"&order=created_at").then(function(r){alert(r.map(function(x){return"• "+x.reason}).join("\n")||"Sem detalhes.")}).catch(function(e){alert(nmsg(e))})}));
-  if(admin||(mine&&!rep))bar.append(sb(BG_L("🗑 Delete","🗑 Apagar"),function(){if(!confirm(BG_L("Delete this news item? This cannot be undone.","Apagar esta notícia? Não pode ser desfeito.")))return;api("bengu_news?id=eq."+n.id,"DELETE").then(function(){delete NC[f.k];show(cur)}).catch(function(e){alert(nmsg(e))})},"#B71C1C"));
+  if(admin&&window.bgNewsAdmin)bar.append(sb("🏷 Etiqueta / repor",function(){window.bgNewsAdmin(n,function(){delete NC[f.k];show(cur)})}));if(admin||(mine&&!rep))bar.append(sb(BG_L("🗑 Delete","🗑 Apagar"),function(){if(!confirm(BG_L("Delete this news item? This cannot be undone.","Apagar esta notícia? Não pode ser desfeito.")))return;api("bengu_news?id=eq."+n.id,"DELETE").then(function(){delete NC[f.k];show(cur)}).catch(function(e){alert(nmsg(e))})},"#B71C1C"));
   else if(mine&&rep)bar.append(h("span",{style:"font-size:12px;opacity:.7;align-self:center"},BG_L("Reported: only the administrator can delete it.","Denunciada: só o administrador a pode apagar.")));
   c.append(bgEng("news",n,{title:n.title,text:n.body?n.body.slice(0,200):"",dl:(n.photo_url&&String(n.photo_url).indexOf(U+"/storage/")==0)?{url:n.photo_url,name:n.title}:{text:n.title+"\n\n"+(n.body||""),name:n.title}}),bar);bgNV("news",n,c);return c}
  function normC(c){return String(c||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toUpperCase()}
@@ -17434,7 +17434,7 @@ var BG_TRUST={
  empresa:"[Nome legal da empresa / responsável, NUIT, morada em Moçambique]",
  equipa:"[Nome e função de cada pessoa da equipa, ou pelo menos do responsável pela moderação]",
  prazoDenuncia:"[X] horas",             /* prazo de resposta às denúncias */
- limiteOcultar:"[X] denúncias",         /* ocultação automática (precisa de regra no servidor) */
+ limiteOcultar:"5 pessoas",             /* tem de coincidir com o número no SQL 4.57 (bg_news_autohide) */
  prazoRecurso:"[X] dias"
 };
 function get(k){try{return localStorage.getItem(k)}catch(e){return null}}
@@ -17462,7 +17462,7 @@ var SECTIONS=[
   "Notícias: devem indicar a fonte e a hora. Informação falsa pode ser denunciada e é corrigida ou retirada.",
   "Como decidimos: um administrador analisa a denúncia, vê o contexto e escolhe entre manter, avisar, apagar o conteúdo ou suspender a conta. A suspensão mostra sempre a justificação.",
   "Prazo de resposta às denúncias: "+BG_TRUST.prazoDenuncia+".",
-  "Ocultação automática: conteúdo com "+BG_TRUST.limiteOcultar+" pode ficar oculto até ser analisado."]],
+  "Ocultação automática: notícias denunciadas por "+BG_TRUST.limiteOcultar+" diferentes ficam ocultas até serem analisadas."]],
  ["Recurso",[
   "Se a sua conta ou publicação foi suspensa ou apagada, pode pedir revisão por email para "+BG_TRUST.email+", com o assunto «Recurso» e o nome da conta.",
   "Respondemos em "+BG_TRUST.prazoRecurso+" e explicamos a decisão final."]],
@@ -17492,7 +17492,7 @@ function openTrust(){
   b.append(d);
  });
  var a=el("a","display:inline-block;margin-top:10px;color:#FFB020","Política de Privacidade completa");a.href="privacy.html";a.target="_blank";a.rel="noopener";b.append(a);
- o.append(b);o.addEventListener("click",function(e){if(e.target===o)close()});
+ if(window.__bgTrustExtra)window.__bgTrustExtra(b);o.append(b);o.addEventListener("click",function(e){if(e.target===o)close()});
  function close(){o.remove();if(location.hash==="#confianca")history.replaceState(null,"",location.pathname+location.search)}
  document.body.append(o);
 }
@@ -17514,6 +17514,100 @@ function banner(){
 }
 function boot(){banner();chk()}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
+})();
+</script>
+
+<script>
+/* BENGU 4.57: etiquetas de notícias, recurso e números de transparência. Requer o SQL 4.57 no Supabase. */
+(function(){
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",LS="sb-cnpkgauzhoyzlhtcexiv-auth-token";
+function ses(){try{return JSON.parse(localStorage.getItem(LS))}catch(e){return null}}
+function tok(){var x=ses();return x&&x.access_token}
+function uid(){var x=ses();return x&&x.user&&x.user.id}
+function call(path,method,body,prefer){var h={apikey:K,Authorization:"Bearer "+(tok()||K),"Content-Type":"application/json"};if(prefer)h.Prefer=prefer;
+ return fetch(U+"/rest/v1/"+path,{method:method||"GET",headers:h,body:body?JSON.stringify(body):undefined}).then(function(r){return r.text().then(function(t){var j=null;try{j=t?JSON.parse(t):null}catch(e){}if(!r.ok)throw new Error((j&&j.message)||("Erro "+r.status));return j})})}
+function el(t,css,txt){var e=document.createElement(t);if(css)e.style.cssText=css;if(txt!=null)e.textContent=txt;return e}
+var BT="border:0;border-radius:10px;padding:10px 12px;font-weight:700;font-size:13px;cursor:pointer;margin:6px 6px 0 0;";
+function sheet(title){
+ var o=el("div","position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,.78);display:flex;align-items:flex-end;justify-content:center");
+ var b=el("div","background:#12183a;color:#fff;width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px;box-sizing:border-box;font:14px/1.45 system-ui,sans-serif");
+ var h=el("div","display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"),x=el("button","background:none;border:0;color:#fff;font-size:22px","✕");
+ function close(){o.remove()}x.onclick=close;o.onclick=function(e){if(e.target===o)close()};
+ h.append(el("b","font-size:16px",title),x);b.append(h);o.append(b);document.body.append(o);return{body:b,close:close}}
+
+/* hora exacta + "editado" */
+function fmt(d){try{return new Date(d).toLocaleString("pt-PT",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}catch(e){return""}}
+window.bgTm=function(n){var t=n.created_at?" ("+fmt(n.created_at)+")":"";if(n.edited_at)t+=" · editado "+fmt(n.edited_at);return t};
+
+/* etiquetas Corrigida / Retirada */
+window.bgNewsBadge=function(n,c){
+ if(n.status!=="corrected"&&n.status!=="retracted")return;
+ var ret=n.status==="retracted";
+ var b=el("div","margin:8px 0;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:700;color:#fff;background:"+(ret?"#B71C1C":"#EF6C00"),
+   (ret?"RETIRADA":"CORRIGIDA")+(n.status_at?" · "+fmt(n.status_at):""));
+ if(n.correction_note)b.append(el("div","font-weight:400;margin-top:3px",n.correction_note));
+ c.insertBefore(b,c.firstChild&&c.firstChild.tagName==="IMG"?c.children[1]:c.firstChild);
+ if(ret){c.querySelectorAll("p").forEach(function(p){p.remove()});c.style.opacity=".7"}
+};
+/* administrador: corrigir / retirar / limpar / repor */
+window.bgNewsAdmin=function(n,done){
+ var r=prompt("Etiqueta desta notícia:\n1 = Corrigida\n2 = Retirada\n3 = Sem etiqueta\n4 = Repor (anular ocultação automática)","1");
+ if(r===null)return;var patch,now=new Date().toISOString();
+ if(r==="1"||r==="2"){var note=prompt("Nota para os leitores (o que foi corrigido / porque foi retirada):","");if(note===null)return;
+  patch={status:r==="1"?"corrected":"retracted",correction_note:(note||"").slice(0,300)||null,status_at:now}}
+ else if(r==="3")patch={status:null,correction_note:null,status_at:null};
+ else if(r==="4")patch={auto_hidden:false,reviewed_at:now};
+ else return;
+ call("bengu_news?id=eq."+n.id,"PATCH",patch,"return=minimal").then(function(){alert("Feito.");done&&done()}).catch(function(e){alert(e.message)});
+};
+
+/* recurso */
+function appealForm(){
+ if(!uid()){alert("Entre na sua conta para pedir recurso.");return}
+ var m=sheet("Pedir recurso"),b=m.body;
+ var sel=el("select","width:100%;padding:9px;border-radius:8px;background:#0f1233;color:#fff;border:1px solid #2a2f6a");
+ [["account","A minha conta foi suspensa"],["content","Uma publicação ou notícia minha foi apagada"]].forEach(function(o){var op=el("option",null,o[1]);op.value=o[0];sel.append(op)});
+ var ta=el("textarea","width:100%;box-sizing:border-box;min-height:110px;margin-top:8px;padding:9px;border-radius:8px;background:#0f1233;color:#fff;border:1px solid #2a2f6a;font:inherit");
+ ta.placeholder="Explique porque acha que a decisão foi um engano (10 a 1000 letras).";ta.maxLength=1000;
+ var go=el("button",BT+"background:#FFB020;color:#12183A","Enviar recurso");
+ go.onclick=function(){var t=ta.value.trim();if(t.length<10){alert("Escreva pelo menos 10 letras.");return}
+  go.disabled=true;call("bengu_appeals","POST",{user_id:uid(),kind:sel.value,message:t},"return=minimal").then(function(){m.close();alert("Recurso enviado. Vamos responder dentro do prazo indicado.")}).catch(function(e){go.disabled=false;alert(e.message)})};
+ b.append(sel,ta,go);
+}
+window.bengu_appeal_open=appealForm;
+
+function appealsAdmin(){
+ var m=sheet("Recursos pendentes"),b=m.body;b.append(el("p",null,"A carregar…"));
+ call("bengu_appeals?select=id,user_id,kind,message,created_at&status=eq.pending&order=created_at").then(function(rows){
+  b.lastChild.remove();if(!rows||!rows.length){b.append(el("p",null,"Nenhum recurso pendente."));return}
+  rows.forEach(function(r){var d=el("div","border-top:1px solid rgba(255,255,255,.15);padding:8px 0");
+   d.append(el("div","font-size:12px;opacity:.7",(r.kind==="account"?"Conta suspensa":"Conteúdo apagado")+" · "+fmt(r.created_at)+" · user "+String(r.user_id).slice(0,8)),el("p","margin:6px 0",r.message));
+   [["Aceitar","accepted","#43A047"],["Rejeitar","rejected","#B71C1C"]].forEach(function(a){var bt=el("button",BT+"background:"+a[2]+";color:#fff",a[0]);
+    bt.onclick=function(){var note=prompt("Resposta ao utilizador (ficará guardada):","");if(note===null)return;
+     call("bengu_appeals?id=eq."+r.id,"PATCH",{status:a[1],decision_note:(note||"").slice(0,300)||null,decided_at:new Date().toISOString()},"return=minimal").then(function(){d.remove()}).catch(function(e){alert(e.message)})};d.append(bt)});
+   b.append(d)});
+ }).catch(function(e){b.lastChild.remove();b.append(el("p",null,e.message))});
+}
+
+/* transparência: números do trimestre actual */
+function stats(){
+ var m=sheet("Números do trimestre"),b=m.body,d=new Date(),q=Math.floor(d.getMonth()/3)+1;
+ b.append(el("p",null,"A carregar…"));
+ call("rpc/bengu_transparency","POST",{p_year:d.getFullYear(),p_q:q}).then(function(j){
+  b.lastChild.remove();b.append(el("p","opacity:.8",d.getFullYear()+" · trimestre "+q));
+  [["Denúncias de notícias recebidas",j.news_reports],["Notícias ocultadas automaticamente",j.news_auto_hidden],["Notícias corrigidas",j.news_corrected],["Notícias retiradas",j.news_retracted],["Recursos recebidos",j.appeals],["Recursos aceites",j.appeals_accepted]].forEach(function(x){
+   var r=el("div","display:flex;justify-content:space-between;border-top:1px solid rgba(255,255,255,.15);padding:8px 0");r.append(el("span",null,x[0]),el("b",null,String(x[1]==null?0:x[1])));b.append(r)});
+ }).catch(function(e){b.lastChild.remove();b.append(el("p",null,"Ainda não disponível: "+e.message))});
+}
+
+/* botões extra dentro da página de confiança */
+window.__bgTrustExtra=function(box){
+ var w=el("div","margin-top:12px;border-top:1px solid rgba(255,255,255,.15);padding-top:8px");
+ var a=el("button",BT+"background:#FFB020;color:#12183A","Pedir recurso");a.onclick=appealForm;
+ var s=el("button",BT+"background:#2a2f6a;color:#fff","Ver números do trimestre");s.onclick=stats;
+ w.append(a,s);box.append(w);
+ if(tok())call("rpc/is_admin","POST",{}).then(function(ok){if(ok===true){var x=el("button",BT+"background:#1E88E5;color:#fff","Recursos pendentes (admin)");x.onclick=appealsAdmin;w.append(x)}}).catch(function(){});
+};
 })();
 </script>
 </body>

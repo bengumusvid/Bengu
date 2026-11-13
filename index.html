@@ -3883,18 +3883,19 @@ st.textContent="header.sticky.top-0,nav.fixed.bottom-0{transition:transform .1s 
  "html[data-bgbars=\"down\"] nav.fixed.bottom-0{transform:translateY(100%)}";
 document.head.appendChild(st);
 /* BENGU 4.55: a faixa dos ESTADOS sai no mesmo instante em que se desliza o feed (não espera chegar ao topo); volta ao chegar ao topo */
-var sst=document.createElement("style");sst.textContent="html.bg-st-hide .bg-st{display:none!important}"+
+var sst=document.createElement("style");sst.textContent="html.bg-st-hide .bg-st,html.bg-st-hide .bg-st+[role=tablist]{display:none!important}"+
  "@keyframes bgStIn{from{transform:translateY(-14px);opacity:0}to{transform:none;opacity:1}}"+
- "html.bg-st-hide.bg-st-float .bg-st{display:flex!important;position:fixed;left:0;right:0;top:var(--bgst-top,56px);z-index:40;animation:bgStIn .16s ease-out .1s both}";document.head.appendChild(sst);
+ "html.bg-st-hide.bg-st-float .bg-st{display:flex!important;position:fixed;left:0;right:0;top:var(--bgst-top,56px);z-index:40;animation:bgStIn .16s ease-out .1s both}"+
+ "html.bg-st-hide.bg-st-float .bg-st+[role=tablist]{display:flex!important;position:fixed;left:0;right:0;top:var(--bgtab-top,220px);z-index:40;animation:bgStIn .16s ease-out .1s both}";document.head.appendChild(sst);
 function stEl(){var e=document.querySelector(".bg-st");if(!e||!e.offsetHeight)return null;var p=e.previousElementSibling;if(p&&p.tagName==="H1")return null;return e}
 function stHide(){if(root.classList.contains("bg-st-hide"))return;var e=stEl();if(!e)return;
- var a=e.nextElementSibling;while(a&&getComputedStyle(a).position==="fixed")a=a.nextElementSibling;
+ var a=e.nextElementSibling;if(a&&a.getAttribute("role")==="tablist")a=a.nextElementSibling;while(a&&getComputedStyle(a).position==="fixed")a=a.nextElementSibling;
  var t0=a?a.getBoundingClientRect().top:0;root.classList.add("bg-st-hide");
  if(a){var t1=a.getBoundingClientRect().top;if(t1!==t0)window.scrollBy(0,t1-t0)}}
 function stShow(){root.classList.remove("bg-st-float");if(root.classList.contains("bg-st-hide"))root.classList.remove("bg-st-hide")}
 /* BENGU 4.56: ao deslizar de volta para cima, a faixa dos estados reaparece logo por baixo do cabeçalho (sem esperar chegar ao topo) */
 function stFloat(){if(!root.classList.contains("bg-st-hide")||root.classList.contains("bg-st-float")||(tgt&&inner(tgt)))return;
- var h=document.querySelector("header.sticky.top-0");root.style.setProperty("--bgst-top",(h?h.offsetHeight:0)+"px");root.classList.add("bg-st-float")}
+ var h=document.querySelector("header.sticky.top-0");root.style.setProperty("--bgst-top",(h?h.offsetHeight:0)+"px");root.classList.add("bg-st-float");var se=document.querySelector(".bg-st");if(se)root.style.setProperty("--bgtab-top",((h?h.offsetHeight:0)+se.offsetHeight)+"px")}
 function stSync(){if((window.pageYOffset||root.scrollTop||0)<=4)stShow()}
 document.addEventListener("touchstart",stSync,{passive:true,capture:true});
 document.addEventListener("click",function(){setTimeout(stSync,60)},true);

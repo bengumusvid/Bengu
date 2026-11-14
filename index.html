@@ -16640,18 +16640,23 @@ function IN(w,t){w.append(el("p","font-size:12px;opacity:.75;margin:0 0 4px;text
 function op4(a,pool){var s=[a];shuf(pool).forEach(function(v){if(s.length<4&&s.indexOf(v)<0)s.push(v)});return shuf(s)}
 function pos(a){return a.filter(function(v){return v>0})}
 /* ===== Modelo dos jogos educativos: desenho 3D + pergunta + 4 respostas ===== */
-function Q3(id,gen,draw,h){return function(w){var lv,sc=0,ok=0,li=3,cur,run=1,e=E3(w,h||230),info=el("div",HEAD),q=el("div","text-align:center;font-size:17px;font-weight:800;margin:6px 0"),op=el("div","display:grid;grid-template-columns:repeat(2,1fr);gap:8px"),act=el("div","text-align:center;margin-top:8px"),hold=el("div","margin-top:10px"),tm;
+/* som dos jogos educativos: voz a dizer o nome certo + sons curtos; pode ser desligado (guardado no telemóvel) */
+function SND(){try{return localStorage.getItem("bg_snd")!=="0"}catch(e){return true}}
+function sayIt(t,l){if(!SND())return;try{var u,v=window.speechSynthesis;if(!v)return;v.cancel();u=new SpeechSynthesisUtterance(String(t).replace("/"," sobre "));u.lang=l||"pt-PT";u.rate=.9;v.speak(u)}catch(e){}}
+var AC;function beep(ok){if(!SND())return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();var o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);o.frequency.value=ok?880:180;g.gain.value=.12;o.start();o.stop(AC.currentTime+(ok?.15:.25))}catch(e){}}
+function sndBtn(){var b=btn("",function(){try{localStorage.setItem("bg_snd",SND()?"0":"1")}catch(e){}up();if(!SND()&&window.speechSynthesis)speechSynthesis.cancel()},";padding:5px 12px;font-size:12px;background:#2a2f66;color:#fff");function up(){b.textContent=SND()?"🔊 Som: ligado":"🔇 Som: desligado"}up();var d=el("div","text-align:center;margin:0 0 4px");d.append(b);return d}
+function Q3(id,gen,draw,h,lg){return function(w){var lv,sc=0,ok=0,li=3,cur,run=1,e=E3(w,h||230),info=el("div",HEAD),q=el("div","text-align:center;font-size:17px;font-weight:800;margin:6px 0"),op=el("div","display:grid;grid-template-columns:repeat(2,1fr);gap:8px"),act=el("div","text-align:center;margin-top:8px"),hold=el("div","margin-top:10px"),tm;
  e.rot=1;
  function upd(){info.textContent="Nível "+lv+" · ❤️ "+li+" · Pontos: "+sc}
  function nx(){lv=lvl(id);cur=gen(lv);q.textContent=cur.q;op.replaceChildren();upd();cur.o.forEach(function(v){var b=el("button",CARD+";font-size:14px;padding:9px 6px",String(v));b.onclick=function(){pk(v,b)};op.append(b)})}
- function pk(v,b){if(!run)return;run=0;if(v===cur.a){sc+=10*lv;ok++;b.style.background="#2e7d32";if(ok%5===0){setLvl(id,lv+1);submit(id,sc,hold);toast("⬆ Nível "+(lv+1))}}else{li--;b.style.background="#8e1a1a"}upd();
+ function pk(v,b){if(!run)return;run=0;if(v===cur.a){beep(1);sayIt(cur.a,lg);sc+=10*lv;ok++;b.style.background="#2e7d32";if(ok%5===0){setLvl(id,lv+1);submit(id,sc,hold);toast("⬆ Nível "+(lv+1))}}else{beep(0);li--;b.style.background="#8e1a1a"}upd();
   tm=setTimeout(function(){if(li<1){q.textContent="Fim! A resposta era: "+cur.a;op.replaceChildren();act.replaceChildren(btn("Jogar outra vez",rs));submit(id,sc,hold)}else{run=1;nx()}},750)}
  function rs(){sc=0;ok=0;li=3;run=1;act.replaceChildren();nx()}
- IN(w,"Arrasta o desenho 3D para o rodar e responde.");w.append(info,e.cv,q,op,act,hold);board(id,hold);rs();
- e.run(function(d,t){if(!e.drag)e.ya+=d*.6;draw(e,cur,t)});return function(){e.stop();clearTimeout(tm)}}}
+ IN(w,"Arrasta o desenho 3D para o rodar e responde.");w.append(sndBtn(),info,e.cv,q,op,act,hold);board(id,hold);rs();
+ e.run(function(d,t){if(!e.drag)e.ya+=d*.6;draw(e,cur,t)});return function(){e.stop();clearTimeout(tm);try{speechSynthesis.cancel()}catch(x){}}}}
 /* Cartões 3D com dados "símbolo=resposta" */
-function DQ(id,s,q,sz,n){var d=s.split("|").map(function(x){return x.split("=")}),pool=d.map(function(x){return x[1]});
- return Q3(id,function(L){var it=d[rndI(0,Math.min(d.length,4+L*3)-1)];return{q:q,a:it[1],o:op4(it[1],pool),t:it[0]}},function(e,c,t){e.txt(c.t,sz,Math.sin(t*1.3)*.9,n)},170)}
+function DQ(id,s,q,sz,n,l){var d=s.split("|").map(function(x){return x.split("=")}),pool=d.map(function(x){return x[1]});
+ return Q3(id,function(L){var it=d[rndI(0,Math.min(d.length,4+L*3)-1)];return{q:q,a:it[1],o:op4(it[1],pool),t:it[0]}},function(e,c,t){e.txt(c.t,sz,Math.sin(t*1.3)*.9,n)},170,l)}
 /* 1. Sólidos */
 function gSol(L){var n=3+rndI(0,Math.min(5,L+1)),pr=Math.random()<.5,k=rndI(0,2),V=[],F=[],R=[],i;
  for(i=0;i<n;i++){V.push([Math.cos(i*6.2832/n)*1.4,-1,Math.sin(i*6.2832/n)*1.4]);R.push(i)}
@@ -16811,7 +16816,7 @@ function G3D(){return[
 ["d3relogio","🕒","Relógio 3D",Q3("d3relogio",gClk,dClk)],
 ["d3animais","🦁","Animais 3D",DQ("d3animais","🐘=Elefante|🦁=Leão|🦒=Girafa|🐊=Crocodilo|🦓=Zebra|🐒=Macaco|🐍=Cobra|🦛=Hipopótamo|🐢=Tartaruga|🦜=Papagaio|🐟=Peixe|🐄=Vaca|🐐=Cabra|🐓=Galo|🦏=Rinoceronte|🐆=Leopardo|🐧=Pinguim|🐬=Golfinho","Que animal é este?",95,0)],
 ["d3frutas","🥭","Frutas e legumes 3D",DQ("d3frutas","🥭=Manga|🍌=Banana|🍍=Ananás|🥥=Coco|🍉=Melancia|🍋=Limão|🥜=Amendoim|🌽=Milho|🥕=Cenoura|🍅=Tomate|🍊=Laranja|🍎=Maçã|🍇=Uvas|🍓=Morango|🍆=Beringela|🥔=Batata","O que é isto?",95,0)],
-["d3ingles","🇬🇧","Inglês 3D",DQ("d3ingles","🐈=Cat|🐕=Dog|☀️=Sun|🌙=Moon|⭐=Star|🏠=House|🚗=Car|📖=Book|🌳=Tree|🍎=Apple|💧=Water|🔥=Fire|🐟=Fish|✋=Hand|👀=Eyes|🎵=Music|🚌=Bus|✈️=Plane","Como se diz em inglês?",95,0)],
+["d3ingles","🇬🇧","Inglês 3D",DQ("d3ingles","🐈=Cat|🐕=Dog|☀️=Sun|🌙=Moon|⭐=Star|🏠=House|🚗=Car|📖=Book|🌳=Tree|🍎=Apple|💧=Water|🔥=Fire|🐟=Fish|✋=Hand|👀=Eyes|🎵=Music|🚌=Bus|✈️=Plane","Como se diz em inglês?",95,0,"en-US")],
 ["d3bandeiras","🚩","Bandeiras 3D",DQ("d3bandeiras","🇲🇿=Moçambique|🇵🇹=Portugal|🇧🇷=Brasil|🇦🇴=Angola|🇿🇦=África do Sul|🇿🇼=Zimbabwe|🇹🇿=Tanzânia|🇲🇼=Malawi|🇿🇲=Zâmbia|🇫🇷=França|🇬🇧=Reino Unido|🇺🇸=EUA|🇯🇵=Japão|🇨🇳=China|🇪🇸=Espanha|🇩🇪=Alemanha|🇮🇹=Itália|🇨🇻=Cabo Verde","De que país é esta bandeira?",95,0)],
 ["d3capitais","🌍","Capitais do mundo 3D",DQ("d3capitais","Moçambique=Maputo|Angola=Luanda|Portugal=Lisboa|Brasil=Brasília|África do Sul=Pretória|Zimbabwe=Harare|Tanzânia=Dodoma|Malawi=Lilongwe|Zâmbia=Lusaca|França=Paris|Espanha=Madrid|Itália=Roma|Alemanha=Berlim|Japão=Tóquio|Egipto=Cairo|Quénia=Nairobi|Cabo Verde=Praia|Argentina=Buenos Aires|Rússia=Moscovo|Canadá=Otava","Qual é a capital?",40,6)],
 ["d3provincias","🗺️","Províncias de Moçambique 3D",DQ("d3provincias","Maputo (cidade)=Maputo|Maputo (província)=Matola|Gaza=Xai-Xai|Inhambane=Inhambane|Sofala=Beira|Manica=Chimoio|Tete=Tete|Zambézia=Quelimane|Nampula=Nampula|Niassa=Lichinga|Cabo Delgado=Pemba","Qual é a capital desta província?",36,6)],

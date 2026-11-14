@@ -5788,6 +5788,7 @@ function bgMeId() {
 /* BENGU 4.42: visualização só conta com interacção real (vídeo visto até ao fim, foto aberta, música tocada, texto/PDF aberto) */
 function bgCountPost(p) {
   try {
+    bgJrnlView(p);
     if (!p || p.id == null || si.has(p.id)) return;
     const mid = bgMeId();
     if (mid && p.userId === mid) return;
@@ -5796,6 +5797,56 @@ function bgCountPost(p) {
   } catch (e) {}
 }
 window.bgCountPost = bgCountPost;
+/* BENGU 4.58: se a publicação partilha um jornal (PDF) das Notícias, os gostos e as visualizações contam também no jornal de origem */
+const __bgJm = {}, __bgJv = {};
+/* descobre o conteúdo de origem (jornal, notícia ou música) de uma publicação que o partilha */
+function bgJrnlOf(p) {
+  try {
+    const urls = ((p && p.items) || []).filter((x) => x && x.url && x.kind !== "video" && !/^blob:/.test(x.url)).map((x) => x.url).slice(0, 3);
+    const t = [(p && p.text) || "", ...urls].join(" ");
+    if (!(t in __bgJm)) {
+      const q = (tb, col, v, kind) => Promise.resolve(me.from(tb).select("id,author_id").eq(col, v).limit(1)).then((r) => (r && r.data && r.data[0] ? { kind, id: r.data[0].id, author_id: r.data[0].author_id } : null), () => null);
+      const find = async () => {
+        const j = t.match(/https?:\/\/[^\s"'<>)]*\/journals\/[^\s"'<>)]+?\.pdf/i);
+        if (j) return q("bengu_journals", "pdf_url", j[0], "journal");
+        const n = t.match(/(?:\/s\/n\/|#ver-n-)([\w-]+)/);
+        if (n) return q("bengu_news", "id", n[1], "news");
+        for (const u of urls) {
+          const r = (await q("bengu_music", "audio_url", u, "music")) || (await q("bengu_news", "photo_url", u, "news")) || (await q("bengu_journals", "pdf_url", u, "journal"));
+          if (r) return r;
+        }
+        return null;
+      };
+      __bgJm[t] = find().catch(() => null);
+    }
+    return __bgJm[t];
+  } catch (e) { return Promise.resolve(null); }
+}
+function bgJrnlView(p) {
+  try {
+    bgJrnlOf(p).then((j) => {
+      if (!j) return;
+      const k = j.kind + ":" + j.id;
+      if (__bgJv[k]) return;
+      const mid = bgMeId();
+      if (mid && j.author_id === mid) return;
+      __bgJv[k] = 1;
+      me.rpc("bengu_bump_content_view", { p_kind: j.kind, p_id: String(j.id) }).then(() => {}, () => {});
+    });
+  } catch (e) {}
+}
+function bgJrnlLike(p, on) {
+  try {
+    bgJrnlOf(p).then((j) => {
+      const mid = bgMeId();
+      if (!j || !mid) return;
+      const q = on
+        ? me.from("bengu_content_likes").insert({ kind: j.kind, content_id: String(j.id) })
+        : me.from("bengu_content_likes").delete().eq("kind", j.kind).eq("content_id", String(j.id)).eq("user_id", mid);
+      Promise.resolve(q).then(() => {}, () => {});
+    });
+  } catch (e) {}
+}
 let __bgDlQ = null, __bgDlC = {};
 function bgDlGet(id) {
   if (id in __bgDlC) return Promise.resolve(__bgDlC[id]);
@@ -7790,7 +7841,7 @@ function J_() {
       const { error: he } = Z
         ? await me.from("likes").insert({ post_id: I, user_id: h.id })
         : await me.from("likes").delete().eq("post_id", I).eq("user_id", h.id);
-      he && (le(!Z), _e(Ze(he)));
+      he ? (le(!Z), _e(Ze(he))) : bgJrnlLike(V, Z);
     },
     Bg = async (I) => {
       const V = U.includes(I);

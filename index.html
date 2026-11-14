@@ -16617,14 +16617,14 @@ function swipe(node,cb){var sx=0,sy=0;node.addEventListener("touchstart",functio
 function keys(cb){function kh(e){var m={ArrowLeft:0,ArrowUp:1,ArrowRight:2,ArrowDown:3}[e.key];if(m==null)return;e.preventDefault();cb(m)}document.addEventListener("keydown",kh);return function(){document.removeEventListener("keydown",kh)}}
 function topbar(G,menu){var d=el("div","display:flex;align-items:center;justify-content:center;margin:0 0 4px"),b=el("button",BTN+";padding:7px 12px;font-size:13px","← Jogos");b.onclick=menu;if(window.__bgBk)window.__bgBk.replaceChildren(b);d.append(el("b","font-size:16px",G[1]+" "+G[2]));return d}
 /* ---- BENGU 4.57: 30 jogos 3D (15 educativos + 15 de diversão). Sem bibliotecas, funcionam offline, com níveis. ---- */
-function E3(w,h){var W=Math.max(220,Math.min(520,(w.clientWidth||320)-2)),H=h,cv=el("canvas","display:block;margin:6px auto;border-radius:14px;background:linear-gradient(#1c2a78,#080b24);touch-action:none;max-width:100%;width:78%"),o={W:W,H:H,cv:cv,x:cv.getContext("2d"),ya:.7,pi:.5,D:9,cy:0,cz:0,oy:0,rot:0,drag:0,tap:null,mv:null},lx=0,ly=0,raf=0,BF=[[0,2,6,4],[1,3,7,5],[0,1,5,4],[2,3,7,6],[0,1,3,2],[4,5,7,6]],BS=[.7,.8,.5,1,.65,.9];
+function E3(w,h){var W=Math.max(220,Math.min(520,(w.clientWidth||320)-2)),H=Math.round(h*1.12),cv=el("canvas","display:block;margin:6px auto;border-radius:14px;background:linear-gradient(#1c2a78,#080b24);touch-action:none;max-width:100%;width:100%"),o={W:W,H:H,Z:1.12,cv:cv,x:cv.getContext("2d"),ya:.7,pi:.5,D:9,cy:0,cz:0,oy:0,rot:0,drag:0,tap:null,mv:null},lx=0,ly=0,raf=0,BF=[[0,2,6,4],[1,3,7,5],[0,1,5,4],[2,3,7,6],[0,1,3,2],[4,5,7,6]],BS=[.7,.8,.5,1,.65,.9];
  cv.width=W;cv.height=H;
  function ps(v){var r=cv.getBoundingClientRect();return[(v.clientX-r.left)*W/(r.width||W),(v.clientY-r.top)*H/(r.height||H)]}
  cv.onpointerdown=function(v){var p=ps(v);lx=v.clientX;ly=v.clientY;o.drag=1;if(o.tap)o.tap(p[0],p[1])};
  cv.onpointermove=function(v){if(!o.drag)return;var p=ps(v);if(o.mv)o.mv(p[0],p[1]);if(o.rot){o.ya+=(v.clientX-lx)/60;o.pi=Math.max(.1,Math.min(1.4,o.pi+(v.clientY-ly)/80))}lx=v.clientX;ly=v.clientY};
  cv.onpointerup=cv.onpointercancel=function(){o.drag=0};
  /* câmara em perspectiva: guinada (ya), inclinação (pi), distância (D) */
- o.P=function(a,b,c){var cy=Math.cos(o.ya),sy=Math.sin(o.ya),cp=Math.cos(o.pi),sp=Math.sin(o.pi),X,Z,Y;c-=o.cz;b-=o.cy;X=a*cy-c*sy;Z=a*sy+c*cy;Y=b*cp+Z*sp;Z=Math.max(.5,Z*cp-b*sp+o.D);var s=W*.9/Z;return[W/2+X*s,H/2+o.oy-Y*s,s,Z]};
+ o.P=function(a,b,c){var cy=Math.cos(o.ya),sy=Math.sin(o.ya),cp=Math.cos(o.pi),sp=Math.sin(o.pi),X,Z,Y;c-=o.cz;b-=o.cy;X=a*cy-c*sy;Z=a*sy+c*cy;Y=b*cp+Z*sp;Z=Math.max(.5,Z*cp-b*sp+o.D);var s=W*.9/Z*o.Z;return[W/2+X*s,H/2+o.oy*o.Z-Y*s,s,Z]};
  o.k=function(c,k){return typeof c=="string"?c:"rgb("+c.map(function(v){return Math.min(255,v*k|0)}).join()+")"};
  o.poly=function(V,fs,c,ks){var Q=V.map(function(v){return o.P(v[0],v[1],v[2])}),x=o.x;fs.map(function(f,i){return[f,i,f.reduce(function(a,j){return a+Q[j][3]},0)/f.length]}).sort(function(a,b){return b[2]-a[2]}).forEach(function(g){x.beginPath();g[0].forEach(function(j,i){x[i?"lineTo":"moveTo"](Q[j][0],Q[j][1])});x.closePath();x.fillStyle=o.k(c,ks?ks[g[1]]:.55+.45*((g[1]*7%10)/10));x.fill();x.strokeStyle="rgba(255,255,255,.3)";x.stroke()})};
  o.box=function(a,b,c,p,q,r,col){var V=[],i;for(i=0;i<8;i++)V.push([a+(i&1?p:-p),b+(i&2?q:-q),c+(i&4?r:-r)]);o.poly(V,BF,col,BS)};
@@ -16787,7 +16787,7 @@ function pong(w){var e=E3(w,340),info=el("div",HEAD),act=el("div","text-align:ce
  e.ya=0;e.pi=0;e.D=6;
  function srv(d){bx=0;by=0;bz=5;vx=rndI(-10,10)/10*1.5;vy=rndI(-10,10)/10*1.2;vz=d*(5+lv*.6)}
  function st(){lv=lvl("d3pong");px=0;py=0;ax=0;ay=0;li=3;sc=0;hits=0;on=1;srv(-1);act.replaceChildren();board("d3pong",hold)}
- e.tap=e.mv=function(x,y){var u=e.W*.15;px=Math.max(-1.8,Math.min(1.8,(x-e.W/2)/u));py=Math.max(-1.2,Math.min(1.2,-(y-e.H/2)/u))};
+ e.tap=e.mv=function(x,y){var u=e.W*.15*e.Z;px=Math.max(-1.8,Math.min(1.8,(x-e.W/2)/u));py=Math.max(-1.2,Math.min(1.2,-(y-e.H/2)/u))};
  IN(w,"Arrasta o dedo para mexer a raquete azul. Devolve a bola ao fundo do túnel!");w.append(info,e.cv,act,hold);st();
  e.run(function(d){var x=e.x,i,a,b,s,C=[[-2,-1.5],[2,-1.5],[2,1.5],[-2,1.5]],
   R=function(z,c){var p=C.map(function(q){return e.P(q[0],q[1],z)});x.strokeStyle=c;x.beginPath();p.forEach(function(q,j){x[j?"lineTo":"moveTo"](q[0],q[1])});x.closePath();x.stroke()},

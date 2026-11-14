@@ -16547,12 +16547,12 @@ function open(start){
  if(!tok()){alert("Inicie sessão para usar a IA e os jogos.");return}
  close();ov=el("div","position:fixed;inset:0;z-index:100010;background:rgba(0,0,0,.75);display:flex;align-items:flex-end;justify-content:center");
  var c=el("div","background:#14163a;color:#fff;border-radius:16px 16px 0 0;width:100%;max-width:520px;height:88vh;display:flex;flex-direction:column;box-sizing:border-box;font-family:inherit"),
-  top=el("div","display:flex;gap:6px;align-items:center;padding:12px 12px 6px"),body=el("div","flex:1;min-height:0;overflow:auto;padding:8px 14px 14px"),
+  top=el("div","display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;padding:12px 12px 6px"),body=el("div","flex:1;min-height:0;overflow:auto;padding:8px 14px 14px"),
   ALLT=[["jogos","🎮 Jogos"],["premium","⭐ Premium"],["verificacao","✅ Verificação"],["visitas","👁 Visitas"],["agendadas","⏰ Agendadas"],["selos","🏅 Selos"],["adm","⚙️ Admin"]],
   /* BENGU 4.56: Premium, Verificação, Visitas e Agendadas já não aparecem aqui; abrem-se só pelas Definições */
   tabs=(["premium","verificacao","visitas","agendadas","selos","adm"].indexOf(start)>=0?ALLT.filter(function(t){return t[0]===start}):(window.BG_IA_ON?[["ia","🤖 IA"]]:[]).concat([ALLT[0]]));
- var bs={},tw=el("div","flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none");tabs.forEach(function(t){var b=el("button","border:0;border-radius:16px;padding:7px 11px;font-weight:700;font-size:13px;background:#2a2f66;color:#fff;flex-shrink:0;white-space:nowrap",t[1]);b.onclick=function(){show(t[0])};bs[t[0]]=b;tw.append(b)});top.append(tw);
- var x=el("button",BTN,"Fechar");x.style.flexShrink="0";x.onclick=close;top.append(x);
+ var bs={},tw=el("div","min-width:0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;justify-content:center"),bk=el("div","justify-self:start");window.__bgBk=bk;tabs.forEach(function(t){var b=el("button","border:0;border-radius:16px;padding:7px 11px;font-weight:700;font-size:13px;background:#2a2f66;color:#fff;flex-shrink:0;white-space:nowrap",t[1]);b.onclick=function(){show(t[0])};bs[t[0]]=b;tw.append(b)});top.append(bk,tw);
+ var x=el("button",BTN,"Fechar");x.style.flexShrink="0";x.style.justifySelf="end";x.onclick=close;top.append(x);
  c.append(top,body);ov.append(c);ov.onclick=function(e){if(e.target===ov)close()};document.body.append(ov);
  function show(k){Object.keys(bs).forEach(function(z){bs[z].style.background=z===k?"#f5b400":"#2a2f66";bs[z].style.color=z===k?"#14163a":"#fff"});try{bs[k].scrollIntoView({inline:"center",block:"nearest"})}catch(e){}body.replaceChildren();
   if(k==="ia")viewAI(body);else if(k==="jogos")viewGames(body);else if(k==="premium")viewPremium(body);else if(k==="verificacao")viewVerify(body);else if(k==="visitas")viewVisitors(body);else if(k==="agendadas")viewScheduled(body);else if(k==="selos")viewBadges(body);else viewAdmin(body)}
@@ -16615,9 +16615,9 @@ function dpad(cb){var g=el("div","display:grid;grid-template-columns:repeat(3,58
 function swipe(node,cb){var sx=0,sy=0;node.addEventListener("touchstart",function(e){var t=e.touches[0];sx=t.clientX;sy=t.clientY},{passive:true});
  node.addEventListener("touchend",function(e){var t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(Math.max(Math.abs(dx),Math.abs(dy))<20)return;cb(Math.abs(dx)>Math.abs(dy)?(dx>0?2:0):(dy>0?3:1))},{passive:true})}
 function keys(cb){function kh(e){var m={ArrowLeft:0,ArrowUp:1,ArrowRight:2,ArrowDown:3}[e.key];if(m==null)return;e.preventDefault();cb(m)}document.addEventListener("keydown",kh);return function(){document.removeEventListener("keydown",kh)}}
-function topbar(G,menu){var d=el("div","display:flex;align-items:center;gap:8px;margin:2px 0 8px"),b=el("button",BTN+";padding:7px 11px","← Jogos");b.onclick=menu;d.append(b,el("b","font-size:16px",G[1]+" "+G[2]));return d}
+function topbar(G,menu){var d=el("div","display:flex;align-items:center;justify-content:center;margin:0 0 4px"),b=el("button",BTN+";padding:7px 12px;font-size:13px","← Jogos");b.onclick=menu;if(window.__bgBk)window.__bgBk.replaceChildren(b);d.append(el("b","font-size:16px",G[1]+" "+G[2]));return d}
 /* ---- BENGU 4.57: 30 jogos 3D (15 educativos + 15 de diversão). Sem bibliotecas, funcionam offline, com níveis. ---- */
-function E3(w,h){var W=Math.max(220,Math.min(520,(w.clientWidth||320)-2)),H=h,cv=el("canvas","display:block;margin:6px auto;border-radius:14px;background:linear-gradient(#1c2a78,#080b24);touch-action:none;max-width:100%"),o={W:W,H:H,cv:cv,x:cv.getContext("2d"),ya:.7,pi:.5,D:9,cy:0,cz:0,oy:0,rot:0,drag:0,tap:null,mv:null},lx=0,ly=0,raf=0,BF=[[0,2,6,4],[1,3,7,5],[0,1,5,4],[2,3,7,6],[0,1,3,2],[4,5,7,6]],BS=[.7,.8,.5,1,.65,.9];
+function E3(w,h){var W=Math.max(220,Math.min(520,(w.clientWidth||320)-2)),H=h,cv=el("canvas","display:block;margin:6px auto;border-radius:14px;background:linear-gradient(#1c2a78,#080b24);touch-action:none;max-width:100%;width:78%"),o={W:W,H:H,cv:cv,x:cv.getContext("2d"),ya:.7,pi:.5,D:9,cy:0,cz:0,oy:0,rot:0,drag:0,tap:null,mv:null},lx=0,ly=0,raf=0,BF=[[0,2,6,4],[1,3,7,5],[0,1,5,4],[2,3,7,6],[0,1,3,2],[4,5,7,6]],BS=[.7,.8,.5,1,.65,.9];
  cv.width=W;cv.height=H;
  function ps(v){var r=cv.getBoundingClientRect();return[(v.clientX-r.left)*W/(r.width||W),(v.clientY-r.top)*H/(r.height||H)]}
  cv.onpointerdown=function(v){var p=ps(v);lx=v.clientX;ly=v.clientY;o.drag=1;if(o.tap)o.tap(p[0],p[1])};
@@ -16643,7 +16643,7 @@ function pos(a){return a.filter(function(v){return v>0})}
 function Q3(id,gen,draw,h){return function(w){var lv,sc=0,ok=0,li=3,cur,run=1,e=E3(w,h||230),info=el("div",HEAD),q=el("div","text-align:center;font-size:17px;font-weight:800;margin:6px 0"),op=el("div","display:grid;grid-template-columns:repeat(2,1fr);gap:8px"),act=el("div","text-align:center;margin-top:8px"),hold=el("div","margin-top:10px"),tm;
  e.rot=1;
  function upd(){info.textContent="Nível "+lv+" · ❤️ "+li+" · Pontos: "+sc}
- function nx(){lv=lvl(id);cur=gen(lv);q.textContent=cur.q;op.replaceChildren();upd();cur.o.forEach(function(v){var b=el("button",CARD+";font-size:16px;padding:14px 6px",String(v));b.onclick=function(){pk(v,b)};op.append(b)})}
+ function nx(){lv=lvl(id);cur=gen(lv);q.textContent=cur.q;op.replaceChildren();upd();cur.o.forEach(function(v){var b=el("button",CARD+";font-size:14px;padding:9px 6px",String(v));b.onclick=function(){pk(v,b)};op.append(b)})}
  function pk(v,b){if(!run)return;run=0;if(v===cur.a){sc+=10*lv;ok++;b.style.background="#2e7d32";if(ok%5===0){setLvl(id,lv+1);submit(id,sc,hold);toast("⬆ Nível "+(lv+1))}}else{li--;b.style.background="#8e1a1a"}upd();
   tm=setTimeout(function(){if(li<1){q.textContent="Fim! A resposta era: "+cur.a;op.replaceChildren();act.replaceChildren(btn("Jogar outra vez",rs));submit(id,sc,hold)}else{run=1;nx()}},750)}
  function rs(){sc=0;ok=0;li=3;run=1;act.replaceChildren();nx()}
@@ -16689,7 +16689,7 @@ function dClk(e,c,t){var x=e.x,i,p,q,R=2,ds=function(z,col){x.fillStyle=col;x.be
 /* ===== Corrida 3D em 3 faixas (5 cenários) ===== */
 function RUN(id,S){return function(w){var e=E3(w,320),info=el("div",HEAD),act=el("div","display:flex;gap:10px;justify-content:center;margin-top:8px"),hold=el("div","margin-top:10px"),lv,b0,ln,px,O,sc,co,on,nt,dz;
  e.pi=.45;e.ya=0;e.oy=60;e.D=7;e.cv.style.background=S.b;
- function st(){b0=lv=lvl(id);ln=1;px=0;O=[];sc=0;co=0;on=1;nt=0;dz=0;act.replaceChildren(btn("◀",function(){ln=Math.max(0,ln-1)},";padding:12px 34px;font-size:20px"),btn("▶",function(){ln=Math.min(2,ln+1)},";padding:12px 34px;font-size:20px"));board(id,hold)}
+ function st(){b0=lv=lvl(id);ln=1;px=0;O=[];sc=0;co=0;on=1;nt=0;dz=0;act.replaceChildren(btn("◀",function(){ln=Math.max(0,ln-1)},";padding:8px 26px;font-size:16px"),btn("▶",function(){ln=Math.min(2,ln+1)},";padding:8px 26px;font-size:16px"));board(id,hold)}
  function end(){on=0;info.textContent="💥 Fim! Pontos: "+(sc|0);submit(id,sc,hold);act.replaceChildren(btn("Jogar outra vez",st))}
  e.tap=function(x){if(on)ln=Math.max(0,Math.min(2,ln+(x<e.W/2?-1:1)))};
  IN(w,S.t);w.append(info,e.cv,act,hold);st();
@@ -16705,7 +16705,7 @@ function RUN(id,S){return function(w){var e=E3(w,320),info=el("div",HEAD),act=el
 /* ===== Torre de blocos ===== */
 function torre(w){var e=E3(w,320),info=el("div",HEAD),act=el("div","text-align:center;margin-top:8px"),hold=el("div","margin-top:10px"),B,n,p,dr,sc,on,lv,hs=function(i){return[130+120*Math.sin(i*.4),130+120*Math.sin(i*.4+2),130+120*Math.sin(i*.4+4)]};
  e.ya=.8;e.pi=.55;e.D=11;
- function st(){lv=lvl("d3torre");B=[[0,0,1.2,1.2]];n=1;p=-3;dr=1;sc=0;on=1;e.cy=0;act.replaceChildren(btn("⬇ Largar bloco",drop,";padding:14px 34px;font-size:18px"));board("d3torre",hold)}
+ function st(){lv=lvl("d3torre");B=[[0,0,1.2,1.2]];n=1;p=-3;dr=1;sc=0;on=1;e.cy=0;act.replaceChildren(btn("⬇ Largar bloco",drop,";padding:9px 24px;font-size:14px"));board("d3torre",hold)}
  function drop(){if(!on)return;var t=B[n-1],a=n%2,tc=t[a],th=t[2+a],lo=Math.max(p-th,tc-th),hi=Math.min(p+th,tc+th),nb;
   if(hi-lo<.06){on=0;info.textContent="🏗️ Caiu! Altura: "+(n-1);act.replaceChildren(btn("Jogar outra vez",st));submit("d3torre",sc,hold);return}
   nb=t.slice();nb[a]=(lo+hi)/2;nb[2+a]=(hi-lo)/2;if(Math.abs(p-tc)<.08){nb[a]=tc;nb[2+a]=th;sc+=5}B.push(nb);n++;sc+=10;if(n%8==0){lv++;setLvl("d3torre",lv);toast("⬆ Nível "+lv)}p=-3.2;dr=1}
@@ -16731,7 +16731,7 @@ function TIRO(id,S){return function(w){var e=E3(w,320),info=el("div",HEAD),act=e
 /* ===== Saltos 3D ===== */
 function hop(w){var e=E3(w,320),info=el("div",HEAD),act=el("div","text-align:center;margin-top:8px"),hold=el("div","margin-top:10px"),Pl,k,jp,jx,on,lv,sc,fy,hw,tt=0;
  e.ya=0;e.pi=.75;e.D=8;e.oy=50;
- function st(){lv=lvl("d3pulo");Pl=[];for(var i=0;i<400;i++)Pl.push({a:rndI(10,24)/10,s:.7+Math.random()*.5+lv*.06,h:Math.random()*6.3});k=0;jp=-1;on=1;sc=0;fy=0;hw=Math.max(.55,1.1-lv*.05);e.cz=0;act.replaceChildren(btn("⬆ Saltar",jump,";padding:14px 34px;font-size:18px"));board("d3pulo",hold)}
+ function st(){lv=lvl("d3pulo");Pl=[];for(var i=0;i<400;i++)Pl.push({a:rndI(10,24)/10,s:.7+Math.random()*.5+lv*.06,h:Math.random()*6.3});k=0;jp=-1;on=1;sc=0;fy=0;hw=Math.max(.55,1.1-lv*.05);e.cz=0;act.replaceChildren(btn("⬆ Saltar",jump,";padding:9px 24px;font-size:14px"));board("d3pulo",hold)}
  function X(i,t){var q=Pl[i];return i?Math.sin(t*q.s+q.h)*q.a:0}
  function jump(){if(on&&jp<0){jp=0;jx=X(k,tt)}}
  e.tap=jump;IN(w,"Toca para saltar para a próxima plataforma em movimento.");w.append(info,e.cv,act,hold);st();
@@ -16756,7 +16756,7 @@ function sim3(w){var e=E3(w,300),info=el("div",HEAD),act=el("div","text-align:ce
 function LANC(id,S){return function(w){var e=E3(w,320),info=el("div",HEAD),act=el("div","text-align:center;margin-top:8px"),hold=el("div","margin-top:10px"),ph,am,pw,bl,sc,lv,tr,kx,hx,tp=function(){return Math.max(.05,.12-lv*.006)};
  e.ya=0;e.pi=.25;e.D=6;e.oy=40;
  function nw(){ph=0;bl=null;hx=lv>2?rndI(-15,15)/10:0;kx=rndI(-16,16)/10}
- function st(){lv=lvl(id);sc=0;tr=5;am=0;pw=0;nw();act.replaceChildren(btn("🎯 Parar",go,";padding:14px 34px;font-size:18px"));board(id,hold)}
+ function st(){lv=lvl(id);sc=0;tr=5;am=0;pw=0;nw();act.replaceChildren(btn("🎯 Parar",go,";padding:9px 24px;font-size:14px"));board(id,hold)}
  function go(){if(ph===0)ph=1;else if(ph===1){ph=2;var X=am*3,ok=Math.abs(pw-.7)<tp()&&(S.k?Math.abs(X)<2.3&&Math.abs(X-kx)>.9:Math.abs(X-hx)<Math.max(.22,.55-lv*.03));bl={t:0,X:X,p:pw,ok:ok}}}
  function end(){ph=3;bl=null;info.textContent="🏁 Fim! Pontos: "+sc;if(sc>=lv*40){setLvl(id,lv+1);toast("⬆ Próximo nível!")}submit(id,sc,hold);act.replaceChildren(btn("Jogar outra vez",st))}
  e.tap=go;IN(w,S.t);w.append(info,e.cv,act,hold);st();
@@ -16771,7 +16771,7 @@ function LANC(id,S){return function(w){var e=E3(w,320),info=el("div",HEAD),act=e
 /* ===== Aterragem lunar ===== */
 function lander(w){var e=E3(w,320),info=el("div",HEAD),act=el("div","display:flex;gap:8px;justify-content:center;margin-top:8px"),hold=el("div","margin-top:10px"),X,Y,vx,vy,fu,on,pad,lv,K={l:0,u:0,r:0};
  e.ya=0;e.pi=.35;e.D=9;e.cy=1.6;
- function hb(t,k){var b=btn(t,function(){},";padding:14px 22px;font-size:18px;touch-action:none");b.onpointerdown=function(){K[k]=1};b.onpointerup=b.onpointerleave=b.onpointercancel=function(){K[k]=0};return b}
+ function hb(t,k){var b=btn(t,function(){},";padding:9px 16px;font-size:14px;touch-action:none");b.onpointerdown=function(){K[k]=1};b.onpointerup=b.onpointerleave=b.onpointercancel=function(){K[k]=0};return b}
  function st(){lv=lvl("d3lua");X=rndI(-20,20)/10;Y=4;vx=0;vy=0;fu=100;on=1;pad=rndI(-25,25)/10;act.replaceChildren(hb("◀","l"),hb("🔥 Motor","u"),hb("▶","r"));board("d3lua",hold)}
  function end(ok){on=0;var s=ok?100+(fu|0)+lv*10:0;info.textContent=ok?"✅ Aterragem perfeita! Pontos: "+s:"💥 Despenhaste-te! Tenta de novo.";if(ok)setLvl("d3lua",lv+1);submit("d3lua",s,hold);act.replaceChildren(btn("Jogar outra vez",st))}
  IN(w,"Segura 🔥 para travar a queda e ◀ ▶ para ir para a plataforma verde. Pousa devagar!");w.append(info,e.cv,act,hold);st();
@@ -16835,7 +16835,7 @@ function G3D(){return[
 
 function GAMES(){return[["cobra","🐍","Cobra 3D",snake],["tetris","🧱","Tetris",tetris],["galo","❌","Jogo do galo",galo],["2048","🔢","2048",g2048],["minas","💣","Campo minado",minas],["toupeira","🔨","Caça à toupeira",toupeira],["puzzle","🧩","Puzzle 8",puzzle],["simon","🎨","Simon (cores)",simon],["ppt","✂️","Pedra, papel, tesoura",ppt],["numero","🎯","Adivinha o número",numero],["forca","🔤","Forca",forca],["contas","➕","Contas rápidas",contas],["reacao","⚡","Teste de reação",reacao],["quiz","❓","Quiz",quiz],["cores","🌈","Cores",cores],["flappy","🐤","Flappy Bengu",flappy],["corrida","🏎️","Corrida",corrida],["domino","🎲","Dominó",domino],["memoria","🧠","Jogo da memória",memory,1]].concat(G3D())}
 function viewGames(b){stopGame();var box=el("div"),inMenu=false;b.append(box);menu();refreshAcc(function(){if(inMenu)menu()});
- function menu(){stopGame();inMenu=true;box.replaceChildren(el("h3","margin:4px 0","🎮 Jogos"),el("p","font-size:12px;opacity:.7;margin:0 0 10px","Jogas sem internet e sem gastar dados. Todos os jogos têm níveis (1, 2, 3… sem limite) e ficam mais difíceis a cada nível."));
+ function menu(){stopGame();inMenu=true;if(window.__bgBk)window.__bgBk.replaceChildren();box.replaceChildren(el("h3","margin:4px 0","🎮 Jogos"),el("p","font-size:12px;opacity:.7;margin:0 0 10px","Jogas sem internet e sem gastar dados. Todos os jogos têm níveis (1, 2, 3… sem limite) e ficam mais difíceis a cada nível."));
   var mu=el("button",CARD+";flex-direction:row;justify-content:center;width:100%;margin-bottom:10px;background:#3a3f90"),tx=el("span","text-align:left");tx.append(el("div","","Música offline"),el("div","font-size:11px;font-weight:400;opacity:.75","As músicas do teu telemóvel · sem internet"));
   mu.append(el("span","font-size:26px","🎵"),tx);if(!canC("offline_music"))mu.append(el("span","font-size:12px","🔒"));
   mu.onclick=function(){if(!canC("offline_music")){toast("A música offline está reservada a contas premium.");setTimeout(function(){if(window.bengu_ia_open)window.bengu_ia_open("premium")},700);return}if(window.bgLocalMusic)window.bgLocalMusic();else toast("Música offline indisponível.")};box.append(mu);

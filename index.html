@@ -12609,6 +12609,30 @@ function lx({
               }),
             ],
           }),
+          u.jsxs("div", {
+            className: P,
+            children: [
+              u.jsxs("div", {
+                children: [
+                  u.jsx("div", {
+                    className: "text-sm font-semibold",
+                    style: { color: k.ink },
+                    children: Tu.lang === "pt" ? "Tradução automática de textos" : "Automatic text translation",
+                  }),
+                  u.jsx("div", {
+                    className: "text-xs",
+                    style: { color: k.mute },
+                    children: Tu.lang === "pt" ? "Traduz as publicações para o idioma da app ao abri-las." : "Translates posts to the app language when opened.",
+                  }),
+                ],
+              }),
+              u.jsx(Ws, {
+                on: !!i.autoTr,
+                onChange: (R) => a("autoTr", R),
+                label: Tu.lang === "pt" ? "Tradução automática de textos" : "Automatic text translation",
+              }),
+            ],
+          }),
           u.jsxs("button", {
             onClick: g,
             className:
@@ -12800,10 +12824,24 @@ function BgPostMenu({ k, x, vis, onVis, views, dl, pinned, onPin, onPinP, pinned
     ],
   });
 }
+function bgAutoTr() {
+  try { return !!JSON.parse(localStorage.getItem("bengu_prefs") || "{}").autoTr; } catch (e) { return false; }
+}
 function BgTrWrap({ text, render }) {
   const h = B.createElement, L = bgTrL(), lg = (Tu.lang || "pt").slice(0, 2);
   const key = lg + "|" + text;
+  const auto = bgAutoTr();
   const [tr, setTr] = B.useState(null), [busy, setBusy] = B.useState(false), [err, setErr] = B.useState(false);
+  B.useEffect(() => {
+    if (!auto) return;
+    if (bgTrCache[key]) { setTr(bgTrCache[key]); return; }
+    let alive = true;
+    setBusy(true);
+    bgTr(text)
+      .then((v) => { bgTrCache[key] = v; if (alive) { setTr(v); setBusy(false); } })
+      .catch(() => { if (alive) { setErr(true); setBusy(false); } });
+    return () => { alive = false; };
+  }, [key, auto]);
   const go = () => {
     if (tr !== null) return setTr(null);
     if (bgTrCache[key]) return setTr(bgTrCache[key]);

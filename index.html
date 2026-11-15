@@ -14495,7 +14495,8 @@ function fx({
   const [h, y] = B.useState(!1),
     [E, C] = B.useState(e.name),
     [A, P] = B.useState(e.handle),
-    [O, R] = B.useState(e.bio);
+    [O, R] = B.useState(e.bio),
+    [bgMenu, setBgMenu] = B.useState(false);
   B.useEffect(() => {
     (C(e.name), P(e.handle), R(e.bio), y(!1));
   }, [e.id, e.name, e.handle, e.bio]);
@@ -14674,6 +14675,43 @@ function fx({
                         children: e.bio,
                       }),
                       t
+                        ? u.jsxs("div", {
+                            className: "mt-3",
+                            children: [
+                              u.jsxs("div", {
+                                className: "flex gap-2 items-center",
+                                children: [
+                                  u.jsxs("button", {
+                                    onClick: () => y(!0),
+                                    className: "flex-1 py-2.5 rounded-full text-sm font-bold flex items-center justify-center gap-2",
+                                    style: j,
+                                    children: [u.jsx($c, { size: 16 }), " ", x("editProfile")],
+                                  }),
+                                  u.jsx("button", {
+                                    onClick: () => setBgMenu(!bgMenu),
+                                    "aria-label": "Menu",
+                                    "aria-expanded": bgMenu,
+                                    className: "shrink-0 rounded-full flex items-center justify-center",
+                                    style: { ...j, width: 42, height: 42, fontSize: 20, lineHeight: 1 },
+                                    children: "≡",
+                                  }),
+                                ],
+                              }),
+                              bgMenu &&
+                                u.jsxs("div", {
+                                  className: "mt-2 flex flex-col gap-2",
+                                  children: [
+                                    u.jsxs("button", { onClick: b, className: re, style: j, children: [u.jsx(dg, { size: 16 }), " ", x("dashboard")] }),
+                                    u.jsxs("button", { onClick: v, className: re, style: j, children: [u.jsx(Oo, { size: 16 }), " ", x("savedList")] }),
+                                    u.jsxs("button", { onClick: g, className: re, style: j, children: [u.jsx(Lo, { size: 16 }), " ", x("shareApp")] }),
+                                    u.jsxs("button", { onClick: w, className: re, style: j, children: [u.jsx(wg, { size: 16 }), " ", x("settings")] }),
+                                    u.jsxs("button", { onClick: c, className: re, style: { color: k.like }, children: [u.jsx(Bc, { size: 16 }), " ", x("logout")] }),
+                                  ],
+                                }),
+                            ],
+                          })
+                        : null,
+                      t
                         ? null
                         : u.jsxs("div", {
                             className: "mt-4 flex flex-col gap-2",
@@ -14724,53 +14762,7 @@ function fx({
         ],
       }),
       m,
-      t &&
-        !h &&
-        u.jsx("section", {
-          className: "mt-2 px-4 py-4",
-          style: { background: k.card },
-          children: u.jsxs("div", {
-            className: "flex flex-col gap-2",
-            children: [
-              u.jsxs("button", {
-                onClick: () => y(!0),
-                className: re,
-                style: j,
-                children: [u.jsx($c, { size: 16 }), " ", x("editProfile")],
-              }),
-              u.jsxs("button", {
-                onClick: b,
-                className: re,
-                style: j,
-                children: [u.jsx(dg, { size: 16 }), " ", x("dashboard")],
-              }),
-              u.jsxs("button", {
-                onClick: v,
-                className: re,
-                style: j,
-                children: [u.jsx(Oo, { size: 16 }), " ", x("savedList")],
-              }),
-              u.jsxs("button", {
-                onClick: g,
-                className: re,
-                style: j,
-                children: [u.jsx(Lo, { size: 16 }), " ", x("shareApp")],
-              }),
-              u.jsxs("button", {
-                onClick: w,
-                className: re,
-                style: j,
-                children: [u.jsx(wg, { size: 16 }), " ", x("settings")],
-              }),
-              u.jsxs("button", {
-                onClick: c,
-                className: re,
-                style: { color: k.like },
-                children: [u.jsx(Bc, { size: 16 }), " ", x("logout")],
-              }),
-            ],
-          }),
-        }),
+
     ],
   });
 }

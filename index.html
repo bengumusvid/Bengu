@@ -2599,7 +2599,7 @@ function goTo(n,ov){var t=((n.title||"")+" "+(n.body||"")).toLowerCase(),k=Strin
  if(/torneio|equipa|futebol/.test(t)&&window.bengu_fut_open){close();window.bengu_fut_open();return}
  if(/competi/.test(t)&&window.bengu_comp_open){close();window.bengu_comp_open();return}
  if((k==="group"||k==="page_manage"||k==="page_follow"||/\b(página|pagina|grupo)\b/.test(t))&&window.bengu_pg_open){close();window.bengu_pg_open();return}
- if(k==="like"||k==="comment"||k==="tag"){close();if(me&&window.bengu_td){window.bengu_td(me);var q=(n.body||"").replace(/^["“]|["”]$/g,"").trim();setTimeout(function(){try{var all=document.querySelectorAll("p,span,div"),f=null;if(q){for(var i=0;i<all.length&&!f;i++){if(all[i].children.length===0&&all[i].textContent.trim()===q)f=all[i]}}if(f)f.scrollIntoView({block:"center",behavior:"smooth"})}catch(e){}},900)}return}
+ if(k==="like"||k==="comment"||k==="tag"){close();if(me&&window.bengu_td){var q=String(n.body||"").replace(/^[^:]*:\s*/,"").replace(/^["“]|["”]$/g,"").trim();window.__bgFocus=q;window.bengu_td(me)}return}
  actorOf(n).then(prof)}
 /* abre a conversa do remetente da mensagem tocada na notificação */
 function openMsg(n,overlay){
@@ -14426,7 +14426,26 @@ function PtBase({ posts: e, rr: t, isMe: r }) {
           : e.filter((q) => kind(q) === id),
     })),
     first = secs.find((s) => s.list.length),
-    [open, setOpen] = B.useState(r || !first ? "" : first.id);
+    [open, setOpen] = B.useState(r || !first ? "" : first.id),
+    fq = String(window.__bgFocus || "").toLowerCase(),
+    [fdone, setFdone] = B.useState(false);
+  B.useEffect(() => {
+    if (fdone || !fq) return;
+    const hit = e.find((q) => JSON.stringify(q).toLowerCase().indexOf(fq) >= 0);
+    if (!hit) return;
+    setOpen(hit.profilePinnedAt ? "pins" : kind(hit));
+    setFdone(true);
+    window.__bgFocus = null;
+    setTimeout(() => {
+      const all = document.querySelectorAll("p,span,div");
+      for (let i = 0; i < all.length; i++) {
+        if (all[i].children.length === 0 && all[i].textContent.toLowerCase().indexOf(fq) >= 0) {
+          all[i].scrollIntoView({ block: "center", behavior: "smooth" });
+          break;
+        }
+      }
+    }, 700);
+  }, [e]);
   return u.jsx("div", {
     className: "flex flex-col gap-2",
     children: secs.map((s) =>

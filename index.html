@@ -16626,7 +16626,7 @@ function viewAI(b){
  go.onclick=send;inp.onkeydown=function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}}
 /* ---------- Jogos ---------- */
 /* BENGU 4.54: Cobra + 8 jogos novos (grátis para todos) + Jogo da memória (segue o acesso definido pelo administrador). */
-function stopGame(){var s=window.__bgGameStop;window.__bgGameStop=null;if(s){try{s()}catch(e){}}}
+function stopGame(){var s=window.__bgGameStop;window.__bgGameStop=null;if(s){try{s()}catch(e){}}window.__bgGameOn=false;setGamePause(false)}
 var CARD="border:0;border-radius:14px;padding:14px 8px;background:#2a2f66;color:#fff;font-size:14px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:6px",
  KB="border:0;border-radius:12px;background:#2a2f66;color:#fff;font-size:20px";
 function lvl(k){try{return Math.max(1,parseInt(localStorage.getItem("bg_lvl_"+k))||1)}catch(e){return 1}}
@@ -16983,20 +16983,118 @@ function ingTrad(w){var id="ingtrad",lv,sc=0,ok=0,li=3,cur,run=1,alive=1,tm,last
  IN(w,"Lê a palavra ou frase em inglês e escolhe a tradução certa em português.");
  w.append(info,card,q,op,act,modeBar(function(){nx()}),hold,freeBox(null));board(id,hold);rs();
  return function(){alive=0;clearTimeout(tm);try{speechSynthesis.cancel()}catch(e){}}}
-function GAMES(){return[["cobra","🐍","Cobra 3D",snake],["tetris","🧱","Tetris",tetris],["galo","❌","Jogo do galo",galo],["2048","🔢","2048",g2048],["minas","💣","Campo minado",minas],["toupeira","🔨","Caça à toupeira",toupeira],["puzzle","🧩","Puzzle 8",puzzle],["simon","🎨","Simon (cores)",simon],["ppt","✂️","Pedra, papel, tesoura",ppt],["numero","🎯","Adivinha o número",numero],["forca","🔤","Forca",forca],["contas","➕","Contas rápidas",contas],["reacao","⚡","Teste de reação",reacao],["quiz","❓","Quiz",quiz],["cores","🌈","Cores",cores],["flappy","🐤","Flappy Bengu",flappy],["corrida","🏎️","Corrida",corrida],["domino","🎲","Dominó",domino],["memoria","🧠","Jogo da memória",memory,1],["ingfala","🎤","Fala inglês",ingFala],["ingtrad","🇬🇧","Traduz inglês",ingTrad]].concat(G3D())}
+/* ---- BENGU 4.60: jogos de leitura e de números (pt, en, fr). Outras línguas usam o conteúdo em inglês. ---- */
+var BGD={
+ pt:{vogais:["a","e","i","o","u"],alfabeto:"a b c d e f g h i j k l m n o p q r s t u v w x y z".split(" "),
+  ditongos:["ai","ei","oi","ou","au","eu","ui","ão","õe"],
+  silabas:["ma","me","mi","mo","mu","pa","pe","pi","po","pu","ba","bo","la","le","lu","to","ti","da","do","fe","ga","no","so","vi"],
+  palavras:["sol","pão","gato","casa","bola","mesa","água","lua","rio","mar","flor","livro","escola","amigo","família","cadeira","banana","janela","criança","estrela"],
+  frases:["O gato come peixe.","A casa é azul.","Eu gosto de ler.","O sol brilha no céu.","A menina canta bem.","Tenho um livro novo.","Vamos à escola amanhã.","O rio corre para o mar."],
+  texto:["Eu tenho um cão. Ele se chama Rex e gosta de correr.","Hoje está sol. Vamos ao parque brincar com os amigos.","A minha mãe faz bolo. O bolo cheira muito bem."]},
+ en:{vogais:["a","e","i","o","u"],alfabeto:"a b c d e f g h i j k l m n o p q r s t u v w x y z".split(" "),
+  ditongos:["ai","ay","oi","oy","ou","ow"],
+  silabas:["ma","me","mi","mo","mu","ba","be","bi","bo","bu","ta","te","ti","to","tu","ca","co","cu","la","le","li"],
+  palavras:["sun","cat","dog","book","tree","water","house","apple","happy","school","friend","family","garden","window","rainbow","elephant","chocolate","butterfly","bicycle","kitchen"],
+  frases:["The cat eats fish.","My house is blue.","I like to read.","The sun is shining.","She sings very well.","I have a new book.","We go to school tomorrow.","The river runs to the sea."],
+  texto:["I have a dog. His name is Max and he likes to run.","Today is sunny. We will play in the park with our friends.","My mom bakes a cake. It smells very good."]},
+ fr:{vogais:["a","e","i","o","u"],alfabeto:"a b c d e f g h i j k l m n o p q r s t u v w x y z".split(" "),
+  ditongos:["ai","au","eau","ou","oi","eu","ui","ei"],
+  silabas:["ma","me","mi","mo","mu","ba","be","bi","bo","bu","la","le","li","lo","lu","ta","te","ti","to","tu"],
+  palavras:["soleil","chat","livre","maison","pomme","fleur","école","chien","eau","jardin","fenêtre","chocolat","papillon","bicyclette","cuisine","famille","bonjour","merci"],
+  frases:["Le chat mange du poisson.","J'aime lire.","Ma maison est bleue.","Le soleil brille.","Elle chante très bien.","J'ai un nouveau livre.","Nous allons à l'école demain."],
+  texto:["J'ai un chien. Il s'appelle Max et il aime courir.","Aujourd'hui il fait beau. Nous jouons au parc avec nos amis."]}
+};
+function bgLang(){var l=null;try{l=localStorage.getItem("bengu_lang")}catch(e){}l=String(l||navigator.language||"pt").toLowerCase();if(l.indexOf("pt")===0)return"pt";if(l.indexOf("fr")===0)return"fr";return"en"}
+var BGLC={pt:"pt-BR",en:"en-US",fr:"fr-FR"};
+function bgSpeak(txt,lg){try{if(!window.speechSynthesis)return;speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(String(txt));u.lang=BGLC[lg]||"en-US";u.rate=.8;speechSynthesis.speak(u)}catch(e){}}
+var BG_EN1=["zero","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen"],BG_EN10=["","","twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"];
+function enLt1000(n){var s=[];if(n>=100){s.push(BG_EN1[Math.floor(n/100)]+" hundred");n%=100;if(n)s.push("and")}if(n>=20)s.push(BG_EN10[Math.floor(n/10)]+(n%10?"-"+BG_EN1[n%10]:""));else if(n>0)s.push(BG_EN1[n]);return s.join(" ")}
+function enNum(n){if(n===0)return"zero";var p=[],sc=[[1e9,"billion"],[1e6,"million"],[1e3,"thousand"]];sc.forEach(function(x){var q=Math.floor(n/x[0]);if(q){p.push(enLt1000(q)+" "+x[1]);n%=x[0]}});if(n)p.push(enLt1000(n));return p.join(" ")}
+var BG_PT1=["zero","um","dois","três","quatro","cinco","seis","sete","oito","nove","dez","onze","doze","treze","catorze","quinze","dezesseis","dezessete","dezoito","dezenove"],BG_PT10=["","","vinte","trinta","quarenta","cinquenta","sessenta","setenta","oitenta","noventa"],BG_PT100=["","cento","duzentos","trezentos","quatrocentos","quinhentos","seiscentos","setecentos","oitocentos","novecentos"];
+function ptLt1000(n){if(n===100)return"cem";var s=[];if(n>=100){s.push(BG_PT100[Math.floor(n/100)]);n%=100}if(n>=20)s.push(BG_PT10[Math.floor(n/10)]+(n%10?" e "+BG_PT1[n%10]:""));else if(n>0)s.push(BG_PT1[n]);return s.join(" e ")}
+function ptNum(n){if(n===0)return"zero";var p=[],sc=[[1e9,"bilhão","bilhões"],[1e6,"milhão","milhões"],[1e3,"mil","mil"]];sc.forEach(function(x){var q=Math.floor(n/x[0]);if(q){p.push(x[0]===1e3?(q===1?"":ptLt1000(q)+" ")+"mil":ptLt1000(q)+" "+(q===1?x[1]:x[2]));n%=x[0]}});if(n)p.push(ptLt1000(n));return p.join(" e ")}
+var BG_FR1=["zéro","un","deux","trois","quatre","cinq","six","sept","huit","neuf","dix","onze","douze","treize","quatorze","quinze","seize","dix-sept","dix-huit","dix-neuf"],BG_FR10=["","","vingt","trente","quarante","cinquante","soixante"];
+function frLt100(n){if(n<20)return BG_FR1[n];if(n<70){var t=BG_FR10[Math.floor(n/10)],u=n%10;if(u===0)return t;if(u===1)return t+" et un";return t+"-"+BG_FR1[u]}if(n<80){var r=n-60;if(r===11)return"soixante et onze";return"soixante-"+BG_FR1[r]}if(n===80)return"quatre-vingts";return"quatre-vingt-"+BG_FR1[n-80]}
+function frLt1000(n){if(n<100)return frLt100(n);var h=Math.floor(n/100),r=n%100,head=h===1?"cent":BG_FR1[h]+" cent"+(r===0?"s":"");return r?head+" "+frLt100(r):head}
+function frNum(n){if(n===0)return"zéro";var p=[],sc=[[1e9,"milliard","milliards"],[1e6,"million","millions"],[1e3,"mille","mille"]];sc.forEach(function(x){var q=Math.floor(n/x[0]);if(q){p.push(x[0]===1e3?(q===1?"":frLt1000(q)+" ")+"mille":(q===1?"un ":frLt1000(q)+" ")+(q===1?x[1]:x[2]));n%=x[0]}});if(n)p.push(frLt1000(n));return p.join(" ")}
+function bgNumWords(n,lg){return lg==="pt"?ptNum(n):lg==="fr"?frNum(n):enNum(n)}
+function bgFmt(n){return String(n).replace(/\B(?=(\d{3})+(?!\d))/g," ")}
+function bgShuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),x=a[i];a[i]=a[j];a[j]=x}return a}
+function bgPool(lg,cat,lv){var all=BGD[lg][cat],P=all;
+ if(cat==="palavras")P=all.filter(function(s){return s.length<=2+lv*2});
+ else if(cat==="frases")P=all.filter(function(s){return s.length<=8+lv*6});
+ else if(cat==="texto")P=all.filter(function(s){return s.length<=30+lv*25});
+ if(P.length<4)P=all.slice().sort(function(a,b){return a.length-b.length}).slice(0,4);return P}
+function bgGenPool(cat){return function(lv,lg){var P=bgPool(lg,cat,lv),nOpt=Math.min(lv<=2?2:lv<=5?3:4,P.length),ans=P[Math.floor(Math.random()*P.length)],opts=[ans],t=0;
+ while(opts.length<nOpt&&t<200){var c=P[Math.floor(Math.random()*P.length)];if(opts.indexOf(c)<0)opts.push(c);t++}
+ bgShuffle(opts);return{say:ans,opts:opts,ans:opts.indexOf(ans)}}}
+var BG_MAXN=[20,100,1000,1e4,1e5,1e6,1e7,1e8,1e9,1e10,1e11];
+function bgGenNum(lv,lg){var max=BG_MAXN[Math.min(lv,BG_MAXN.length)-1],n=Math.floor(Math.random()*max),w=bgNumWords(n,lg),opts=[w],t=0;
+ while(opts.length<4&&t<300){var d=Math.floor(Math.random()*max),dw=bgNumWords(d,lg);if(d!==n&&opts.indexOf(dw)<0)opts.push(dw);t++}
+ bgShuffle(opts);return{show:bgFmt(n),say:w,opts:opts,ans:opts.indexOf(w)}}
+function bgQuiz(w,key,title,gen){
+ var lg=bgLang(),lv=lvl(key),ok=0,tm=null,alive=true,q=null,isNum=key==="num_ler";
+ var top=el("div","text-align:center;font-size:13px;opacity:.85;margin:4px 0"),big=el("div","font-size:34px;font-weight:800;margin:12px 0;min-height:48px;word-break:break-word;text-align:center"),
+  spk=el("button",BTN+";padding:8px 14px;margin:0 auto;display:block","🔊 Ouvir"),grid=el("div","display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px"),msg=el("div","min-height:22px;font-weight:700;margin-top:8px;text-align:center");
+ w.append(top,big,spk,grid,msg);
+ if(["pt","en","fr"].indexOf(String(localStorage.getItem("bengu_lang")||navigator.language||"pt").slice(0,2).toLowerCase())<0)
+  w.append(el("p","font-size:12px;opacity:.7;text-align:center;margin-top:10px",BG_L("These games have content in Portuguese, English and French. Other languages use English.","Estes jogos têm conteúdo em português, inglês e francês. Outras línguas usam o inglês.")));
+ function ask(){q=gen(lv,lg);top.textContent=title+" · Nível "+lv+" · Acertos: "+ok;
+  big.textContent=isNum?q.show:"🔊 "+BG_L("Listen and choose","Ouve e escolhe");msg.textContent="";msg.style.color="#fff";grid.replaceChildren();
+  q.opts.forEach(function(o,i){var b=el("button",CARD+";padding:14px 6px;font-size:18px;word-break:break-word",o);b.onclick=function(){pick(i)};grid.append(b)});
+  if(!isNum)bgSpeak(q.say,lg)}
+ function pick(i){if(!q||!alive)return;var bs=grid.children;for(var j=0;j<bs.length;j++)bs[j].disabled=true;
+  var good=i===q.ans;if(good){ok++;msg.style.color="#7CFC9A";msg.textContent="✔ Muito bem!"}else{msg.style.color="#ff8a8a";msg.textContent="✖ "+q.opts[q.ans]}
+  bs[q.ans].style.background="#2E9E4F";if(!good)bs[i].style.background="#B71C1C";
+  bgSpeak(q.opts[q.ans],lg);
+  if(good&&ok%3===0&&lv<BG_MAXN.length+5){lv++;setLvl(key,lv)}
+  clearTimeout(tm);tm=setTimeout(ask,1600)}
+ spk.onclick=function(){if(q)bgSpeak(isNum?q.say:q.say,lg)};
+ ask();
+ return function(){alive=false;clearTimeout(tm);try{speechSynthesis.cancel()}catch(e){}};
+}
+function LEIT(){return[
+ ["leit_vogais","🅰️","Leitura: vogais",function(w){return bgQuiz(w,"leit_vogais",BG_L("Vowels","Vogais"),bgGenPool("vogais"))}],
+ ["leit_alfabeto","🔠","Leitura: alfabeto",function(w){return bgQuiz(w,"leit_alfabeto",BG_L("Alphabet","Alfabeto"),bgGenPool("alfabeto"))}],
+ ["leit_ditongos","🔡","Leitura: ditongos",function(w){return bgQuiz(w,"leit_ditongos",BG_L("Diphthongs","Ditongos"),bgGenPool("ditongos"))}],
+ ["leit_silabas","🧱","Leitura: sílabas",function(w){return bgQuiz(w,"leit_silabas",BG_L("Syllables","Sílabas"),bgGenPool("silabas"))}],
+ ["leit_palavras","📝","Leitura: palavras",function(w){return bgQuiz(w,"leit_palavras",BG_L("Words","Palavras"),bgGenPool("palavras"))}],
+ ["leit_frases","💬","Leitura: frases",function(w){return bgQuiz(w,"leit_frases",BG_L("Sentences","Frases"),bgGenPool("frases"))}],
+ ["leit_texto","📖","Leitura: textos",function(w){return bgQuiz(w,"leit_texto",BG_L("Texts","Textos"),bgGenPool("texto"))}],
+ ["num_ler","🔢","Ler números (0 a 100 bi)",function(w){return bgQuiz(w,"num_ler",BG_L("Numbers","Números"),bgGenNum)}]
+]}
+function GAMES(){return[["cobra","🐍","Cobra 3D",snake],["tetris","🧱","Tetris",tetris],["galo","❌","Jogo do galo",galo],["2048","🔢","2048",g2048],["minas","💣","Campo minado",minas],["toupeira","🔨","Caça à toupeira",toupeira],["puzzle","🧩","Puzzle 8",puzzle],["simon","🎨","Simon (cores)",simon],["ppt","✂️","Pedra, papel, tesoura",ppt],["numero","🎯","Adivinha o número",numero],["forca","🔤","Forca",forca],["contas","➕","Contas rápidas",contas],["reacao","⚡","Teste de reação",reacao],["quiz","❓","Quiz",quiz],["cores","🌈","Cores",cores],["flappy","🐤","Flappy Bengu",flappy],["corrida","🏎️","Corrida",corrida],["domino","🎲","Dominó",domino],["memoria","🧠","Jogo da memória",memory,1],["ingfala","🎤","Fala inglês",ingFala],["ingtrad","🇬🇧","Traduz inglês",ingTrad]].concat(G3D()).concat(LEIT())}
 function viewGames(b){stopGame();var box=el("div","-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent"),inMenu=false;box.oncontextmenu=function(e){e.preventDefault()};box.onselectstart=function(e){e.preventDefault()};b.append(box);menu();refreshAcc(function(){if(inMenu)menu()});
  function menu(){stopGame();inMenu=true;if(window.__bgBk)window.__bgBk.replaceChildren();box.replaceChildren(el("h3","margin:4px 0","🎮 Jogos"),el("p","font-size:12px;opacity:.7;margin:0 0 10px","Jogas sem internet e sem gastar dados. Todos os jogos têm níveis (1, 2, 3… sem limite) e ficam mais difíceis a cada nível."));
   var mu=el("button",CARD+";flex-direction:row;justify-content:center;width:100%;margin-bottom:10px;background:#3a3f90"),tx=el("span","text-align:left");tx.append(el("div","","Música offline"),el("div","font-size:11px;font-weight:400;opacity:.75","As músicas do teu telemóvel · sem internet"));
   mu.append(el("span","font-size:26px","🎵"),tx);if(!canC("offline_music"))mu.append(el("span","font-size:12px","🔒"));
   mu.onclick=function(){if(!canC("offline_music")){toast("A música offline está reservada a contas premium.");setTimeout(function(){if(window.bengu_ia_open)window.bengu_ia_open("premium")},700);return}if(window.bgLocalMusic)window.bgLocalMusic();else toast("Música offline indisponível.")};box.append(mu);
-  var EDU={numero:1,forca:1,contas:1,quiz:1,memoria:1,ingfala:1,ingtrad:1};
-  var isEdu=function(G){return !!(EDU[G[0]]||/^d3/.test(G[0]))};
+  var EDU={leit_vogais:1,leit_alfabeto:1,leit_ditongos:1,leit_silabas:1,leit_palavras:1,leit_frases:1,leit_texto:1,num_ler:1,numero:1,forca:1,contas:1,quiz:1,memoria:1,ingfala:1,ingtrad:1,d3solidos:1,d3tabuada:1,d3cubos:1,d3fracoes:1,d3grafico:1,d3planetas:1,d3relogio:1,d3animais:1,d3frutas:1,d3ingles:1,d3bandeiras:1,d3capitais:1,d3provincias:1,d3quimica:1,d3corpo:1};
+  var isEdu=function(G){return !!EDU[G[0]]};
   function sec(title,list){box.append(el("h4","margin:14px 0 6px;font-size:15px",title));var g=el("div","display:grid;grid-template-columns:repeat(2,1fr);gap:10px");
    list.forEach(function(G){var c=el("button",CARD);c.append(el("span","font-size:30px",G[1]),el("span","",G[2]));if(!canC("game_"+G[0]))c.append(el("span","font-size:11px;font-weight:400;opacity:.8","🔒 Premium"));c.onclick=function(){play(G)};g.append(c)});box.append(g)}
   sec("📚 Jogos de aprendizagem",GAMES().filter(isEdu));sec("🎉 Jogos de diversão",GAMES().filter(function(G){return !isEdu(G)}))}
- function play(G){stopGame();
+ window.__bgGameOn=false;window.__bgPause=false;
+(function(){var si=window.setInterval,ci=window.clearInterval,st=window.setTimeout,ct=window.clearTimeout,raf=window.requestAnimationFrame,caf=window.cancelAnimationFrame;
+ var OFF=1e9,n=0,map={};
+ window.setInterval=function(fn){if(!window.__bgGameOn||typeof fn!=="function")return si.apply(window,arguments);var a=[].slice.call(arguments,2),ms=arguments[1];return si(function(){if(!window.__bgPause)fn.apply(null,a)},ms)};
+ window.setTimeout=function(fn,ms){if(!window.__bgGameOn||typeof fn!=="function")return st.apply(window,arguments);var a=[].slice.call(arguments,2),h=OFF+(++n);
+  (function sched(d){map[h]=st(function(){if(window.__bgPause){sched(120);return}delete map[h];fn.apply(null,a)},d)})(ms||0);return h};
+ window.clearTimeout=function(id){if(id>=OFF&&(id in map)){ct(map[id]);delete map[id];return}ct.apply(window,arguments)};
+ window.requestAnimationFrame=function(fn){if(!window.__bgGameOn||typeof fn!=="function")return raf.apply(window,arguments);var h=OFF+(++n);
+  (function loop(){map[h]=raf(function(ts){if(window.__bgPause){loop();return}delete map[h];fn(ts)})})();return h};
+ window.cancelAnimationFrame=function(id){if(id>=OFF&&(id in map)){caf(map[id]);delete map[id];return}caf.apply(window,arguments)};
+})();
+function setGamePause(on){window.__bgPause=!!on;var o=document.getElementById("bg-gpause");if(!on){if(o)o.remove();return}
+ if(o)return;o=document.createElement("div");o.id="bg-gpause";o.setAttribute("role","dialog");
+ o.style.cssText="position:fixed;inset:0;z-index:100040;background:rgba(8,11,36,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#fff;font:700 18px system-ui,sans-serif;touch-action:none";
+ var t=document.createElement("div");t.textContent="⏸ Jogo em pausa";var b=document.createElement("button");b.textContent="▶ Continuar";
+ b.style.cssText="border:0;border-radius:14px;padding:12px 26px;font:700 16px system-ui,sans-serif;background:#FFB020;color:#12183A;cursor:pointer";
+ b.onclick=function(){setGamePause(false)};o.append(t,b);document.body.append(o)}
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden"&&window.__bgGameOn&&!window.__bgPause)setGamePause(true)});
+function play(G){stopGame();
   if(!canC("game_"+G[0])){toast("Este jogo está reservado a contas premium ou foi desligado pelo administrador.");setTimeout(function(){if(window.bengu_ia_open)window.bengu_ia_open("premium")},700);return}
-  inMenu=false;var w=el("div");box.replaceChildren(topbar(G,menu),w);var r=G[3](w);if(typeof r==="function")window.__bgGameStop=r}}
+  inMenu=false;var w=el("div"),bar=topbar(G,menu),pz=el("button",BTN+";padding:7px 12px;font-size:13px","⏸ Pausar");pz.onclick=function(){setGamePause(!window.__bgPause);pz.textContent=window.__bgPause?"▶ Continuar":"⏸ Pausar"};bar.append(pz);box.replaceChildren(bar,w);window.__bgGameOn=true;setGamePause(false);var r=G[3](w);if(typeof r==="function")window.__bgGameStop=r}}
 /* ---- 1. Cobra ---- */
 function snake(w){
  var cols=22,rows=28,W=Math.max(220,Math.min(520,(w.clientWidth||320)-2));

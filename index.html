@@ -7092,18 +7092,9 @@ function es({
               }),
         ],
       }),
-      e.text && e.type === "text" && Iu(e) && !Iu(e).plain && u.jsx("div", { onClick: () => bgCountPost(e), children: u.jsx(Ng, { post: e }) }),
-      e.text &&
-        e.type !== "live" &&
-        !(e.type === "text" && Iu(e) && !Iu(e).plain) &&
-        u.jsx("p", {
-          lang: "pt",
-          onClick: () => { e.type === "text" && bgCountPost(e); },
-          className: `px-4 pb-3 text-left whitespace-pre-wrap ${e.type === "text" ? "text-lg leading-snug" : "text-[15px] leading-snug"}`,
-          style: { color: k.ink, fontFamily: e.type === "text" && Iu(e) && Iu(e).font ? bgFontCss(Iu(e).font) : void 0 },
-          children: Tg_(e.text),
-        }),
-      e.text && u.jsx(BgPostTr, { text: e.text }),
+      e.text && e.type === "text" && Iu(e) && !Iu(e).plain && u.jsx(BgTrWrap, { text: e.text, render: (tx) => u.jsx("div", { onClick: () => bgCountPost(e), children: u.jsx(Ng, { post: { ...e, text: tx } }) }) }),
+      e.text && e.type !== "live" && !(e.type === "text" && Iu(e) && !Iu(e).plain) && u.jsx(BgTrWrap, { text: e.text, render: (tx) => u.jsx("p", { lang: "pt", onClick: () => { e.type === "text" && bgCountPost(e); }, className: `px-4 pb-3 text-left whitespace-pre-wrap ${e.type === "text" ? "text-lg leading-snug" : "text-[15px] leading-snug"}`, style: { color: k.ink, fontFamily: e.type === "text" && Iu(e) && Iu(e).font ? bgFontCss(Iu(e).font) : void 0 }, children: Tg_(tx) }) }),
+      e.text && e.type === "live" && u.jsx(BgPostTr, { text: e.text }),
       u.jsx(K_, { post: e, users: r, mine: n, onDeleteItem: delIt, onDownloadItem: dlIt_ }),
       u.jsx(BgPostMusic, { post: e }),
       u.jsxs("div", {
@@ -12808,6 +12799,25 @@ function BgPostMenu({ k, x, vis, onVis, views, dl, pinned, onPin, onPinP, pinned
       }),
     ],
   });
+}
+function BgTrWrap({ text, render }) {
+  const h = B.createElement, L = bgTrL(), lg = (Tu.lang || "pt").slice(0, 2);
+  const key = lg + "|" + text;
+  const [tr, setTr] = B.useState(null), [busy, setBusy] = B.useState(false), [err, setErr] = B.useState(false);
+  const go = () => {
+    if (tr !== null) return setTr(null);
+    if (bgTrCache[key]) return setTr(bgTrCache[key]);
+    setBusy(true); setErr(false);
+    bgTr(text)
+      .then((v) => { bgTrCache[key] = v; setTr(v); setBusy(false); })
+      .catch(() => { setErr(true); setBusy(false); });
+  };
+  return h("div", null,
+    render(tr !== null ? tr : text),
+    h("div", { className: "px-4 pb-3" },
+      h("button", { onClick: go, className: "text-xs font-semibold", style: { color: k.mute } },
+        busy ? "…" : tr !== null ? L[1] : L[0]),
+      err && h("div", { className: "text-xs mt-1", style: { color: k.mute } }, L[2])));
 }
 function BgPostTr({ text }) {
   const h = B.createElement, L = bgTrL(), lg = (Tu.lang || "pt").slice(0, 2);

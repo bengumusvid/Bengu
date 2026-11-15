@@ -16626,7 +16626,7 @@ function viewAI(b){
  go.onclick=send;inp.onkeydown=function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}}
 /* ---------- Jogos ---------- */
 /* BENGU 4.54: Cobra + 8 jogos novos (grátis para todos) + Jogo da memória (segue o acesso definido pelo administrador). */
-function stopGame(){var s=window.__bgGameStop;window.__bgGameStop=null;if(s){try{s()}catch(e){}}window.__bgGameOn=false;setGamePause(false)}
+function stopGame(){var s=window.__bgGameStop;window.__bgGameStop=null;if(s){try{s()}catch(e){}}window.__bgGameOn=false;try{setGamePause(false)}catch(e){}}
 var CARD="border:0;border-radius:14px;padding:14px 8px;background:#2a2f66;color:#fff;font-size:14px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:6px",
  KB="border:0;border-radius:12px;background:#2a2f66;color:#fff;font-size:20px";
 function lvl(k){try{return Math.max(1,parseInt(localStorage.getItem("bg_lvl_"+k))||1)}catch(e){return 1}}
@@ -17065,7 +17065,8 @@ function LEIT(){return[
 ]}
 function GAMES(){return[["cobra","🐍","Cobra 3D",snake],["tetris","🧱","Tetris",tetris],["galo","❌","Jogo do galo",galo],["2048","🔢","2048",g2048],["minas","💣","Campo minado",minas],["toupeira","🔨","Caça à toupeira",toupeira],["puzzle","🧩","Puzzle 8",puzzle],["simon","🎨","Simon (cores)",simon],["ppt","✂️","Pedra, papel, tesoura",ppt],["numero","🎯","Adivinha o número",numero],["forca","🔤","Forca",forca],["contas","➕","Contas rápidas",contas],["reacao","⚡","Teste de reação",reacao],["quiz","❓","Quiz",quiz],["cores","🌈","Cores",cores],["flappy","🐤","Flappy Bengu",flappy],["corrida","🏎️","Corrida",corrida],["domino","🎲","Dominó",domino],["memoria","🧠","Jogo da memória",memory,1],["ingfala","🎤","Fala inglês",ingFala],["ingtrad","🇬🇧","Traduz inglês",ingTrad]].concat(G3D()).concat(LEIT())}
 function viewGames(b){stopGame();var box=el("div","-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent"),inMenu=false;box.oncontextmenu=function(e){e.preventDefault()};box.onselectstart=function(e){e.preventDefault()};b.append(box);menu();refreshAcc(function(){if(inMenu)menu()});
- function menu(){stopGame();inMenu=true;if(window.__bgBk)window.__bgBk.replaceChildren();box.replaceChildren(el("h3","margin:4px 0","🎮 Jogos"),el("p","font-size:12px;opacity:.7;margin:0 0 10px","Jogas sem internet e sem gastar dados. Todos os jogos têm níveis (1, 2, 3… sem limite) e ficam mais difíceis a cada nível."));
+ function menu(){try{menuBody()}catch(e){box.replaceChildren(el("h3","margin:4px 0","🎮 Jogos"),el("p","color:#ff8a8a;font-size:13px;word-break:break-word","Erro ao abrir os jogos: "+(e&&e.message?e.message:e)))}}
+function menuBody(){stopGame();inMenu=true;if(window.__bgBk)window.__bgBk.replaceChildren();box.replaceChildren(el("h3","margin:4px 0","🎮 Jogos"),el("p","font-size:12px;opacity:.7;margin:0 0 10px","Jogas sem internet e sem gastar dados. Todos os jogos têm níveis (1, 2, 3… sem limite) e ficam mais difíceis a cada nível."));
   var mu=el("button",CARD+";flex-direction:row;justify-content:center;width:100%;margin-bottom:10px;background:#3a3f90"),tx=el("span","text-align:left");tx.append(el("div","","Música offline"),el("div","font-size:11px;font-weight:400;opacity:.75","As músicas do teu telemóvel · sem internet"));
   mu.append(el("span","font-size:26px","🎵"),tx);if(!canC("offline_music"))mu.append(el("span","font-size:12px","🔒"));
   mu.onclick=function(){if(!canC("offline_music")){toast("A música offline está reservada a contas premium.");setTimeout(function(){if(window.bengu_ia_open)window.bengu_ia_open("premium")},700);return}if(window.bgLocalMusic)window.bgLocalMusic();else toast("Música offline indisponível.")};box.append(mu);

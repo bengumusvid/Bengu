@@ -2594,12 +2594,13 @@ function actorOf(n){var m=/^(.+?)\s+(começou|gostou|comentou|identificou|marcou
 function goTo(n,ov){var t=((n.title||"")+" "+(n.body||"")).toLowerCase(),k=String(n.kind||""),me=meId();
  function close(){if(ov&&ov.remove)ov.remove()}
  function prof(id){close();if(id&&window.bengu_td)window.bengu_td(id);else if(window.__bgGoHome)window.__bgGoHome()}
+ if(k==="like"||k==="comment"||k==="tag"){close();if(me&&window.bengu_td){var q=String(n.body||"").replace(/^[^:]*:\s*/,"").replace(/^["“]|["”]$/g,"").trim();window.__bgFocus=q;window.bengu_td(me)}return}
  if(/jornal|notícia|noticia/.test(t)&&window.bengu_news_open){close();window.bengu_news_open();return}
  if(/música|musica|single|álbum|album/.test(t)&&window.bengu_music_open&&k!=="comment"&&k!=="like"){close();window.bengu_music_open();return}
  if(/torneio|equipa|futebol/.test(t)&&window.bengu_fut_open){close();window.bengu_fut_open();return}
  if(/competi/.test(t)&&window.bengu_comp_open){close();window.bengu_comp_open();return}
  if((k==="group"||k==="page_manage"||k==="page_follow"||/\b(página|pagina|grupo)\b/.test(t))&&window.bengu_pg_open){close();window.bengu_pg_open();return}
- if(k==="like"||k==="comment"||k==="tag"){close();if(me&&window.bengu_td){var q=String(n.body||"").replace(/^[^:]*:\s*/,"").replace(/^["“]|["”]$/g,"").trim();window.__bgFocus=q;window.bengu_td(me)}return}
+ 
  actorOf(n).then(prof)}
 /* abre a conversa do remetente da mensagem tocada na notificação */
 function openMsg(n,overlay){
@@ -14397,94 +14398,30 @@ function BgPinIco({ size }) {
 function Pt_(p){var show=!p.isMe&&!p.adsOff&&bgAdsOn()&&Array.isArray(p.posts)&&p.posts.length>0;
   return u.jsxs("div",{className:"flex flex-col gap-2",children:[u.jsx(PtBase,{posts:p.posts,rr:p.rr,isMe:p.isMe}),show&&u.jsx(BgAd,{})]})}
 function PtBase({ posts: e, rr: t, isMe: r }) {
-  const kind = (q) => {
-      const ks = q.items.map((i) => i.kind);
-      return ks.includes("video")
-        ? "video"
-        : ks.includes("image")
-          ? "photo"
-          : ks.includes("audio")
-            ? "music"
-            : ks.includes("doc")
-              ? "doc"
-              : "text";
-    },
-    secs = [
-      ["pins", "📌 Fixadas", BgPinIco],
-      ["video", x("catVideos"), zo],
-      ["photo", x("catPhotos"), Es],
-      ["music", x("catMusic"), Mc],
-      ["text", x("catTexts"), xg],
-      ["doc", x("tDoc"), zc],
-    ].map(([id, label, Ic]) => ({
-      id,
-      label,
-      Ic,
-      list:
-        id === "pins"
-          ? e.filter((q) => q.profilePinnedAt).sort((a, b) => new Date(b.profilePinnedAt) - new Date(a.profilePinnedAt))
-          : e.filter((q) => kind(q) === id),
-    })),
-    first = secs.find((s) => s.list.length),
-    [open, setOpen] = B.useState(r || !first ? "" : first.id),
-    fq = String(window.__bgFocus || "").toLowerCase(),
-    [fdone, setFdone] = B.useState(false);
+  const fq = String(window.__bgFocus || "").toLowerCase().slice(0, 40),
+    [fdone, setFdone] = B.useState(false),
+    pins = e.filter((q) => q.profilePinnedAt).sort((a, b) => new Date(b.profilePinnedAt) - new Date(a.profilePinnedAt)),
+    rest = e.filter((q) => !q.profilePinnedAt),
+    all = pins.concat(rest);
   B.useEffect(() => {
     if (fdone || !fq) return;
     const hit = e.find((q) => JSON.stringify(q).toLowerCase().indexOf(fq) >= 0);
     if (!hit) return;
-    setOpen(hit.profilePinnedAt ? "pins" : kind(hit));
     setFdone(true);
     window.__bgFocus = null;
     setTimeout(() => {
-      const all = document.querySelectorAll("p,span,div");
-      for (let i = 0; i < all.length; i++) {
-        if (all[i].children.length === 0 && all[i].textContent.toLowerCase().indexOf(fq) >= 0) {
-          all[i].scrollIntoView({ block: "center", behavior: "smooth" });
+      const els = document.querySelectorAll("p,span,div");
+      for (let i = 0; i < els.length; i++) {
+        if (els[i].children.length === 0 && els[i].textContent.toLowerCase().indexOf(fq) >= 0) {
+          els[i].scrollIntoView({ block: "center", behavior: "smooth" });
           break;
         }
       }
-    }, 700);
+    }, 400);
   }, [e]);
   return u.jsx("div", {
     className: "flex flex-col gap-2",
-    children: secs.map((s) =>
-      u.jsxs(
-        "section",
-        {
-          style: { background: k.card },
-          children: [
-            u.jsxs("button", {
-              onClick: () => setOpen(open === s.id ? "" : s.id),
-              "aria-expanded": open === s.id,
-              disabled: !s.list.length,
-              className: "w-full flex items-center gap-2 px-4 py-3 text-left",
-              style: { color: k.ink, opacity: s.list.length ? 1 : 0.45 },
-              children: [
-                u.jsx(s.Ic, { size: 18 }),
-                u.jsx("span", {
-                  className: "flex-1 text-sm font-bold",
-                  children: s.label,
-                }),
-                u.jsx("span", {
-                  className: "text-xs font-semibold",
-                  style: { color: k.mute },
-                  children: s.list.length,
-                }),
-                u.jsx("span", {
-                  "aria-hidden": "true",
-                  className: "text-xs",
-                  style: { color: k.mute },
-                  children: open === s.id ? "▾" : "▸",
-                }),
-              ],
-            }),
-            open === s.id && s.list.map((q) => u.jsx(es, { ...t(q) }, q.id)),
-          ],
-        },
-        s.id,
-      ),
-    ),
+    children: all.map((q) => u.jsx(es, { ...t(q) }, q.id)),
   });
 }
 function fx({

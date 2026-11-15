@@ -17006,7 +17006,9 @@ var BGD={
 };
 function bgLang(){var l=null;try{l=localStorage.getItem("bengu_lang")}catch(e){}l=String(l||navigator.language||"pt").toLowerCase();if(l.indexOf("pt")===0)return"pt";if(l.indexOf("fr")===0)return"fr";return"en"}
 var BGLC={pt:"pt-BR",en:"en-US",fr:"fr-FR"};
-function bgSpeak(txt,lg){try{if(!window.speechSynthesis)return;speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(String(txt));u.lang=BGLC[lg]||"en-US";u.rate=.8;speechSynthesis.speak(u)}catch(e){}}
+function bgVoice(lg){try{var vs=speechSynthesis.getVoices()||[],want=String(BGLC[lg]||"").toLowerCase();return vs.find(function(x){return String(x.lang).toLowerCase()===want})||vs.find(function(x){return String(x.lang).toLowerCase().indexOf(lg)===0})||null}catch(e){return null}}
+function bgSpeak(txt,lg){try{if(!window.speechSynthesis)return;speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(String(txt));u.lang=BGLC[lg]||"en-US";var v=bgVoice(lg);if(v)u.voice=v;u.rate=.8;speechSynthesis.speak(u)}catch(e){}}
+function bgReadLang(){try{var s=localStorage.getItem("bg_read_lang");if(s&&BGD[s])return s}catch(e){}return bgLang()}
 var BG_EN1=["zero","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen"],BG_EN10=["","","twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"];
 function enLt1000(n){var s=[];if(n>=100){s.push(BG_EN1[Math.floor(n/100)]+" hundred");n%=100;if(n)s.push("and")}if(n>=20)s.push(BG_EN10[Math.floor(n/10)]+(n%10?"-"+BG_EN1[n%10]:""));else if(n>0)s.push(BG_EN1[n]);return s.join(" ")}
 function enNum(n){if(n===0)return"zero";var p=[],sc=[[1e9,"billion"],[1e6,"million"],[1e3,"thousand"]];sc.forEach(function(x){var q=Math.floor(n/x[0]);if(q){p.push(enLt1000(q)+" "+x[1]);n%=x[0]}});if(n)p.push(enLt1000(n));return p.join(" ")}
@@ -17033,12 +17035,13 @@ function bgGenNum(lv,lg){var max=BG_MAXN[Math.min(lv,BG_MAXN.length)-1],n=Math.f
  while(opts.length<4&&t<300){var d=Math.floor(Math.random()*max),dw=bgNumWords(d,lg);if(d!==n&&opts.indexOf(dw)<0)opts.push(dw);t++}
  bgShuffle(opts);return{show:bgFmt(n),say:w,opts:opts,ans:opts.indexOf(w)}}
 function bgQuiz(w,key,title,gen){
- var lg=bgLang(),lv=lvl(key),ok=0,tm=null,alive=true,q=null,isNum=key==="num_ler";
+ var lg=bgReadLang(),lv=lvl(key),ok=0,tm=null,alive=true,q=null,isNum=key==="num_ler";
  var top=el("div","text-align:center;font-size:13px;opacity:.85;margin:4px 0"),big=el("div","font-size:34px;font-weight:800;margin:12px 0;min-height:48px;word-break:break-word;text-align:center"),
   spk=el("button",BTN+";padding:8px 14px;margin:0 auto;display:block","🔊 Ouvir"),grid=el("div","display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px"),msg=el("div","min-height:22px;font-weight:700;margin-top:8px;text-align:center");
- w.append(top,big,spk,grid,msg);
- if(["pt","en","fr"].indexOf(String(localStorage.getItem("bengu_lang")||navigator.language||"pt").slice(0,2).toLowerCase())<0)
-  w.append(el("p","font-size:12px;opacity:.7;text-align:center;margin-top:10px",BG_L("These games have content in Portuguese, English and French. Other languages use English.","Estes jogos têm conteúdo em português, inglês e francês. Outras línguas usam o inglês.")));
+ var LANGS=[["pt","Português"],["en","English"],["fr","Français"]],lr=el("div","display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:4px 0 8px"),lbtn={};
+ LANGS.forEach(function(x){var b=el("button",BTN+";padding:7px 12px;font-size:13px",x[1]);lbtn[x[0]]=b;b.onclick=function(){lg=x[0];try{localStorage.setItem("bg_read_lang",lg)}catch(e){}paint();clearTimeout(tm);ask()};lr.append(b)});
+ function paint(){LANGS.forEach(function(x){var on=x[0]===lg;lbtn[x[0]].style.background=on?"#f5b400":"#2a2f66";lbtn[x[0]].style.color=on?"#14163a":"#fff"})}
+ w.append(lr,top,big,spk,grid,msg);paint();
  function ask(){q=gen(lv,lg);top.textContent=title+" · Nível "+lv+" · Acertos: "+ok;
   big.textContent=isNum?q.show:"🔊 "+BG_L("Listen and choose","Ouve e escolhe");msg.textContent="";msg.style.color="#fff";grid.replaceChildren();
   q.opts.forEach(function(o,i){var b=el("button",CARD+";padding:14px 6px;font-size:18px;word-break:break-word",o);b.onclick=function(){pick(i)};grid.append(b)});
@@ -17064,7 +17067,8 @@ function LEIT(){return[
  ["num_ler","🔢","Ler números (0 a 100 bi)",function(w){return bgQuiz(w,"num_ler",BG_L("Numbers","Números"),bgGenNum)}]
 ]}
 function GAMES(){return[["cobra","🐍","Cobra 3D",snake],["tetris","🧱","Tetris",tetris],["galo","❌","Jogo do galo",galo],["2048","🔢","2048",g2048],["minas","💣","Campo minado",minas],["toupeira","🔨","Caça à toupeira",toupeira],["puzzle","🧩","Puzzle 8",puzzle],["simon","🎨","Simon (cores)",simon],["ppt","✂️","Pedra, papel, tesoura",ppt],["numero","🎯","Adivinha o número",numero],["forca","🔤","Forca",forca],["contas","➕","Contas rápidas",contas],["reacao","⚡","Teste de reação",reacao],["quiz","❓","Quiz",quiz],["cores","🌈","Cores",cores],["flappy","🐤","Flappy Bengu",flappy],["corrida","🏎️","Corrida",corrida],["domino","🎲","Dominó",domino],["memoria","🧠","Jogo da memória",memory,1],["ingfala","🎤","Fala inglês",ingFala],["ingtrad","🇬🇧","Traduz inglês",ingTrad]].concat(G3D()).concat(LEIT())}
-function viewGames(b){stopGame();var box=el("div","-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent"),inMenu=false;box.oncontextmenu=function(e){e.preventDefault()};box.onselectstart=function(e){e.preventDefault()};b.append(box);menu();refreshAcc(function(){if(inMenu)menu()});
+function viewGames(b){try{viewGamesInner(b)}catch(e){b.append(el("p","color:#ff8a8a;font-size:13px;word-break:break-word","Erro nos jogos: "+(e&&e.message?e.message:e)))}}
+function viewGamesInner(b){b.append(el("p","font-size:11px;opacity:.5;margin:0 0 4px","Jogos · versão 4.60"));stopGame();var box=el("div","-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent"),inMenu=false;box.oncontextmenu=function(e){e.preventDefault()};box.onselectstart=function(e){e.preventDefault()};b.append(box);menu();refreshAcc(function(){if(inMenu)menu()});
  function menu(){try{menuBody()}catch(e){box.replaceChildren(el("h3","margin:4px 0","🎮 Jogos"),el("p","color:#ff8a8a;font-size:13px;word-break:break-word","Erro ao abrir os jogos: "+(e&&e.message?e.message:e)))}}
 function menuBody(){stopGame();inMenu=true;if(window.__bgBk)window.__bgBk.replaceChildren();box.replaceChildren(el("h3","margin:4px 0","🎮 Jogos"),el("p","font-size:12px;opacity:.7;margin:0 0 10px","Jogas sem internet e sem gastar dados. Todos os jogos têm níveis (1, 2, 3… sem limite) e ficam mais difíceis a cada nível."));
   var mu=el("button",CARD+";flex-direction:row;justify-content:center;width:100%;margin-bottom:10px;background:#3a3f90"),tx=el("span","text-align:left");tx.append(el("div","","Música offline"),el("div","font-size:11px;font-weight:400;opacity:.75","As músicas do teu telemóvel · sem internet"));

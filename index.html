@@ -5196,7 +5196,13 @@ function L_({ children: e }) {
           try { if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused"; } catch (e) {}
           /* ecrã apagado: o sistema pode pausar sem o utilizador pedir; retomar */
           if (wantR.current && document.visibilityState === "hidden" && !a_.ended) {
-            setTimeout(() => { if (wantR.current && a_.paused && !a_.ended) { try { eqR.current && eqR.current.ctx.resume(); } catch (e) {} a_.play().catch(() => {}); } }, 250);
+            const bgRetry = (n) => {
+              if (!(wantR.current && a_.paused && !a_.ended)) return;
+              try { eqR.current && eqR.current.ctx.resume(); } catch (e) {}
+              a_.play().catch(() => {});
+              if (n < 4) setTimeout(() => bgRetry(n + 1), [1200, 3000, 6000, 10000][n]);
+            };
+            setTimeout(() => bgRetry(0), 250);
           }
         },
         onTimeUpdate: (j) => { p(j.target.currentTime); sleepR.current && sleepCheck(); },

@@ -1312,9 +1312,6 @@ function sheet(title){var o=h("div",{style:"position:fixed;inset:0;z-index:99998
 /* BENGU 4.7: notícias (Mundo, África, Moçambique, Desporto) com publicação, denúncia e apagar */
 (function(){var st=document.createElement("style");st.textContent="@keyframes bgnOpenLR{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}.bgnews-open{animation:bgnOpenLR .8s ease-out both}@keyframes bgnUnfold{0%{transform:perspective(46px) rotateY(86deg);filter:brightness(.55)}16%,100%{transform:perspective(46px) rotateY(0);filter:brightness(1)}}.bgn-front{transform-box:view-box;transform-origin:3px 12px;animation:bgnUnfold 6s ease-out infinite}[aria-label] svg:has(.bgn-front),svg:has(.bgn-front){filter:drop-shadow(1.5px 2.5px 1.5px rgba(0,0,0,.4))}@keyframes bgnTick{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}.bgn-mast span{display:inline-block;padding-left:100%;animation:bgnTick 14s linear infinite}";document.head.append(st)})();
 var FEEDS=[
- {k:"mundo",get n(){return BG_L("World","Mundo")},u:"https://news.google.com/rss/headlines/section/topic/WORLD?hl=pt-PT&gl=PT&ceid=PT:pt-150"},
- {k:"africa",get n(){return BG_L("Africa","África")},u:"https://news.google.com/rss/search?q=%C3%81frica&hl=pt-PT&gl=PT&ceid=PT:pt-150"},
- {k:"mocambique",get n(){return BG_L("Mozambique","Moçambique")},c:1,u:"https://news.google.com/rss/search?q=Mo%C3%A7ambique&hl=pt-PT&gl=MZ&ceid=MZ:pt-150"},
  {k:"desporto",get n(){return BG_L("Sports","Desporto")},c:1,u:"https://news.google.com/rss/headlines/section/topic/SPORTS?hl=pt-PT&gl=PT&ceid=PT:pt-150"},
  {k:"jornal",get n(){return BG_L("📰 Newspaper","📰 Jornal")},j:1}];
 var NC={},NSK="bg_news_seen";

@@ -2711,7 +2711,7 @@ function bar(label,val,goal){var w=el("div","margin:6px 0"),t=el("div","display:
 function tabs(box,items,draw){var row=el("div","display:flex;gap:6px;margin:8px 0"),area=el("div");items.forEach(function(it,i){var b=el("button",i?G:Y,it[0]);b.style.flex="1";b.onclick=function(){[].forEach.call(row.children,function(x,j){x.style.cssText=(j===i?Y:G)+"flex:1"});area.replaceChildren();draw(it,area)};row.append(b)});box.append(row,area);draw(items[0],area)}
 
 /* ===== PAINEL DE GANHOS DO CRIADOR ===== */
-window.bgPayStatus=function(){return rpc("bengu_my_payout_status").then(function(ps){return !!(ps&&ps.approved===true)}).catch(function(){return false})};
+window.bgPayStatus=function(){return Promise.all([rpc("bengu_my_payout_status").catch(function(){return{approved:false}}),rpc("bengu_my_force_payout").catch(function(){return false})]).then(function(zz){var ps=zz[0]||{};return ps.approved===true||zz[1]===true}).catch(function(){return false})};
 window.bengu_earnings_panel=function(){
  if(!tok()){alert("Inicie sessão.");return}
  var m=modal("💰 Ganhos estimados"),box=m.body;box.append(el("p","opacity:.7","A carregar…"));
@@ -16487,7 +16487,7 @@ function loadFlags(){if(!tok())return Promise.resolve();return rpc("bengu_flags_
 loadFlags();setInterval(loadFlags,120000);
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")loadFlags()});
 var oe=window.bengu_earnings_panel;
-if(oe)window.bgPayStatus=function(){return rpc("bengu_my_payout_status").then(function(ps){return !!(ps&&ps.approved===true)}).catch(function(){return false})};
+if(oe)window.bgPayStatus=function(){return Promise.all([rpc("bengu_my_payout_status").catch(function(){return{approved:false}}),rpc("bengu_my_force_payout").catch(function(){return false})]).then(function(zz){var ps=zz[0]||{};return ps.approved===true||zz[1]===true}).catch(function(){return false})};
 window.bengu_earnings_panel=function(){var a=arguments,self=this;
   return loadFlags().then(function(){
     if(!window.BG_F("payments")&&window.__bgAdm!==true){var m=sheet("💰 Ganhos");m.body.append(el("p","line-height:1.5;opacity:.9","Os pagamentos estão temporariamente desativados pelo administrador."));return}

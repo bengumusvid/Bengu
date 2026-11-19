@@ -16583,10 +16583,12 @@ window.bengu_earnings_panel=function(){var a=arguments,self=this;
         var ov=[].slice.call(document.body.children).filter(function(e){return getComputedStyle(e).position==="fixed"}).pop();
         if(!ov||ov.getAttribute("data-bg-off"))return;
         ov.setAttribute("data-bg-off","1");
+        var panel=ov.firstElementChild||ov;
         var pm=document.createElement("p");pm.textContent="Os pagamentos estão temporariamente indisponíveis.";
-        pm.style.cssText="margin:8px 16px;color:#ffb020;font-weight:700";ov.insertBefore(pm,ov.firstChild);
+        pm.style.cssText="margin:8px 0 12px;color:#ffb020;font-weight:700;font-size:15px;line-height:1.4";panel.insertBefore(pm,panel.firstChild);
         ov.querySelectorAll("button,input,select,textarea").forEach(function(x){
-          if(x.getAttribute("aria-label")==="Fechar"||x.textContent.trim()==="\u2715")return;
+          var tx=(x.textContent||"").trim();
+          if(/^(Fechar|Close|\u2715|\u00d7|X)$/.test(tx)||/^(Fechar|Close)$/i.test(x.getAttribute("aria-label")||""))return;
           x.disabled=true;x.style.opacity=".45";x.style.pointerEvents="none";
         });
       };

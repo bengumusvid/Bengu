@@ -18299,6 +18299,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 <script>
 /* BENGU: contas guardadas neste aparelho (lista e troca de conta) */
 (function(){
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ";
 var LS="sb-cnpkgauzhoyzlhtcexiv-auth-token",KEY="bg_accounts",ACT="bg_acc_active";
 function read(){try{return JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){return[]}}
 function write(l){try{localStorage.setItem(KEY,JSON.stringify(l))}catch(e){}}
@@ -18307,12 +18308,26 @@ function sync(){
  var t=cur(),act=null;try{act=localStorage.getItem(ACT)}catch(e){}
  var l=read();
  if(!t){if(act){write(l.filter(function(a){return a.id!==act}));try{localStorage.removeItem(ACT)}catch(e){}}return}
- var u=t.user,meta=u.user_metadata||{};
- var name=(meta.name||[meta.first_name,meta.last_name].filter(Boolean).join(" ")||u.email||"Conta").slice(0,40);
+ var u=t.user;
+ var prev=l.filter(function(a){return a.id===u.id})[0];
+ var name=(prev&&prev.name)||"Conta";
  l=l.filter(function(a){return a.id!==u.id});
  l.unshift({id:u.id,email:u.email||"",name:name,token:localStorage.getItem(LS)});
  write(l);
  try{localStorage.setItem(ACT,u.id)}catch(e){}
+}
+function refreshNames(){
+ var l=read();if(!l.length)return;
+ var ids=l.map(function(a){return a.id}).join(",");
+ var t=cur();var auth=t?t.access_token:K;
+ fetch(U+"/rest/v1/profiles?select=id,name&id=in.("+ids+")",{headers:{apikey:K,Authorization:"Bearer "+auth}})
+  .then(function(r){return r.ok?r.json():[]})
+  .then(function(rows){
+   var map={};(rows||[]).forEach(function(r){if(r&&r.name)map[r.id]=r.name});
+   var cl=read(),changed=false;
+   cl.forEach(function(a){if(map[a.id]&&a.name!==map[a.id]){a.name=map[a.id];changed=true}});
+   if(changed)write(cl);
+  }).catch(function(){});
 }
 window.bgAccReg={
  list:read,
@@ -18324,6 +18339,7 @@ window.bgAccReg={
  }
 };
 sync();
+refreshNames();
 })();
 </script>
 </body>

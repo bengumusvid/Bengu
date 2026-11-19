@@ -7303,6 +7303,7 @@ function J_() {
     [Q, ee] = B.useState(null),
     [$, ie] = B.useState(null),
     [ce, se] = B.useState(!1),
+    [bgAccOpen, bgSetAccOpen] = B.useState(!1),
     [ge, Re] = B.useState(null),
     [Se, ft] = B.useState(""),
     Nr = B.useRef(null),
@@ -8541,6 +8542,17 @@ function J_() {
                       ],
                     }),
                     u.jsx("button", {
+                      onClick: () => bgSetAccOpen(!0),
+                      "aria-label": "Contas",
+                      title: "Contas nesta app",
+                      className: "p-1.5",
+                      children: u.jsx("svg", {
+                        width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke: "#fff",
+                        strokeWidth: 2.4, strokeLinecap: "round", strokeLinejoin: "round",
+                        children: u.jsx("path", { d: "M6 9l6 6 6-6" }),
+                      }),
+                    }),
+                    u.jsx("button", {
                       onClick: () => se(!0),
                       "aria-label": x("menu"),
                       className: "p-1.5",
@@ -9048,6 +9060,39 @@ function J_() {
                       I,
                     );
               }),
+            }),
+          }),
+        bgAccOpen &&
+          u.jsx("div", {
+            onClick: (ev) => { if (ev.target === ev.currentTarget) bgSetAccOpen(!1); },
+            style: { position: "fixed", inset: 0, zIndex: 100050, background: "rgba(0,0,0,.6)", display: "flex", alignItems: "flex-end", justifyContent: "center" },
+            children: u.jsxs("div", {
+              style: { background: k.paper, color: k.ink, width: "100%", maxWidth: 560, borderRadius: "18px 18px 0 0", padding: "16px 16px calc(18px + env(safe-area-inset-bottom,0px))", boxSizing: "border-box" },
+              children: [
+                u.jsx("div", { className: "font-extrabold mb-2", children: "Contas nesta app" }),
+                ...((window.bgAccReg ? window.bgAccReg.list() : []).map((ac) => {
+                  const isAct = window.bgAccReg.active() === ac.id;
+                  return u.jsxs("button", {
+                    key: ac.id,
+                    onClick: () => { if (!isAct) window.bgAccReg.switchTo(ac.id); },
+                    className: "w-full flex items-center gap-3 py-3 text-left",
+                    style: { borderTop: "1px solid rgba(128,128,128,.25)" },
+                    children: [
+                      u.jsxs("span", { className: "flex-1 min-w-0", children: [
+                        u.jsx("span", { className: "block font-bold truncate", children: ac.name }),
+                        u.jsx("span", { className: "block text-xs truncate", style: { color: k.mute }, children: ac.email }),
+                      ] }),
+                      isAct && u.jsx("span", { style: { color: "#2fbf71", fontWeight: 800 }, children: "\u2713" }),
+                    ],
+                  });
+                })),
+                u.jsx("button", {
+                  onClick: () => { window.__bgAddOpen = true; bgSetAccOpen(!1); },
+                  className: "w-full mt-3 py-3 rounded-full font-bold",
+                  style: { background: k.saffron, color: k.onAccent },
+                  children: "+ Registar ou entrar noutra conta",
+                }),
+              ],
             }),
           }),
         window.__bgAddOpen &&
@@ -18233,6 +18278,36 @@ function open(kind,id){
 function chk(){var m=/^#ver-(n|page)-([A-Za-z0-9-]{1,40})$/.exec(location.hash);if(m)open(m[1],m[2])}
 window.addEventListener("hashchange",chk);
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){setTimeout(chk,300)});else setTimeout(chk,300);
+})();
+</script>
+<script>
+/* BENGU: contas guardadas neste aparelho (lista e troca de conta) */
+(function(){
+var LS="sb-cnpkgauzhoyzlhtcexiv-auth-token",KEY="bg_accounts",ACT="bg_acc_active";
+function read(){try{return JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){return[]}}
+function write(l){try{localStorage.setItem(KEY,JSON.stringify(l))}catch(e){}}
+function cur(){try{var t=JSON.parse(localStorage.getItem(LS));return t&&t.user?t:null}catch(e){return null}}
+function sync(){
+ var t=cur(),act=null;try{act=localStorage.getItem(ACT)}catch(e){}
+ var l=read();
+ if(!t){if(act){write(l.filter(function(a){return a.id!==act}));try{localStorage.removeItem(ACT)}catch(e){}}return}
+ var u=t.user,meta=u.user_metadata||{};
+ var name=(meta.name||[meta.first_name,meta.last_name].filter(Boolean).join(" ")||u.email||"Conta").slice(0,40);
+ l=l.filter(function(a){return a.id!==u.id});
+ l.unshift({id:u.id,email:u.email||"",name:name,token:localStorage.getItem(LS)});
+ write(l);
+ try{localStorage.setItem(ACT,u.id)}catch(e){}
+}
+window.bgAccReg={
+ list:read,
+ active:function(){try{return localStorage.getItem(ACT)}catch(e){return null}},
+ switchTo:function(id){
+  var a=read().filter(function(x){return x.id===id})[0];if(!a)return;
+  try{localStorage.setItem(LS,a.token);localStorage.setItem(ACT,id)}catch(e){return}
+  window.location.reload();
+ }
+};
+sync();
 })();
 </script>
 </body>

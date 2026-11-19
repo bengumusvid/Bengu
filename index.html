@@ -16569,7 +16569,7 @@ function note(box,t,ok){var m=el("div","margin:8px 0;padding:8px 10px;border-rad
 
 /* ----- interruptores: lidos por todos, aplicados no ecrã de ganhos ----- */
 window.BG_FLAGS=window.BG_FLAGS||{};
-window.BG_F=function(k){if(window.BG_MONEY_OFF&&k!=="earnings_estimate"&&k!=="withdrawals"&&/pay|earn|money|fee|vote|payout|concurs|contest/i.test(k))return false;var f=window.BG_FLAGS||{};if(k!=="payments"&&f.payments===false)return false;if(k==="withdrawals"||k==="payouts")return f[k]===true;return f[k]!==false};
+window.BG_F=function(k){if(window.BG_MONEY_OFF&&k!=="earnings_estimate"&&k!=="withdrawals"&&/pay|earn|money|fee|vote|payout|concurs|contest/i.test(k))return false;var f=window.BG_FLAGS||{};if(k!=="payments"&&k!=="earnings_estimate"&&f.payments===false)return false;if(k==="withdrawals"||k==="payouts")return f[k]===true;return f[k]!==false};
 function loadFlags(){if(!tok())return Promise.resolve();return rpc("bengu_flags_get").then(function(f){if(f&&typeof f==="object")window.BG_FLAGS=f}).catch(function(){})}
 loadFlags();setInterval(loadFlags,120000);
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")loadFlags()});
@@ -16598,7 +16598,7 @@ window.bengu_earnings_panel=function(){var a=arguments,self=this;
     return oe.apply(self,a)})};
 
 /* ----- painel de interruptores (geral ou por utilizador) ----- */
-var KEYS=[["payments","💳 Todos os pagamentos (interruptor geral)","Desliga ganhos, levantamentos e pagamentos de uma só vez."],["earnings_estimate","📊 Estimativa dos ganhos","Mostra ou esconde os ganhos estimados."],["withdrawals","🏧 Levantamentos","Permite ou bloqueia pedidos de levantamento."],["payouts","💸 Pagamentos aos utilizadores","Permite ou bloqueia o pagamento aos utilizadores."]];
+var KEYS=[["payments","💳 Todos os pagamentos (interruptor geral)","Desliga levantamentos e pagamentos aos utilizadores de uma só vez. A estimativa de ganhos continua visível."],["earnings_estimate","📊 Estimativa dos ganhos","Mostra ou esconde os ganhos estimados."],["withdrawals","🏧 Levantamentos","Permite ou bloqueia pedidos de levantamento."],["payouts","💸 Pagamentos aos utilizadores","Permite ou bloqueia o pagamento aos utilizadores."]];
 window.bengu_pay_switches=function(uid,name){
   var m=sheet(uid?("💳 Pagamentos de "+(name||"utilizador")):"💳 Pagamentos de todos os utilizadores");
   m.body.append(el("p","font-size:12px;opacity:.75;margin:0 0 6px",uid?"Só afeta este utilizador. Os interruptores gerais continuam a valer.":"Afeta todos os utilizadores. Não é preciso publicar um index novo."));

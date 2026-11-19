@@ -9076,7 +9076,12 @@ function J_() {
                   window.location.reload();
                   return res;
                 },
-                onSignIn: Ig,
+                startMode: "signup",
+                onSignIn: async (...args) => {
+                  const res = await Ig(...args);
+                  if (!res || !res.error) { window.__bgAddOpen = false; window.location.reload(); }
+                  return res;
+                },
                 onSendCode: Lg,
                 onVerify: zg,
               }),
@@ -14845,9 +14850,10 @@ function px({
   onSignIn: n,
   onSendCode: s,
   onVerify: i,
+  startMode: sm,
 }) {
   const [a, o] = B.useState("email"),
-    [l, c] = B.useState("signup"),
+    [l, c] = B.useState(sm || "signup"),
     [d, p] = B.useState("form"),
     [w, f] = B.useState(""),
     [v, g] = B.useState(() => {

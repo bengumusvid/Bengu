@@ -9676,7 +9676,7 @@ function X_({
       children: [
         cardPhoto(O),
         u.jsx("div", { style: { position: "absolute", left: 0, right: 0, bottom: 0, height: 70, background: shade } }),
-        u.jsxs("span", { className: "absolute flex items-center text-[12px] font-bold", style: { left: 8, right: 8, bottom: 8, color: "#fff", textAlign: "left" }, children: [u.jsx("span", { className: "truncate", style: { minWidth: 0 }, children: x("profile") }), BgB(O)] }),
+        u.jsxs("span", { className: "absolute flex items-center text-[12px] font-bold", style: { left: 8, right: 8, bottom: 8, color: "#fff", textAlign: "left" }, children: [u.jsx("span", { className: "truncate", style: { minWidth: 0 }, children: (O && O.name) || x("profile") }), BgB(O)] }),
       ],
     });
   const A = ({ user: O, onClick: R, label: U, plus: re, st: stt, n: sn, add: ad }) => re

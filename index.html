@@ -16569,7 +16569,7 @@ function note(box,t,ok){var m=el("div","margin:8px 0;padding:8px 10px;border-rad
 
 /* ----- interruptores: lidos por todos, aplicados no ecrã de ganhos ----- */
 window.BG_FLAGS=window.BG_FLAGS||{};
-window.BG_F=function(k){if(window.BG_MONEY_OFF&&k!=="earnings_estimate"&&k!=="withdrawals"&&/pay|earn|money|fee|vote|payout|concurs|contest/i.test(k))return false;var f=window.BG_FLAGS||{};if(k!=="payments"&&f.payments===false)return false;return f[k]!==false};
+window.BG_F=function(k){if(window.BG_MONEY_OFF&&k!=="earnings_estimate"&&k!=="withdrawals"&&/pay|earn|money|fee|vote|payout|concurs|contest/i.test(k))return false;var f=window.BG_FLAGS||{};if(k!=="payments"&&f.payments===false)return false;if(k==="withdrawals"||k==="payouts")return f[k]===true;return f[k]!==false};
 function loadFlags(){if(!tok())return Promise.resolve();return rpc("bengu_flags_get").then(function(f){if(f&&typeof f==="object")window.BG_FLAGS=f}).catch(function(){})}
 loadFlags();setInterval(loadFlags,120000);
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")loadFlags()});
@@ -16577,7 +16577,22 @@ var oe=window.bengu_earnings_panel;
 if(oe)window.bgPayStatus=function(){var TEST=["horacioeduardo1111@gmail.com","horacioeduardo12025@gmail.com"];return fetch(U+"/auth/v1/user",{headers:{apikey:K,Authorization:"Bearer "+tok()}}).then(function(r){return r.ok?r.json():{}}).catch(function(){return{}}).then(function(u){window.__bgTestAcct=TEST.indexOf(String((u&&u.email)||"").toLowerCase())>-1;if(window.__bgTestAcct)return true;return Promise.all([rpc("bengu_my_payout_status").catch(function(){return{approved:false}}),rpc("bengu_my_force_payout").catch(function(){return false})]).then(function(zz){var ps=zz[0]||{};return ps.approved===true||zz[1]===true})}).catch(function(){return false})};
 window.bengu_earnings_panel=function(){var a=arguments,self=this;
   return loadFlags().then(function(){
-    if(!window.BG_F("payments")&&window.__bgAdm!==true){var m=sheet("💰 Ganhos");m.body.append(el("p","line-height:1.5;opacity:.9","Os pagamentos estão temporariamente desativados pelo administrador."));return}
+    if(!window.BG_F("payments")&&window.__bgAdm!==true){
+      var rr=oe.apply(self,a);
+      var markOff=function(){
+        var ov=[].slice.call(document.body.children).filter(function(e){return getComputedStyle(e).position==="fixed"}).pop();
+        if(!ov||ov.getAttribute("data-bg-off"))return;
+        ov.setAttribute("data-bg-off","1");
+        var pm=document.createElement("p");pm.textContent="Os pagamentos estão temporariamente indisponíveis.";
+        pm.style.cssText="margin:8px 16px;color:#ffb020;font-weight:700";ov.insertBefore(pm,ov.firstChild);
+        ov.querySelectorAll("button,input,select,textarea").forEach(function(x){
+          if(x.getAttribute("aria-label")==="Fechar"||x.textContent.trim()==="\u2715")return;
+          x.disabled=true;x.style.opacity=".45";x.style.pointerEvents="none";
+        });
+      };
+      setTimeout(markOff,300);setTimeout(markOff,1000);
+      return rr;
+    }
     return oe.apply(self,a)})};
 
 /* ----- painel de interruptores (geral ou por utilizador) ----- */
@@ -16587,7 +16602,7 @@ window.bengu_pay_switches=function(uid,name){
   m.body.append(el("p","font-size:12px;opacity:.75;margin:0 0 6px",uid?"Só afeta este utilizador. Os interruptores gerais continuam a valer.":"Afeta todos os utilizadores. Não é preciso publicar um index novo."));
   var list=el("div");m.body.append(list);
   function draw(f){list.replaceChildren();KEYS.forEach(function(k){
-    var on=f[k[0]]!==false,r=el("div","display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid #2a2f6a"),t=el("div","flex:1");
+    var on=(k[0]==="withdrawals"||k[0]==="payouts")?f[k[0]]===true:f[k[0]]!==false,r=el("div","display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid #2a2f6a"),t=el("div","flex:1");
     t.append(el("div","font-weight:700",k[1]),el("div","font-size:12px;opacity:.7",k[2]));
     var b=btn(on?"ATIVO":"DESATIVADO",on?"#2fbf71":"#6b2330","#fff",function(){
       var nv=!on;if(!nv&&!confirm("Desativar: "+k[1]+"?"))return;b.disabled=true;

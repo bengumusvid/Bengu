@@ -9050,6 +9050,38 @@ function J_() {
               }),
             }),
           }),
+        window.__bgAddOpen &&
+          u.jsxs("div", {
+            style: { position: "fixed", inset: 0, zIndex: 100060, background: k.paper, overflowY: "auto" },
+            children: [
+              u.jsx("button", {
+                onClick: () => { window.__bgAddOpen = false; window.location.reload(); },
+                "aria-label": "Fechar",
+                style: { position: "absolute", top: 12, right: 12, zIndex: 2, fontSize: 26, lineHeight: 1, color: k.ink, background: "none", border: 0, padding: 8 },
+                children: "\u2715",
+              }),
+              u.jsx(px, {
+                lang: e,
+                setLang: r,
+                onSignUp: async (args) => {
+                  const isTok = (kk) => /^sb-.*-auth-token/.test(kk);
+                  const keep = {};
+                  Object.keys(localStorage).forEach((kk) => { if (isTok(kk)) keep[kk] = localStorage.getItem(kk); });
+                  const res = await Og(args);
+                  if (res && res.error) return res;
+                  Object.keys(localStorage).forEach((kk) => { if (isTok(kk)) localStorage.removeItem(kk); });
+                  Object.keys(keep).forEach((kk) => localStorage.setItem(kk, keep[kk]));
+                  window.__bgAddOpen = false;
+                  alert("Conta criada. Para entrar nela, use o email e a palavra-passe que registou.");
+                  window.location.reload();
+                  return res;
+                },
+                onSignIn: Ig,
+                onSendCode: Lg,
+                onVerify: zg,
+              }),
+            ],
+          }),
         ce &&
           u.jsx(Z_, {
             prefs: n,
@@ -9115,6 +9147,10 @@ function J_() {
               ...(adm ? [[dg, x("admin"), () => at("admin")]] : []),
               [wg, x("settings"), () => at("settings")],
               [Ic, x("blocked"), () => at("blocked")],
+              [Vc, "Registar outra conta", () => {
+                window.__bgAddOpen = true;
+                se(!1);
+              }],
               [Bc, x("logout"), zi],
             ],
           }),

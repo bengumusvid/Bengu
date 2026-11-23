@@ -18441,9 +18441,11 @@ var TAG="📢 ANÚNCIO ·";
 function tok(){try{return JSON.parse(localStorage.getItem(LS)).access_token}catch(e){return null}}
 function badgeEl(){var b=document.createElement("span");b.textContent="📢 Anúncio";b.setAttribute("data-bg-ad-badge","1");b.style.cssText="display:inline-block;margin:0 0 6px;padding:3px 10px;border-radius:999px;background:#FFB020;color:#12183A;font:800 12px system-ui,sans-serif";return b}
 function scan(){
+ /* remove selos que ficaram em ecrãs que não estão visíveis */
+ document.querySelectorAll("[data-bg-ad-badge]").forEach(function(b){var nx=b.nextElementSibling;if(!nx||nx.offsetParent===null){b.remove()}});
  var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null);var n,hits=[];
- while((n=w.nextNode())){if(n.nodeValue&&n.nodeValue.indexOf(TAG)>=0){var p=n.parentElement;if(p&&!p.__bgAd&&!p.closest("[data-bg-ad-section]")){hits.push(p)}}}
- hits.forEach(function(p){p.__bgAd=1;if(p.previousElementSibling&&p.previousElementSibling.getAttribute&&p.previousElementSibling.getAttribute("data-bg-ad-badge"))return;p.parentNode.insertBefore(badgeEl(),p)});
+ while((n=w.nextNode())){var v=n.nodeValue;if(v&&v.trim().indexOf(TAG)===0){var p=n.parentElement;if(p&&!p.__bgAd&&p.offsetParent!==null&&!p.closest("[data-bg-ad-section]")&&!p.closest("[data-bg-ad-badge]")){hits.push(p)}}}
+ hits.forEach(function(p){if(p.previousElementSibling&&p.previousElementSibling.getAttribute&&p.previousElementSibling.getAttribute("data-bg-ad-badge"))return;p.__bgAd=1;p.parentNode.insertBefore(badgeEl(),p)});
 }
 var tm=null;function sched(){if(tm)return;tm=setTimeout(function(){tm=null;try{scan()}catch(e){}},700)}
 new MutationObserver(sched).observe(document.body,{childList:true,subtree:true,characterData:true});
@@ -18483,6 +18485,51 @@ btn.style.cssText="padding:6px 4px;border:0;background:none;font-size:20px;line-
 btn.onclick=function(){window.bgAdsOpen()};
 function addBtn(){if(document.querySelector("[data-bg-ads-btn]"))return true;var bell=document.querySelector('[aria-label="Notificações"]');if(!bell||!bell.parentNode)return false;btn.setAttribute("data-bg-ads-btn","1");bell.parentNode.insertBefore(btn,bell);return true}
 var tries=0,iv=setInterval(function(){tries++;if(addBtn()||tries>40)clearInterval(iv)},1000);
+})();
+</script>
+
+<script>/* BENGU: duração da conversa no Bate-Papo (escolher ou alterar depois de a conversa começar) */
+(function(){
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",LS="sb-cnpkgauzhoyzlhtcexiv-auth-token";
+var OPTS=[["1 mês",1],["6 meses",6],["1 ano",12],["2 anos",24],["5 anos",60],["Tempo indeterminado",0]];
+function ses(){try{return JSON.parse(localStorage.getItem(LS))}catch(e){return null}}
+function tok(){var x=ses();return x&&x.access_token}
+function uid(){var x=ses();return x&&x.user&&x.user.id}
+function lbl(m){for(var i=0;i<OPTS.length;i++)if(OPTS[i][1]===m)return OPTS[i][0];return "não definida"}
+function hd(){return{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/json"}}
+function pairFilter(me,other){return "or=(and(requester_id.eq."+me+",target_id.eq."+other+"),and(requester_id.eq."+other+",target_id.eq."+me+"))"}
+window.bgDurOpen=function(other){
+ var me=uid();if(!me||!other)return;
+ var ov=document.createElement("div");ov.style.cssText="position:fixed;inset:0;z-index:100095;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center";
+ var box=document.createElement("div");box.style.cssText="background:#fff;color:#12183A;width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:18px;box-sizing:border-box;font:15px/1.4 system-ui,sans-serif";
+ var t=document.createElement("b");t.textContent="⏳ Duração da conversa";t.style.cssText="display:block;font-size:17px;margin-bottom:6px";
+ var st=document.createElement("div");st.style.cssText="margin-bottom:10px;opacity:.8";st.textContent="A carregar…";
+ box.append(t,st);ov.append(box);document.body.append(ov);
+ ov.onclick=function(e){if(e.target===ov)ov.remove()};
+ fetch(U+"/rest/v1/chat_requests?select=id,status,duration_months&"+pairFilter(me,other)+"&limit=1",{headers:hd()})
+ .then(function(r){return r.json()}).then(function(rows){
+  var row=rows&&rows[0];
+  if(!row||row.status!=="accepted"){st.textContent="A conversa ainda não está autorizada. Só pode definir a duração depois de a conversa ser aceite.";return}
+  st.textContent="Duração atual: "+lbl(row.duration_months);
+  OPTS.forEach(function(o){
+   var b=document.createElement("button");b.type="button";b.textContent=o[0];
+   b.style.cssText="display:block;width:100%;margin:6px 0;padding:12px;border:0;border-radius:12px;background:#eef0f6;color:#12183A;font-weight:700;font-size:15px";
+   b.onclick=function(){
+    fetch(U+"/rest/v1/chat_requests?id=eq."+row.id,{method:"PATCH",headers:Object.assign(hd(),{Prefer:"return=minimal"}),body:JSON.stringify({duration_months:o[1]})})
+    .then(function(r){if(!r.ok)throw new Error("Não foi possível guardar.");ov.remove();alert("Duração definida: "+o[0]+".")})
+    .catch(function(e){alert(e.message)});
+   };
+   box.append(b);
+  });
+ }).catch(function(){st.textContent="Não foi possível carregar a conversa agora."});
+};
+/* botão na conversa aberta */
+var btn=document.createElement("button");btn.type="button";btn.textContent="⏳ Duração";btn.setAttribute("data-bg-dur-btn","1");
+btn.style.cssText="position:fixed;right:10px;top:calc(64px + env(safe-area-inset-top,0px));z-index:99980;padding:6px 10px;border:0;border-radius:999px;background:#FFB020;color:#12183A;font:800 12px system-ui,sans-serif;display:none";
+btn.onclick=function(){if(window.__bgChat)window.bgDurOpen(window.__bgChat)};
+document.body.append(btn);
+function visibleField(){var els=document.querySelectorAll("textarea,input[type=text],input:not([type])");for(var i=0;i<els.length;i++){var e=els[i];if(e.offsetParent!==null&&/mensagem|escrev|message/i.test((e.placeholder||"")+" "+(e.getAttribute("aria-label")||"")))return true}return false}
+setInterval(function(){btn.style.display=(window.__bgChat&&visibleField())?"block":"none"},1000);
 })();
 </script>
 </body>

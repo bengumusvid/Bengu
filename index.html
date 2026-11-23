@@ -4155,11 +4155,7 @@ document.addEventListener("ended",function(e){
  var el=v.parentElement,d=0,m=null;
  while(el&&d<12){var t=el.textContent||"";m=/📺 (.+?) · Ep\. (\d+)/.exec(t);if(m){if((t.match(/📺 /g)||[]).length!==1||el.querySelectorAll("video").length!==1)return;break}el=el.parentElement;d++}
  if(!m)return;open(m[1].trim(),+m[2],"next")},true);
-/* botão ⭐ Favoritos (junto ao sino) */
-(function(){var b=document.createElement("button");b.type="button";b.textContent="⭐";b.setAttribute("aria-label","Favoritos de seriados");b.title="Favoritos de seriados";b.setAttribute("data-bg-fav-btn","1");
- b.style.cssText="padding:6px 4px;border:0;background:none;font-size:20px;line-height:1;color:#fff";b.onclick=openFavs;
- function add(){if(document.querySelector("[data-bg-fav-btn]"))return true;var bell=document.querySelector('[aria-label="Notificações"]');if(!bell||!bell.parentNode)return false;bell.parentNode.insertBefore(b,bell);return true}
- var n=0,iv=setInterval(function(){n++;if(add()||n>40)clearInterval(iv)},1000)})();
+
 function caretNode(x,y){try{if(document.caretRangeFromPoint){var r=document.caretRangeFromPoint(x,y);return r&&{n:r.startContainer,o:r.startOffset}}if(document.caretPositionFromPoint){var p=document.caretPositionFromPoint(x,y);return p&&{n:p.offsetNode,o:p.offset}}}catch(e){}return null}
 
 /* destaque da linha 📺 */
@@ -8707,11 +8703,18 @@ function J_() {
                       ["all", x("forYou")],
                       ["following", x("following")],
                       ["users", "Utilizadores"],
+                      ["favs", "⭐ Favoritos"],
                       ].map(([I, V]) => I === "ia" ? u.jsx("button", {
                         key: "ia",
                         onClick: () => window.bengu_ia_open && window.bengu_ia_open(window.BG_IA_ON ? "ia" : "jogos"),
                         className: "flex-1 py-3 text-sm font-semibold",
                         style: { color: k.mute, borderBottom: "3px solid transparent", whiteSpace: "nowrap" },
+                        children: V,
+                      }) : I === "favs" ? u.jsx("button", {
+                        key: "favs",
+                        onClick: () => window.bgSeries && window.bgSeries.favs && window.bgSeries.favs(),
+                        className: "py-3 font-semibold",
+                        style: { flex: "1 1 auto", padding: "12px 4px", fontSize: "13px", color: k.mute, borderBottom: "3px solid transparent", whiteSpace: "nowrap" },
                         children: V,
                       }) : I === "bell" ? u.jsx("button", {
                         key: "bell",
@@ -8727,8 +8730,9 @@ function J_() {
                           role: "tab",
                           "aria-selected": Y === I,
                           onClick: () => ve(I),
-                          className: "flex-1 py-3 text-sm font-semibold",
+                          className: "py-3 font-semibold",
                           style: {
+                            flex: "1 1 auto", padding: "12px 4px", fontSize: "13px", whiteSpace: "nowrap",
                             color: Y === I ? k.ink : k.mute,
                             borderBottom: `3px solid ${Y === I ? k.saffron : "transparent"}`,
                           },
@@ -18599,13 +18603,6 @@ window.bgChatMenu=function(other,name){
  var n=document.createElement("div");n.style.cssText="font-size:12px;opacity:.7;margin:2px 2px 6px";n.textContent="Se se sentir incomodado, pode retirar a autorização a qualquer momento.";box.append(n);
  item("Fechar","none","#666",function(){ov.remove()}).style.textAlign="center";
 };
-/* botão na conversa aberta */
-var btn=document.createElement("button");btn.type="button";btn.textContent="⏳ Duração";btn.setAttribute("data-bg-dur-btn","1");
-btn.style.cssText="position:fixed;right:10px;top:calc(64px + env(safe-area-inset-top,0px));z-index:99980;padding:6px 10px;border:0;border-radius:999px;background:#FFB020;color:#12183A;font:800 12px system-ui,sans-serif;display:none";
-btn.onclick=function(){if(window.__bgChat)window.bgDurOpen(window.__bgChat)};
-document.body.append(btn);
-function visibleField(){var els=document.querySelectorAll("textarea,input[type=text],input:not([type])");for(var i=0;i<els.length;i++){var e=els[i];if(e.offsetParent!==null&&/mensagem|escrev|message/i.test((e.placeholder||"")+" "+(e.getAttribute("aria-label")||"")))return true}return false}
-setInterval(function(){btn.style.display=(window.__bgChat&&visibleField())?"block":"none"},1000);
 })();
 </script>
 <script>/* BENGU: "Para si" — mais conteúdo de quem o segue, de quem segue, de quem gostou e do que mais assiste */

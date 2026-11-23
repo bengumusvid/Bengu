@@ -18438,5 +18438,57 @@ window.bgAdOpen=function(){
 };
 })();
 </script>
+
+<script>/* BENGU: selo "Anúncio" nas publicações de anúncio e secção "📢 Anúncios" (os anúncios continuam no feed) */
+(function(){
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",LS="sb-cnpkgauzhoyzlhtcexiv-auth-token";
+var TAG="📢 ANÚNCIO ·";
+function tok(){try{return JSON.parse(localStorage.getItem(LS)).access_token}catch(e){return null}}
+function badgeEl(){var b=document.createElement("span");b.textContent="📢 Anúncio";b.setAttribute("data-bg-ad-badge","1");b.style.cssText="display:inline-block;margin:0 0 6px;padding:3px 10px;border-radius:999px;background:#FFB020;color:#12183A;font:800 12px system-ui,sans-serif";return b}
+function scan(){
+ var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null);var n,hits=[];
+ while((n=w.nextNode())){if(n.nodeValue&&n.nodeValue.indexOf(TAG)>=0){var p=n.parentElement;if(p&&!p.__bgAd&&!p.closest("[data-bg-ad-section]")){hits.push(p)}}}
+ hits.forEach(function(p){p.__bgAd=1;if(p.previousElementSibling&&p.previousElementSibling.getAttribute&&p.previousElementSibling.getAttribute("data-bg-ad-badge"))return;p.parentNode.insertBefore(badgeEl(),p)});
+}
+var tm=null;function sched(){if(tm)return;tm=setTimeout(function(){tm=null;try{scan()}catch(e){}},700)}
+new MutationObserver(sched).observe(document.body,{childList:true,subtree:true,characterData:true});
+setTimeout(scan,1500);
+function esc(t){var d=document.createElement("div");d.textContent=t;return d.innerHTML}
+window.bgAdsOpen=function(){
+ var ov=document.createElement("div");ov.setAttribute("data-bg-ad-section","1");ov.style.cssText="position:fixed;inset:0;z-index:100090;background:#f4f5fb;overflow:auto;font:15px/1.4 system-ui,sans-serif;color:#12183A";
+ var top=document.createElement("div");top.style.cssText="position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#fff;border-bottom:1px solid #e3e6f0";
+ top.innerHTML='<b style="font-size:18px">📢 Anúncios</b>';
+ var x=document.createElement("button");x.textContent="✕";x.style.cssText="border:0;background:none;font-size:22px;padding:4px 8px";x.onclick=function(){ov.remove()};top.append(x);
+ var list=document.createElement("div");list.style.cssText="padding:12px;max-width:600px;margin:0 auto";list.innerHTML="<p>A carregar…</p>";
+ ov.append(top,list);document.body.append(ov);
+ var q=U+"/rest/v1/posts?select=id,user_id,body,media,created_at&visibility=eq.public&body=like."+encodeURIComponent(TAG+"*")+"&order=created_at.desc&limit=100";
+ var h={apikey:K};var t=tok();if(t)h.Authorization="Bearer "+t;
+ fetch(q,{headers:h}).then(function(r){return r.json()}).then(function(rows){
+  if(!rows||!rows.length){list.innerHTML="<p>Ainda não há anúncios publicados.</p>";return}
+  var ids=[];rows.forEach(function(r){if(ids.indexOf(r.user_id)<0)ids.push(r.user_id)});
+  return fetch(U+"/rest/v1/profiles?select=id,name,handle&id=in.("+ids.join(",")+")",{headers:h}).then(function(r){return r.ok?r.json():[]}).then(function(ps){
+   var nm={};(ps||[]).forEach(function(p){nm[p.id]=p.name||p.handle||"Membro"});
+   list.innerHTML="";
+   rows.forEach(function(r){
+    var c=document.createElement("div");c.style.cssText="background:#fff;border-radius:14px;padding:12px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)";
+    var by=new Date(r.created_at).toLocaleString("pt-PT",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+    var head=document.createElement("div");head.innerHTML='<span style="display:inline-block;margin-bottom:6px;padding:3px 10px;border-radius:999px;background:#FFB020;color:#12183A;font:800 12px system-ui">📢 Anúncio</span><div style="font-size:12px;opacity:.7">'+esc(nm[r.user_id]||"Membro")+" · "+esc(by)+"</div>";
+    c.append(head);
+    var body=document.createElement("div");body.style.cssText="white-space:pre-wrap;margin:8px 0";body.textContent=String(r.body||"").replace(/^📢 ANÚNCIO · /,"");c.append(body);
+    var imgs=(Array.isArray(r.media)?r.media:[]).filter(function(m){return m&&m.url&&(m.kind==="image"||!m.kind)});
+    if(imgs.length){var g=document.createElement("div");g.style.cssText="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:6px";
+     imgs.forEach(function(m){var im=document.createElement("img");im.src=m.url;im.loading="lazy";im.style.cssText="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px";g.append(im)});c.append(g)}
+    list.append(c);
+   });
+  });
+ }).catch(function(){list.innerHTML="<p>Não foi possível carregar os anúncios agora.</p>"});
+};
+var btn=document.createElement("button");btn.textContent="📢 Anúncios";btn.setAttribute("aria-label","Anúncios");
+btn.style.cssText="position:fixed;right:14px;bottom:calc(74px + env(safe-area-inset-bottom,0px));z-index:99990;padding:10px 14px;border:0;border-radius:999px;background:#FFB020;color:#12183A;font:800 14px system-ui,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.2)";
+btn.onclick=function(){window.bgAdsOpen()};
+function addBtn(){if(!document.querySelector("[data-bg-ads-btn]")){btn.setAttribute("data-bg-ads-btn","1");document.body.append(btn)}}
+addBtn();setTimeout(addBtn,2000);
+})();
+</script>
 </body>
 </html>

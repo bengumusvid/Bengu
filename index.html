@@ -18365,5 +18365,17 @@ sync();
 refreshNames();
 })();
 </script>
+<script>
+/* BENGU: ao minimizar ou sair da app, limpa o endereço (#u/..., #pagina=..., #chat/...) para que ao reabrir vá ao feed */
+(function(){
+ function clearDeep(){
+  try{
+   if(location.hash&&location.hash!=="#")history.replaceState(null,"",location.pathname+location.search);
+  }catch(e){}
+ }
+ document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")clearDeep()});
+ window.addEventListener("pagehide",clearDeep);
+})();
+</script>
 </body>
 </html>

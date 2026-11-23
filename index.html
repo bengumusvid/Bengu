@@ -8501,13 +8501,8 @@ function J_() {
                 u.jsxs("div", {
                   className: "flex items-center",
                   children: [
-                    u.jsx("button", {
-                      onClick: () => window.bengu_fut_open && window.bengu_fut_open(),
-                      "aria-label": "Tournaments", "data-comp": "futebol", "data-label": "Tournaments",
-                      title: "Tournaments (football, handball, basketball)",
-                      className: "bg-comp bg-green",
-                      children: u.jsx("span", { className: "bg-coin", "aria-hidden": "true", children: "🏆" }),
-                    }),
+                    
+                    
                     u.jsx("button", {
                       onClick: () => window.bengu_notif_center && window.bengu_notif_center(),
                       "aria-label": "Notificações", title: "Notificações",
@@ -18483,11 +18478,11 @@ window.bgAdsOpen=function(){
   });
  }).catch(function(){list.innerHTML="<p>Não foi possível carregar os anúncios agora.</p>"});
 };
-var btn=document.createElement("button");btn.textContent="📢 Anúncios";btn.setAttribute("aria-label","Anúncios");
-btn.style.cssText="position:fixed;right:14px;bottom:calc(74px + env(safe-area-inset-bottom,0px));z-index:99990;padding:10px 14px;border:0;border-radius:999px;background:#FFB020;color:#12183A;font:800 14px system-ui,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.2)";
+var btn=document.createElement("button");btn.textContent="📢";btn.title="Anúncios";btn.setAttribute("aria-label","Anúncios");
+btn.style.cssText="padding:6px 4px;border:0;background:none;font-size:20px;line-height:1;color:#fff";
 btn.onclick=function(){window.bgAdsOpen()};
-function addBtn(){if(!document.querySelector("[data-bg-ads-btn]")){btn.setAttribute("data-bg-ads-btn","1");document.body.append(btn)}}
-addBtn();setTimeout(addBtn,2000);
+function addBtn(){if(document.querySelector("[data-bg-ads-btn]"))return true;var bell=document.querySelector('[aria-label="Notificações"]');if(!bell||!bell.parentNode)return false;btn.setAttribute("data-bg-ads-btn","1");bell.parentNode.insertBefore(btn,bell);return true}
+var tries=0,iv=setInterval(function(){tries++;if(addBtn()||tries>40)clearInterval(iv)},1000);
 })();
 </script>
 </body>

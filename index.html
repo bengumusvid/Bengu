@@ -9175,6 +9175,19 @@ function J_() {
               ],
               [
                 Lo,
+                "Partilhar perfil no WhatsApp",
+                () => {
+                  se(!1);
+                  const _wu = Rc() + "#u/" + h.handle;
+                  window.open(
+                    "https://wa.me/?text=" +
+                      encodeURIComponent("Estou no Bengu, a rede social de entretenimento para fotos, vídeos, música e notícias. Segue-me aqui: " + _wu),
+                    "_blank",
+                  );
+                },
+              ],
+              [
+                Lo,
                 x("profileLink"),
                 () => {
                   se(!1);
@@ -14774,6 +14787,13 @@ function fx({
                                     children: [u.jsx($c, { size: 16 }), " ", x("editProfile")],
                                   }),
                                   u.jsx("button", {
+                                    onClick: () => window.open("https://wa.me/?text=" + encodeURIComponent("Estou no Bengu, a rede social de entretenimento para fotos, vídeos, música e notícias. Segue-me aqui: " + Rc() + "#u/" + e.handle), "_blank"),
+                                    "aria-label": "Partilhar perfil no WhatsApp",
+                                    className: "flex-1 py-2.5 rounded-full text-sm font-bold flex items-center justify-center gap-2",
+                                    style: j,
+                                    children: "\u2197 Partilhar",
+                                  }),
+                                  u.jsx("button", {
                                     onClick: () => setBgMenu(!bgMenu),
                                     "aria-label": "Menu",
                                     "aria-expanded": bgMenu,
@@ -14815,6 +14835,13 @@ function fx({
                                       color: r ? k.ink : k.onAccent,
                                     },
                                     children: x(r ? "followingBtn" : "follow"),
+                                  }),
+                                  u.jsx("button", {
+                                    onClick: () => window.open("https://wa.me/?text=" + encodeURIComponent("Estou no Bengu, a rede social de entretenimento para fotos, vídeos, música e notícias. Segue-me aqui: " + Rc() + "#u/" + e.handle), "_blank"),
+                                    "aria-label": "Partilhar perfil no WhatsApp",
+                                    className: "flex-1 py-2.5 rounded-full text-sm font-bold flex items-center justify-center gap-2",
+                                    style: j,
+                                    children: "\u2197 Partilhar",
                                   }),
                                   u.jsxs("button", {
                                     onClick: f,

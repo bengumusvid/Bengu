@@ -12102,7 +12102,7 @@ function ox({ me: e, other: t, otherId: r, addUsers: n, onBack: s, say: i }) {
             "aria-label": x("back"),
             children: u.jsx(Ai, { size: 22, color: k.ink }),
           }),
-          u.jsx(Ct, { user: t, size: 36 }),
+          u.jsx("button", { type: "button", onClick: () => window.bgChatMenu && window.bgChatMenu(r, t.name), "aria-label": "Opções da conversa", style: { background: "none", border: 0, padding: 0, borderRadius: "50%", cursor: "pointer" }, children: u.jsx(Ct, { user: t, size: 36 }) }),
           u.jsxs("div", {
             className: "flex-1 min-w-0",
             children: [
@@ -18522,6 +18522,29 @@ window.bgDurOpen=function(other){
    box.append(b);
   });
  }).catch(function(){st.textContent="Não foi possível carregar a conversa agora."});
+};
+/* menu da conversa: abre ao tocar na foto do contacto */
+window.bgChatMenu=function(other,name){
+ var me=uid();if(!me||!other)return;
+ var ov=document.createElement("div");ov.style.cssText="position:fixed;inset:0;z-index:100095;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center";
+ var box=document.createElement("div");box.style.cssText="background:#fff;color:#12183A;width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));box-sizing:border-box;font:15px/1.4 system-ui,sans-serif";
+ var t=document.createElement("b");t.textContent=name||"Conversa";t.style.cssText="display:block;font-size:17px;margin-bottom:10px";
+ box.append(t);ov.append(box);document.body.append(ov);
+ ov.onclick=function(e){if(e.target===ov)ov.remove()};
+ function item(label,bg,fg,fn){var b=document.createElement("button");b.type="button";b.textContent=label;b.style.cssText="display:block;width:100%;margin:6px 0;padding:12px;border:0;border-radius:12px;background:"+bg+";color:"+fg+";font-weight:700;font-size:15px;text-align:left";b.onclick=fn;box.append(b);return b}
+ item("⏳ Duração da conversa","#eef0f6","#12183A",function(){ov.remove();window.bgDurOpen(other)});
+ var rv=item("🚫 Cancelar autorização da conversa","#fdecea","#B71C1C",function(){
+  if(!confirm("Cancelar a autorização desta conversa"+(name?" com "+name:"")+"? Deixarão de poder trocar mensagens."))return;
+  rv.disabled=true;
+  var H=Object.assign(hd(),{Prefer:"return=representation"}),url=U+"/rest/v1/chat_requests?"+pairFilter(me,other);
+  function done(){ov.remove();window.__bgChat=null;alert("Autorização cancelada. A conversa foi fechada.");location.reload()}
+  function fail(){rv.disabled=false;alert("Não foi possível cancelar a autorização agora. Tente novamente mais tarde.")}
+  fetch(url,{method:"PATCH",headers:H,body:JSON.stringify({status:"declined"})}).then(function(r){return r.ok?r.json():[]}).then(function(a){
+   if(a&&a.length)return done();
+   return fetch(url,{method:"DELETE",headers:H}).then(function(r){return r.ok?r.json():[]}).then(function(b){if(b&&b.length)done();else fail()})
+  }).catch(fail)});
+ var n=document.createElement("div");n.style.cssText="font-size:12px;opacity:.7;margin:2px 2px 6px";n.textContent="Se se sentir incomodado, pode retirar a autorização a qualquer momento.";box.append(n);
+ item("Fechar","none","#666",function(){ov.remove()}).style.textAlign="center";
 };
 /* botão na conversa aberta */
 var btn=document.createElement("button");btn.type="button";btn.textContent="⏳ Duração";btn.setAttribute("data-bg-dur-btn","1");

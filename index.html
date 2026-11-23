@@ -13744,6 +13744,7 @@ function BgPostMusic({ post }) {
     }),
   );
 }
+function BgAdIco() { return u.jsx("span", { style: { fontSize: 15, lineHeight: 1 } }, "📢"); }
 const gf = [
   ["text", "tText", xg, ""],
   ["media", "tMedia", Es, "image/*,video/*"],
@@ -13751,6 +13752,7 @@ const gf = [
   ["doc", "tDoc", zc, ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"],
   ["link", "tLink", Dc, ""],
   ["live", "tLive", yg, ""],
+  ["ad", "📢 Anúncio", BgAdIco, ""],
 ];
 function BgVidBadges({ id, createdAt, hasVideo }) {
   const [, bump] = B.useState(0);
@@ -13859,7 +13861,8 @@ function hx({ minor: e, allowDefault: t, onPublish: r, onError: n }) {
       p((xe) => xe.map((Ie, _) => (_ === Y ? { ...Ie, ...ve } : Ie))),
     fe = (Y) => p((ve) => ve.filter((xe, Ie) => Ie !== Y)),
     ae = (Y) => {
-      (i(Y), p([]), m(!1), setMus(null));
+      if (Y === "ad") { window.bgAdOpen && window.bgAdOpen(); return; }
+    (i(Y), p([]), m(!1), setMus(null));
     },
     te = gf.find((Y) => Y[0] === s)[3],
     be = s === "media" || s === "audio" || s === "doc",
@@ -18380,6 +18383,59 @@ refreshNames();
  }
  document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")clearDeep()});
  window.addEventListener("pagehide",clearDeep);
+})();
+</script>
+
+<script>/* BENGU: anúncios (produto/serviço) com fotos, localização, contacto e preço; publicados no feed */
+(function(){
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",LS="sb-cnpkgauzhoyzlhtcexiv-auth-token";
+function ses(){try{return JSON.parse(localStorage.getItem(LS))}catch(e){return null}}
+function tok(){var x=ses();return x&&x.access_token}
+function uid(){var x=ses();return x&&x.user&&x.user.id}
+function inpEl(ph,type){var i=document.createElement("input");i.type=type||"text";i.placeholder=ph;i.style.cssText="width:100%;padding:11px;border:1px solid #cdd3e6;border-radius:10px;font:inherit;box-sizing:border-box;color:#12183A;background:#fff";return i}
+function field(label,el){var w=document.createElement("label");w.style.cssText="display:block;margin:10px 0;font-weight:700;color:#12183A";var t=document.createElement("span");t.textContent=label;t.style.cssText="display:block;margin-bottom:4px";w.append(t,el);return w}
+window.bgAdOpen=function(){
+ if(!uid()){alert("Inicie sessão no Bengu primeiro.");return}
+ var ov=document.createElement("div");ov.style.cssText="position:fixed;inset:0;z-index:100080;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center";
+ var box=document.createElement("div");box.style.cssText="background:#fff;color:#12183A;width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px;box-sizing:border-box;font:15px/1.4 system-ui,sans-serif";
+ var title=document.createElement("b");title.textContent="📢 Publicar anúncio";title.style.cssText="display:block;font-size:18px;margin-bottom:6px";
+ var tIn=inpEl("Nome do produto ou serviço"),dIn=document.createElement("textarea");dIn.placeholder="Descrição";dIn.rows=3;dIn.style.cssText="width:100%;padding:11px;border:1px solid #cdd3e6;border-radius:10px;font:inherit;box-sizing:border-box;color:#12183A;background:#fff";
+ var pIn=inpEl("Preço (ex.: 500 MT)"),lIn=inpEl("Localização (ex.: Maputo, Bairro Central)"),cIn=inpEl("Telefone ou WhatsApp","tel"),eIn=inpEl("Email (opcional)","email");
+ var files=document.createElement("input");files.type="file";files.accept="image/*";files.multiple=true;
+ var EMPTY="Nenhuma foto escolhida (mínimo 1, máximo 10)";
+ var fl=document.createElement("div");fl.style.cssText="font-size:13px;opacity:.75;margin-top:4px";fl.textContent=EMPTY;
+ files.onchange=function(){var n=files.files.length;if(n>10){alert("Máximo de 10 fotos.");files.value="";n=0}fl.textContent=n?n+" foto(s) escolhida(s)":EMPTY};
+ var msg=document.createElement("div");msg.style.cssText="color:#B71C1C;font-size:13px;min-height:18px;margin-top:6px";
+ var go=document.createElement("button");go.type="button";go.textContent="Publicar anúncio";go.style.cssText="width:100%;margin-top:12px;padding:13px;border:0;border-radius:999px;background:#FFB020;color:#12183A;font-weight:800;font-size:16px";
+ var cancel=document.createElement("button");cancel.type="button";cancel.textContent="Cancelar";cancel.style.cssText="width:100%;margin-top:8px;padding:10px;border:0;background:none;color:#666;font-size:15px";
+ cancel.onclick=function(){ov.remove()};
+ ov.onclick=function(e){if(e.target===ov)ov.remove()};
+ go.onclick=function(){publish()};
+ function publish(){
+  var t=tIn.value.trim(),c=cIn.value.trim(),list=files.files;
+  if(t.length<3)return msg.textContent="Indique o nome do produto (mínimo 3 letras).";
+  if(!c)return msg.textContent="Indique um telefone ou WhatsApp para contacto.";
+  if(!list||!list.length)return msg.textContent="Adicione pelo menos 1 foto do produto.";
+  if(list.length>10)return msg.textContent="Máximo de 10 fotos.";
+  go.disabled=true;go.textContent="A publicar…";msg.textContent="";
+  var me=uid(),stamp=Date.now();
+  var ups=[].map.call(list,function(f,i){
+   var ext=((f.name.split(".").pop()||"jpg").replace(/[^a-z0-9]/gi,"")||"jpg").toLowerCase();
+   var path=me+"/ad-"+stamp+"-"+i+"."+ext;
+   return fetch(U+"/storage/v1/object/media/"+path,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":f.type||"image/jpeg","x-upsert":"false"},body:f})
+    .then(function(r){if(!r.ok)throw new Error("Falha ao enviar foto ("+r.status+").");return{url:(window.BG_R2||"")+"/media/"+path,name:f.name,size:(f.size/1048576).toFixed(1).replace(".",",")+" MB",kind:"image"}});
+  });
+  Promise.all(ups).then(function(items){
+   var pr=pIn.value.trim(),lo=lIn.value.trim(),em=eIn.value.trim(),de=dIn.value.trim();
+   var body="📢 ANÚNCIO · "+t+"\n"+(pr?"💰 Preço: "+pr+"\n":"")+(lo?"📍 Localização: "+lo+"\n":"")+"📞 Contacto: "+c+(em?"\n✉️ "+em:"")+(de?"\n\n"+de:"");
+   return fetch(U+"/rest/v1/posts",{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/json",Prefer:"return=minimal"},body:JSON.stringify({user_id:me,type:"media",body:body,media:items,allow_download:true,visibility:"public"})})
+    .then(function(r){if(!r.ok)return r.text().then(function(x){throw new Error(x||"Erro ao publicar.")})});
+  }).then(function(){ov.remove();alert("Anúncio publicado. Já aparece no feed.");location.reload()})
+   .catch(function(e){go.disabled=false;go.textContent="Publicar anúncio";msg.textContent=(e&&e.message)||"Erro ao publicar."});
+ }
+ box.append(title,field("Nome do produto ou serviço *",tIn),field("Descrição",dIn),field("Preço",pIn),field("Localização",lIn),field("Contacto (telefone ou WhatsApp) *",cIn),field("Email",eIn),field("Fotos do produto * (1 a 10)",files),fl,msg,go,cancel);
+ ov.append(box);document.body.append(ov);
+};
 })();
 </script>
 </body>

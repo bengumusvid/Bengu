@@ -652,7 +652,7 @@ document.head.append(h("style",{},
 ".bg-comp{--c:#ff1fa9;--cg:rgba(255,31,169,.8);--c1:#ffd1ee;--c2:#ff7ccb;display:inline-flex;align-items:center;gap:4px;margin-right:3px;padding:2px 6px 2px 2px;border:0;border-radius:999px;background:var(--c);color:#fff;cursor:pointer;flex:none;animation:bgPulse 2s ease-in-out infinite}"+
 ".bg-comp.bg-brown{--c:#7b3f12;--cg:rgba(201,138,75,.9);--c1:#f6dcc0;--c2:#c98a4b;padding:2px}"+
 ".bg-comp.bg-orange{--c:#ff7a00;--cg:rgba(255,138,0,.85);--c1:#ffe6c4;--c2:#ffa94d;padding:2px}"+
-".bg-comp .bg-coin{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff,var(--c1) 50%,var(--c2));color:var(--c);font:900 12px/1 var(--bg-font);text-shadow:0 0 3px rgba(255,255,255,.9);animation:bgSpin 3s ease-in-out infinite,bgGlow 1.6s ease-out infinite}"+
+".bg-comp .bg-coin{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff,var(--c1) 50%,var(--c2));color:var(--c);font:900 12px/1 var(--bg-font);text-shadow:0 0 3px rgba(255,255,255,.9);animation:none}"+
 ".bg-comp .bg-txt{font:800 9.5px/1.05 var(--bg-font);text-align:left;letter-spacing:.2px}"+
 "@media(max-width:480px){.bg-comp .bg-txt{display:none}.bg-comp{padding:2px}}"+
 /* Bengu em 3D */
@@ -1097,6 +1097,7 @@ function chg(tb,id,field,again){var i=h("input",{type:"file",accept:"image/*"});
 function maybeUp(p,kind){return p.get()?upload(p.get(),kind):Promise.resolve(null)}
 /* ecrãs */
 var FIL="todos",curT=null,curOwn=false;
+window.bgTourCreate=function(){open("futebol");create()};
 function open(s){if(s&&SP[s])FIL=s;ov.style.display="block";bar.replaceChildren(btn("✕",function(){curT=null;ov.style.display="none"}),btn("Torneios",list),btn("Criar torneio",create));list();
  if(tok())api("rpc/is_admin","POST",{}).then(function(a){if(a===true)bar.append(btn("🔒 Admin",adminAcc),btn("💲 Fees",adminFees),btn("🌍 Localização",function(){window.bgGeoAdmin&&window.bgGeoAdmin()}))}).catch(function(){})}
 function adminAcc(){curT=null;box.replaceChildren(HD("🔒 Conta M-Pesa de recebimento"),h("p",{style:DIM},"Só o administrador vê esta informação."),h("p",{},"A carregar…"));
@@ -1285,15 +1286,17 @@ function bgEng(kind,n,o){o=o||{};var id=String(n.id),st={likes:0,comments:0,like
  return bar}
 function nm(id){return api("profiles?select=name&id=eq."+id).then(function(r){return r[0]?r[0].name:"Utilizador"}).catch(function(){return"Utilizador"})}
 /* pedir e esperar autorização antes de abrir uma conversa */
+window.bgDurLbl=function(m){var L={1:"por 1 mês",6:"por 6 meses",12:"por 1 ano",24:"por 2 anos",60:"por 5 anos",0:"por tempo indeterminado"};return L[m]||""};
+window.bgChooseDur=function(cb){var o=document.createElement("div");o.style.cssText="position:fixed;inset:0;z-index:100070;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center";var c=document.createElement("div");c.style.cssText="background:#fff;color:#12183A;width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:18px;box-sizing:border-box;font:15px/1.4 system-ui,sans-serif";var t=document.createElement("b");t.textContent="Por quanto tempo quer conversar?";t.style.cssText="display:block;font-size:17px;margin-bottom:12px";c.append(t);[["1 mês",1],["6 meses",6],["1 ano",12],["2 anos",24],["5 anos",60],["Tempo indeterminado",0]].forEach(function(x){var b=document.createElement("button");b.type="button";b.textContent=x[0];b.style.cssText="display:block;width:100%;margin:6px 0;padding:12px;border:0;border-radius:12px;background:#eef0f6;color:#12183A;font-weight:700;font-size:15px";b.onclick=function(){o.remove();cb(x[1])};c.append(b)});var k=document.createElement("button");k.type="button";k.textContent="Cancelar";k.style.cssText="display:block;width:100%;margin-top:8px;padding:10px;border:0;background:none;color:#666";k.onclick=function(){o.remove()};c.append(k);o.onclick=function(e){if(e.target===o)o.remove()};o.append(c);document.body.append(o)};
 var bgGate0=function(id,go){var me=uid();if(!me){toast("Inicie sessão.");return}
  if(window.__bgAdm===true)return go();
  api("chat_requests?select=*&or=(and(requester_id.eq."+me+",target_id.eq."+id+"),and(requester_id.eq."+id+",target_id.eq."+me+"))").then(function(r){var q=r[0];
   if(q&&q.status=="accepted")return nm(id).then(function(n){if(/^\s*(bengu|novas da bengu|bengu news|news bengu)\s*$/i.test(n||"")&&window.__bgAdm!==true)return toast(BG_L("This official account does not accept chats.","Esta conta oficial não aceita conversas."));go()});
   nm(id).then(function(n){
    if(/^\s*(bengu|novas da bengu|bengu news|news bengu)\s*$/i.test(n||"")&&window.__bgAdm!==true)return toast(BG_L("This official account does not accept chat requests.","Esta conta oficial não aceita pedidos de conversa."));
-   if(!q){if(confirm("Pedir autorização a "+n+" para conversar?"))api("chat_requests","POST",{requester_id:me,target_id:id}).then(function(){toast("Pedido enviado. Aguarde a autorização de "+n+".")}).catch(function(e){toast(e.message)});return}
+   if(!q){bgChooseDur(function(m){api("chat_requests","POST",{requester_id:me,target_id:id,duration_months:m}).then(function(){toast("Pedido enviado ("+bgDurLbl(m)+"). Aguarde a autorização de "+n+".")}).catch(function(e){toast(e.message)})});return}
    if(q.status=="pending"&&q.requester_id==me)return toast("A aguardar a autorização de "+n+".");
-   if(q.status=="pending"){if(confirm(n+" quer conversar consigo. Aceitar?"))api("chat_requests?id=eq."+q.id,"PATCH",{status:"accepted"}).then(go);return}
+   if(q.status=="pending"){if(confirm(n+" quer conversar consigo "+(bgDurLbl(q.duration_months)||"")+". Aceitar?"))api("chat_requests?id=eq."+q.id,"PATCH",{status:"accepted"}).then(go);return}
    toast("O pedido de conversa foi recusado.")})}).catch(function(e){toast(e.message)})};
 /* conta oficial Bengu: abre sempre (só leitura, sem pedido de autorização) */
 window.bgOffRe=/^\s*(bengu|novas da bengu|bengu news|news bengu)\s*$/i;
@@ -1869,6 +1872,7 @@ window.bengu_news_open=function(){var b=sheet(BG_L("📰 News","📰 Notícias")
  function subBar(){var w=h("div",{style:"margin:0 0 10px"}),r1=h("div",{style:"display:flex;gap:6px;overflow-x:auto;padding-bottom:6px"});
   [[BG_L("📰 News","📰 Notícias"),0],["📅 Jogos a realizar",1],["✅ Jogos realizados",2]].forEach(function(x){var on=sub==x[1],bt=h("button",{style:"flex:none;padding:7px 13px;border:2px solid #1E88E5;border-radius:999px;font-weight:800;font-size:13px;background:"+(on?"#1E88E5":"#fff")+";color:"+(on?"#fff":"#1E88E5")},x[0]);bt.addEventListener("click",function(){sub=x[1];show(cur)});r1.append(bt)});w.append(r1);
   if(sub>0){var r2=h("div",{style:"display:flex;gap:6px;overflow-x:auto"});[["Soccer","⚽ Football"],["Basketball","🏀 Basketball"],["Handball","🤾 Handball"],["Volleyball","🏐 Volleyball"]].forEach(function(x){var on=spt==x[0],bt=h("button",{style:"flex:none;padding:5px 11px;border:1px solid #12183A;border-radius:999px;font-size:13px;background:"+(on?"#12183A":"#fff")+";color:"+(on?"#fff":"#12183A")},x[1]);bt.addEventListener("click",function(){spt=x[0];show(cur)});r2.append(bt)});w.append(r2);var ab=h("button",{style:"width:100%;margin-top:8px;padding:10px;border:0;border-radius:12px;background:#43A047;color:#fff;font-weight:800;font-size:15px"},sub==1?"➕ Adicionar jogo a realizar":"➕ Adicionar jogo realizado");ab.addEventListener("click",function(){addGame(sub,function(){show(cur)})});w.append(ab);if(admin)w.append(h("div",{style:"font-size:12px;opacity:.65;margin:4px 0 0"},(BG_GATE.on()?"Moçambique: publicação gratuita · outros países: taxa de 3 USD por jogo.":"")))}
+  var tb=h("button",{style:"width:100%;margin:0 0 10px;padding:10px;border:0;border-radius:12px;background:#FFB020;color:#12183A;font-weight:800;font-size:15px"},"🏆 Organizar torneio");tb.addEventListener("click",function(){window.bgTourCreate&&window.bgTourCreate()});w.append(tb);
   return w}
  function sbGames(up){var now=Date.now(),a=new Date(now-(up?72e5:4*864e5)).toISOString(),z=new Date(now+(up?5*864e5:0)).toISOString();
   return api("sports_fixtures?select=ext_id,league,country,home,away,home_score,away_score,status,kickoff&sport=eq.football&kickoff=gte."+a+"&kickoff=lte."+z+"&order=kickoff."+(up?"asc":"desc")+"&limit=400").then(function(r){
@@ -3836,10 +3840,11 @@ setTimeout(run,20000);setInterval(run,60000);
 })();
 </script>
 <script>/* BENGU 4.24: rodapés animados (Bengu Notícias, eventos, inscrições) movem-se em qualquer telemóvel, mesmo com "reduzir animações" ativo */
-(function(){var SEL=[[".bgn-mast span",14000],[".bg-ev .bg-ev-track",9000],[".bg-insc .bg-insc-track",11000]];
+(function(){var SEL=[[".bg-ev .bg-ev-track",9000],[".bg-insc .bg-insc-track",11000]];
 function fix(){SEL.forEach(function(p){[].forEach.call(document.querySelectorAll(p[0]),function(el){if(el.__bgA||!el.animate)return;var run=false;try{run=el.getAnimations&&el.getAnimations().some(function(a){return a.playState==="running"})}catch(e){}
  if(!run){el.style.animation="none";try{el.__bgA=el.animate([{transform:"translateX(0)"},{transform:"translateX(-100%)"}],{duration:p[1],iterations:Infinity,easing:"linear"})}catch(e){}}else el.__bgA=1})})}
 setInterval(fix,1200);setTimeout(fix,400)})();
+(function(){var st=document.createElement("style");st.textContent=".bgn-mast span{animation:none!important;transform:none!important}";document.head.appendChild(st)})();
 </script>
 <script>/* BENGU 4.29: corretor ortográfico com IA, só para o administrador. Requer a função "bengu-corrigir" (ver bengu-corretor-ortografico.ts) */
 (function(){

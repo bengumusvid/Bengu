@@ -18602,69 +18602,101 @@ function lockBox(box,txt){box.append(el("div","padding:14px;border-radius:12px;b
 function shrink(file,max){return new Promise(function(res,rej){var im=new Image(),url=URL.createObjectURL(file);
  im.onload=function(){URL.revokeObjectURL(url);var r=Math.min(1,max/Math.max(im.naturalWidth,im.naturalHeight)),c=document.createElement("canvas");c.width=Math.round(im.naturalWidth*r);c.height=Math.round(im.naturalHeight*r);c.getContext("2d").drawImage(im,0,0,c.width,c.height);c.toBlob(function(b){b?res(b):rej(new Error("img"))},"image/jpeg",.85)};
  im.onerror=function(){URL.revokeObjectURL(url);rej(new Error("img"))};im.src=url})}
-function upDoc(blob){var path=me()+"/"+Date.now()+".jpg";
+function upDoc(blob){var path=me()+"/"+Date.now()+Math.random().toString(36).slice(2,7)+".jpg";
  return fetch(U+"/storage/v1/object/verification-docs/"+path,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"image/jpeg","x-upsert":"false"},body:blob}).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(t)});return path})}
 function delDoc(path){if(!path)return Promise.resolve();return fetch(U+"/storage/v1/object/verification-docs/"+path,{method:"DELETE",headers:hd()}).catch(function(){})}
 
 /* Pedir verificação (utilizador) */
+function ddays(t){return Math.ceil((Date.parse(t)-Date.now())/864e5)}
+function planPick(box,onPick){var PL=[{k:"Mensal",c:"monthly",l:"Mensal · 6,75 US$ por mês",v:6.75},{k:"Anual",c:"yearly",l:"Anual · 60 US$ por ano",v:60}],st={plan:PL[0]},pw=el("div","display:flex;flex-direction:column;gap:6px;margin:6px 0"),bs=[];
+ function pp(){bs.forEach(function(x,i){x.style.background=PL[i]===st.plan?"#FFB020":"#2a2f66";x.style.color=PL[i]===st.plan?"#12183A":"#fff"});onPick(st.plan)}
+ PL.forEach(function(p){var x=el("button",CHOICE,p.l);x.onclick=function(){st.plan=p;pp()};bs.push(x);pw.append(x)});box.append(pw);pp();return st}
+function payBtn(box,st){var pay=el("button",BTN+";margin-top:10px;background:#2a2f66;color:#fff");function t(){pay.textContent="💳 Pagar "+st.plan.v.toLocaleString("pt-PT",{minimumFractionDigits:2})+" US$ ao administrador (carteira móvel ou banco)"}t();
+ pay.onclick=function(){if(window.bgWalletDeposit)window.bgWalletDeposit(null,"Selo "+st.plan.k.toLowerCase(),st.plan.v)};box.append(pay);return t}
 function viewVerify(b){
- b.append(el("h3","margin:4px 0","✅ Pedir verificação"),el("p","font-size:12px;opacity:.75;margin:0 0 10px","O selo verde ✓ mostra que a conta é mesmo tua. Envia o teu nome, o motivo e uma foto de um documento de identificação. Só o administrador vê o documento, e ele é apagado assim que o pedido for decidido."));
+ b.append(el("h3","margin:4px 0","✅ Selo de verificação"),el("p","font-size:12px;opacity:.75;margin:0 0 10px","O selo verde ✓ mostra que a conta é mesmo tua. Custa 6,75 US$ por mês ou 60 US$ por ano. Envias o documento (frente e verso) e uma selfie; só o administrador os vê e são apagados assim que o pedido for decidido."));
  var box=el("div");b.append(box);
  if(offNow()){box.append(el("p","opacity:.85","Precisas de internet para enviar o pedido."));return}
  box.append(el("p","opacity:.7","A carregar…"));
- Promise.all([rest("bengu_user_badges?select=verified&user_id=eq."+me()).catch(function(){return[]}),rest("bengu_badge_requests?select=id,status,admin_note,created_at&user_id=eq."+me()+"&order=created_at.desc&limit=3").catch(function(){return null})]).then(function(r){
+ Promise.all([rest("bengu_user_badges?select=verified,verified_until&user_id=eq."+me()).catch(function(){return[]}),rest("bengu_badge_requests?select=id,status,admin_note,created_at,kind&user_id=eq."+me()+"&order=created_at.desc&limit=3").catch(function(){return null})]).then(function(r){
   var st=r[0]&&r[0][0]||{},reqs=r[1];box.replaceChildren();
-  if(st.verified){box.append(el("div","padding:12px;border-radius:12px;background:#1b1f48;font-size:14px","✅ A tua conta já tem o selo verificado."));return}
   if(reqs===null){box.append(el("p","opacity:.85","Ainda não está ativo."));return}
-  var pend=reqs.filter(function(x){return x.status==="pending"})[0];
+  var pend=reqs.filter(function(x){return x.status==="pending"})[0],last=reqs[0];
+  if(st.verified){var d=st.verified_until?ddays(st.verified_until):null;
+   box.append(el("div","padding:12px;border-radius:12px;background:#1b1f48;font-size:14px;line-height:1.5","✅ A tua conta tem o selo verificado."+(st.verified_until?"\nVálido até "+fdate(st.verified_until)+" ("+(d>0?"faltam "+d+" dia"+(d===1?"":"s"):"expira hoje")+").":"")));box.firstChild.style.whiteSpace="pre-wrap";
+   if(d!==null&&d<=7)box.append(el("div","padding:10px;border-radius:12px;background:#4a3a10;color:#FFD98A;font-size:13px;margin-top:8px","⚠️ O selo está a acabar. Renova para não o perder."));
+   if(pend){box.append(el("div","padding:12px;border-radius:12px;background:#1b1f48;font-size:14px;margin-top:8px","⏳ Renovação enviada "+ago(pend.created_at)+". O administrador confirma o pagamento."));return}
+   renewForm(box,b);return}
   if(pend){box.append(el("div","padding:12px;border-radius:12px;background:#1b1f48;font-size:14px;line-height:1.5","⏳ Pedido enviado "+ago(pend.created_at)+". Está em análise; a resposta aparece aqui."));return}
-  var last=reqs[0];
   if(last&&last.status==="rejected")box.append(el("div","padding:12px;border-radius:12px;background:#3A1620;color:#FFB4B4;font-size:14px;line-height:1.5;margin-bottom:10px","❌ O último pedido foi recusado"+(last.admin_note?": "+last.admin_note:".")+" Podes enviar outro."));
   verifyForm(box,b)})}
+function renewForm(box,b){
+ var lab=function(t){return el("div","font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;opacity:.6;margin:12px 0 5px",t)},rf=el("input",INP),go=el("button",BTN+";margin-top:12px","Enviar renovação"),sel;
+ rf.placeholder="Referência / ID da transação do pagamento";rf.maxLength=120;
+ box.append(lab("Renovar o selo"));sel=planPick(box,function(){});payBtn(box,sel);box.append(rf,go);
+ go.onclick=function(){var ref=rf.value.trim();if(ref.length<3){toast("Escreve a referência do pagamento");return}go.disabled=true;
+  rest("bengu_badge_requests","POST",{user_id:me(),full_name:"Renovação",reason:"Renovação do selo",doc_path:"-",kind:"renew",plan:sel.plan.c,price_usd:sel.plan.v,pay_reference:ref},{Prefer:"return=minimal"}).then(function(){toast("Renovação enviada ✅");b.replaceChildren();viewVerify(b)}).catch(function(e){go.disabled=false;toast(/23505|duplicate/i.test(String(e&&e.message))?"Já tens um pedido em análise":"Não foi possível enviar. Tenta de novo")})}}
 function verifyForm(box,b){
- var nm=el("input",INP),rs=el("textarea",INP),fi=el("input",INP),pv=el("img","display:none;max-width:100%;max-height:200px;border-radius:10px;margin-top:8px"),go=el("button",BTN+";margin-top:12px","Enviar pedido");
- var lab=function(t){return el("div","font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;opacity:.6;margin:12px 0 5px",t)};
- nm.placeholder="Nome completo (como no documento)";nm.maxLength=120;
- rs.placeholder="Porque deves ter o selo? (ex.: criador de conteúdos, marca, figura pública)";rs.maxLength=500;rs.rows=4;rs.style.resize="vertical";
- fi.type="file";fi.accept="image/*";
- fi.onchange=function(){var f=fi.files&&fi.files[0];if(!f){pv.style.display="none";return}pv.src=URL.createObjectURL(f);pv.style.display="block"};
- go.onclick=function(){var n=nm.value.trim(),why=rs.value.trim(),f=fi.files&&fi.files[0];
+ var lab=function(t){return el("div","font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;opacity:.6;margin:12px 0 5px",t)},
+  nm=el("input",INP),rs=el("textarea",INP),rf=el("input",INP),go=el("button",BTN+";margin-top:12px","Enviar pedido");
+ function pf(label,hint,cam){var i=el("input",INP),p=el("img","display:none;max-width:100%;max-height:170px;border-radius:10px;margin-top:8px");i.type="file";i.accept="image/*";if(cam)i.setAttribute("capture","user");
+  i.onchange=function(){var f=i.files&&i.files[0];if(!f){p.style.display="none";return}p.src=URL.createObjectURL(f);p.style.display="block"};
+  return{i:i,els:[lab(label),el("div","font-size:11.5px;opacity:.7;margin-bottom:4px",hint),i,p]}}
+ var fr=pf("Documento — frente","Bilhete de identidade, passaporte ou carta de condução. Tudo legível.",false),vs=pf("Documento — verso","Se for passaporte, envia a página dos dados outra vez ou a página seguinte.",false),sf=pf("Selfie agora","Tira uma selfie com o rosto bem visível, sem filtros, a segurar o documento.",true),sel;
+ nm.placeholder="Nome completo (exatamente como no documento)";nm.maxLength=120;
+ rs.placeholder="Porque deves ter o selo? (ex.: criador de conteúdos, marca, figura pública)";rs.maxLength=500;rs.rows=3;rs.style.resize="vertical";
+ rf.placeholder="Referência / ID da transação do pagamento";rf.maxLength=120;
+ box.append(lab("Plano do selo"));sel=planPick(box,function(){});payBtn(box,sel);
+ box.append(lab("Referência do pagamento"),rf,lab("Nome completo"),nm,lab("Motivo"),rs);fr.els.concat(vs.els,sf.els).forEach(function(x){box.append(x)});
+ box.append(go,el("div","font-size:11px;opacity:.7;margin-top:10px","Paga o plano escolhido diretamente à carteira Bengu do administrador, escreve a referência e envia o pedido. Cada documento só pode verificar uma conta."));
+ go.onclick=function(){var n=nm.value.trim(),why=rs.value.trim(),ref=rf.value.trim(),f1=fr.i.files[0],f2=vs.i.files[0],f3=sf.i.files[0];
+  if(ref.length<3){toast("Escreve a referência do pagamento");return}
   if(n.length<3){toast("Escreve o teu nome completo");return}
   if(why.length<10){toast("Explica o motivo (mínimo 10 letras)");return}
-  if(!f){toast("Escolhe a foto do documento");return}
-  go.disabled=true;go.textContent="A enviar…";var path=null;
-  shrink(f,1600).then(upDoc).then(function(p){path=p;return rest("bengu_badge_requests","POST",{user_id:me(),full_name:n,reason:why,doc_path:p},{Prefer:"return=minimal"})}).then(function(){toast("Pedido enviado ✅");b.replaceChildren();viewVerify(b)}).catch(function(e){
-   delDoc(path);go.disabled=false;go.textContent="Enviar pedido";
-   var m=String(e&&e.message||"");toast(/23505|duplicate/i.test(m)?"Já tens um pedido em análise":/bucket not found|does not exist|schema cache/i.test(m)?"Ainda não disponível. Tente mais tarde.":"Não foi possível enviar. Tenta de novo")})};
- var pay=el("button",BTN+";margin-top:10px;background:#2a2f66;color:#fff","💳 Pagar ao administrador (carteira móvel ou banco)");pay.onclick=function(){if(window.bgWalletDeposit)window.bgWalletDeposit(null,"Selo")};
- box.append(lab("Nome completo"),nm,lab("Motivo"),rs,lab("Foto do documento"),fi,pv,go,el("div","font-size:11px;opacity:.7;margin-top:12px","Se o selo exigir pagamento, paga diretamente à carteira Bengu do administrador e envia o comprovativo:"),pay)}
+  if(!f1||!f2||!f3){toast("Envia a frente, o verso e a selfie");return}
+  go.disabled=true;go.textContent="A enviar…";var paths=[];
+  function up(f){return shrink(f,1600).then(upDoc).then(function(p){paths.push(p);return p})}
+  up(f1).then(function(p1){return up(f2).then(function(p2){return up(f3).then(function(p3){
+   return rest("bengu_badge_requests","POST",{user_id:me(),full_name:n,reason:why+"\n[Plano: "+sel.plan.l+"]",doc_path:p1,doc_back_path:p2,selfie_path:p3,kind:"new",plan:sel.plan.c,price_usd:sel.plan.v,pay_reference:ref},{Prefer:"return=minimal"})})})}).then(function(){toast("Pedido enviado ✅");b.replaceChildren();viewVerify(b)}).catch(function(e){
+   paths.forEach(delDoc);go.disabled=false;go.textContent="Enviar pedido";
+   var m=String(e&&e.message||"");toast(/23505|duplicate/i.test(m)?"Já tens um pedido em análise":/muitos|recus|conta nova|3 dias/i.test(m)?m:/bucket not found|does not exist|schema cache|column/i.test(m)?"Ainda não disponível. Tente mais tarde.":"Não foi possível enviar. Tenta de novo")})}}
 
 /* Pedidos de verificação (administrador, dentro da aba Selos) */
-function showDoc(path){
- fetch(U+"/storage/v1/object/sign/verification-docs/"+path,{method:"POST",headers:hd(),body:JSON.stringify({expiresIn:300})}).then(function(r){return r.ok?r.json():Promise.reject(new Error("x"))}).then(function(j){
-  var o=el("div","position:fixed;inset:0;z-index:100040;background:rgba(0,0,0,.93);display:flex;align-items:center;justify-content:center;padding:12px"),im=el("img","max-width:100%;max-height:100%;border-radius:8px");
-  im.src=U+"/storage/v1"+j.signedURL;o.onclick=function(){o.remove()};o.append(im);document.body.append(o)}).catch(function(){toast("Não foi possível abrir o documento")})}
+function signed(path){return fetch(U+"/storage/v1/object/sign/verification-docs/"+path,{method:"POST",headers:hd(),body:JSON.stringify({expiresIn:300})}).then(function(r){return r.ok?r.json():Promise.reject(new Error("x"))}).then(function(j){return U+"/storage/v1"+j.signedURL})}
+function showDoc(path){signed(path).then(function(u){var o=el("div","position:fixed;inset:0;z-index:100040;background:rgba(0,0,0,.93);display:flex;align-items:center;justify-content:center;padding:12px"),im=el("img","max-width:100%;max-height:100%;border-radius:8px");im.src=u;o.onclick=function(){o.remove()};o.append(im);document.body.append(o)}).catch(function(){toast("Não foi possível abrir o documento")})}
+function compareDocs(r){var L=[["Frente",r.doc_path],["Verso",r.doc_back_path],["Selfie",r.selfie_path]].filter(function(x){return x[1]&&x[1]!=="-"});
+ if(!L.length){toast("Sem documentos");return}
+ var o=el("div","position:fixed;inset:0;z-index:100040;background:rgba(0,0,0,.95);overflow:auto;padding:12px;color:#fff;font:14px system-ui,sans-serif"),g=el("div","display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px"),x=el("button",BTN+";background:#B71C1C;color:#fff;position:sticky;top:0;margin-bottom:8px","✕ Fechar");x.onclick=function(){o.remove()};
+ o.append(x,el("div","font-weight:800;margin-bottom:8px","Confirma: o rosto da selfie é o do documento, frente e verso coincidem e o nome é "+(r.full_name||"")),g);document.body.append(o);
+ L.forEach(function(it){var c=el("div","background:#1b1f48;border-radius:10px;padding:6px"),im=el("img","width:100%;border-radius:8px");c.append(el("div","font-weight:800;margin:2px 4px 6px",it[0]),im);g.append(c);signed(it[1]).then(function(u){im.src=u}).catch(function(){c.append(el("div","color:#ff9b9b","Não foi possível abrir"))})})}
+function approveDialog(r,go){var o=el("div","position:fixed;inset:0;z-index:100045;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:14px"),bx=el("div","background:#14163a;color:#fff;border-radius:16px;padding:16px;max-width:420px;width:100%;border:2px solid #2E9E4F;font:14px/1.45 system-ui,sans-serif"),ck=[],okb=el("button",BTN+";background:#2E9E4F;color:#fff;margin-top:12px;width:100%","✓ Confirmar e ativar o selo"),no=el("button","border:0;background:none;color:#8b93c9;width:100%;margin-top:6px;font-size:13px","Cancelar"),num=el("input",INP);
+ bx.append(el("div","font-weight:900;font-size:17px;color:#2E9E4F;margin-bottom:8px","Verificação de identidade"));
+ ["A frente e o verso do documento coincidem e não estão adulterados","O rosto da selfie é o mesmo do documento","O nome no documento é igual ao do pedido: "+(r.full_name||"")+" (e igual ao nome da conta)","O pagamento de "+(r.price_usd||"?")+" US$ foi recebido (ref. "+(r.pay_reference||"—")+")"].forEach(function(t){var l=el("label","display:flex;gap:8px;align-items:flex-start;margin:6px 0"),c=el("input");c.type="checkbox";c.onchange=chk;ck.push(c);l.append(c,el("span","",t));bx.append(l)});
+ num.placeholder="Número do documento (para impedir 2 contas com o mesmo)";num.maxLength=40;bx.append(num,okb,no);o.append(bx);document.body.append(o);
+ function chk(){okb.disabled=!(ck.every(function(c){return c.checked})&&num.value.replace(/[^A-Za-z0-9]/g,"").length>=5);okb.style.opacity=okb.disabled?.5:1}num.oninput=chk;chk();
+ no.onclick=function(){o.remove()};okb.onclick=function(){o.remove();go(num.value.trim())}}
 function viewRequests(box,after){
  box.replaceChildren(el("h3","margin:4px 0","📝 Pedidos de verificação"));
  var lst=el("div");box.append(lst);lst.append(el("p","opacity:.7;margin:0","A carregar…"));
- rest("bengu_badge_requests?select=id,user_id,full_name,reason,doc_path,created_at&status=eq.pending&order=created_at.asc&limit=50").then(function(rows){
+ rest("bengu_badge_requests?select=id,user_id,full_name,reason,doc_path,doc_back_path,selfie_path,kind,plan,price_usd,pay_reference,created_at&status=eq.pending&order=created_at.asc&limit=50").then(function(rows){
   rows=rows||[];if(!rows.length){lst.replaceChildren(el("p","opacity:.7;margin:0 0 6px","Sem pedidos por decidir."));return}
   return rest("profiles?select=id,name,avatar_url&id=in.("+rows.map(function(r){return r.user_id}).join(",")+")").catch(function(){return[]}).then(function(ps){
    var pf={};(ps||[]).forEach(function(x){pf[x.id]=x});lst.replaceChildren();
    rows.forEach(function(r){
-    var P0=pf[r.user_id]||{id:r.user_id,name:"Utilizador"},card=el("div","background:#1b1f48;border-radius:14px;padding:12px;margin:6px 0"),top=el("div","display:flex;align-items:center;gap:10px"),mid=el("div","flex:1;min-width:0");
-    mid.append(el("div","font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap",r.full_name),el("div","font-size:11.5px;opacity:.7","Conta: "+(P0.name||"Utilizador")+" · "+ago(r.created_at)));
+    var ren=r.kind==="renew",P0=pf[r.user_id]||{id:r.user_id,name:"Utilizador"},card=el("div","background:#1b1f48;border-radius:14px;padding:12px;margin:6px 0"),top=el("div","display:flex;align-items:center;gap:10px"),mid=el("div","flex:1;min-width:0");
+    mid.append(el("div","font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap",ren?"🔁 Renovação · "+(P0.name||"Utilizador"):r.full_name),el("div","font-size:11.5px;opacity:.7","Conta: "+(P0.name||"Utilizador")+" · "+ago(r.created_at)));
     top.append(avatarEl(P0,44),mid);
-    var why=el("div","font-size:13.5px;line-height:1.45;margin:10px 0;white-space:pre-wrap;word-break:break-word",r.reason),row=el("div","display:flex;gap:8px;flex-wrap:wrap"),
-     bd=el("button",BTN+";background:#2a2f66;color:#fff","📄 Ver documento"),ba=el("button",BTN+";background:#2E9E4F;color:#fff","✓ Aprovar"),br=el("button",BTN+";background:#B71C1C;color:#fff","✕ Recusar");
-    bd.onclick=function(){if(r.doc_path)showDoc(r.doc_path);else toast("Sem documento")};
-    function decide(ok,note){ba.disabled=br.disabled=true;
-     var p=ok?rest("rpc/bengu_admin_set_access","POST",{p_user:r.user_id,p_premium_until:null,p_verified:true,p_ai_until:null}).catch(function(){}).then(function(){return rest("rpc/bengu_admin_set_badge","POST",{p_user:r.user_id,p_verified:true,p_premium_until:null,p_clear_premium:false})}):Promise.resolve();
-     p.then(function(){return rest("rpc/bengu_badge_request_decide","POST",{p_id:r.id,p_approve:ok,p_note:note||null})}).then(function(){delDoc(r.doc_path);if(ok&&window.bgBadgeRefresh)window.bgBadgeRefresh(true);toast(ok?"Selo atribuído ✓":"Pedido recusado");card.remove();if(!lst.children.length)lst.append(el("p","opacity:.7;margin:0 0 6px","Sem pedidos por decidir."));if(after)after()}).catch(function(){ba.disabled=br.disabled=false;toast("Não foi possível decidir")})}
-    ba.onclick=function(){decide(true)};
-    br.onclick=function(){var n=prompt("Motivo da recusa (opcional, a pessoa vai ver):");if(n===null)return;decide(false,n)};
-    row.append(bd,ba,br);card.append(top,why,row);lst.append(card)})})
- }).catch(function(){lst.replaceChildren(el("p","opacity:.85;margin:0","Não foi possível carregar os pedidos. Já executou o SQL 4.56?"))})}
+    var pay=el("div","font-size:12.5px;margin:8px 0;padding:6px 8px;border-radius:8px;background:#0f1233","💳 "+(r.plan==="yearly"?"Anual":"Mensal")+" · "+(r.price_usd||"?")+" US$ · Ref.: "+(r.pay_reference||"—")),
+     why=el("div","font-size:13.5px;line-height:1.45;margin:6px 0 10px;white-space:pre-wrap;word-break:break-word",ren?"":r.reason),row=el("div","display:flex;gap:8px;flex-wrap:wrap"),
+     bd=el("button",BTN+";background:#2a2f66;color:#fff","🔍 Comparar frente, verso e selfie"),ba=el("button",BTN+";background:#2E9E4F;color:#fff","✓ Aprovar"),br=el("button",BTN+";background:#B71C1C;color:#fff","✕ Recusar");
+    bd.onclick=function(){compareDocs(r)};
+    function fin(msg){[r.doc_path,r.doc_back_path,r.selfie_path].forEach(function(p){if(p&&p!=="-")delDoc(p)});if(window.bgBadgeRefresh)window.bgBadgeRefresh(true);toast(msg);card.remove();if(!lst.children.length)lst.append(el("p","opacity:.7;margin:0 0 6px","Sem pedidos por decidir."));if(after)after()}
+    function fail(e){ba.disabled=br.disabled=false;var m=String(e&&e.message||"");toast(/already_used|já foi usado/i.test(m)?"Este documento já verifica outra conta":/function|schema cache|does not exist/i.test(m)?"Falta executar o verificacao_selo.sql":"Não foi possível decidir")}
+    ba.onclick=function(){if(ren){if(!confirm("Confirma que recebeste o pagamento da renovação ("+(r.price_usd||"?")+" US$)?"))return;ba.disabled=br.disabled=true;rest("rpc/bengu_verification_approve","POST",{p_id:String(r.id),p_doc_number:null}).then(function(){fin("Selo renovado ✓")}).catch(fail)}
+     else approveDialog(r,function(num){ba.disabled=br.disabled=true;rest("rpc/bengu_verification_approve","POST",{p_id:String(r.id),p_doc_number:num}).then(function(){fin("Selo atribuído ✓")}).catch(fail)})};
+    br.onclick=function(){var n=prompt("Motivo da recusa (opcional, a pessoa vai ver):");if(n===null)return;ba.disabled=br.disabled=true;rest("rpc/bengu_badge_request_decide","POST",{p_id:r.id,p_approve:false,p_note:n||null}).then(function(){fin("Pedido recusado")}).catch(fail)};
+    row.append(bd,ba,br);card.append(top,pay,why,row);lst.append(card)})})
+ }).catch(function(){lst.replaceChildren(el("p","opacity:.85;margin:0","Não foi possível carregar os pedidos. Já executou o verificacao_selo.sql?"))})}
 
 /* Quem viu o meu perfil (verificadas e Premium) */
 function viewVisitors(b){
@@ -18684,6 +18716,12 @@ function viewVisitors(b){
   if(/plus_only/.test(m))lockBox(box,"🔒 Ver quem visitou o teu perfil é só para contas verificadas e Premium.");
   else if(sqlMiss(m))box.append(el("p","opacity:.85","Ainda não está ativo."));
   else box.append(el("p","opacity:.85","Não foi possível carregar as visitas."))})}
+function badgeWatch(){if(!tok()||!me()||offNow())return;
+ rest("rpc/bengu_verification_expire","POST",{}).catch(function(){}).then(function(){return rest("bengu_user_badges?select=verified,verified_until&user_id=eq."+me())}).then(function(r){var st=r&&r[0];if(!st)return;
+  if(st.verified&&st.verified_until){var d=ddays(st.verified_until);if(d<=7){var k="bg_vrem_"+new Date().toDateString(),seen=false;try{seen=!!localStorage.getItem(k)}catch(e){}
+   if(!seen){try{localStorage.setItem(k,"1")}catch(e){}toast(d>0?"⚠️ O teu selo ✓ expira em "+d+" dia"+(d===1?"":"s")+". Renova em Selo de verificação.":"⚠️ O teu selo ✓ expira hoje. Renova já.")}}}
+  else if(!st.verified&&window.bgBadgeRefresh)window.bgBadgeRefresh(true)}).catch(function(){})}
+setTimeout(badgeWatch,6000);setInterval(badgeWatch,6*36e5);
 var pvSeen={};
 window.bgProfileView=function(id){if(!id||typeof id!=="string"||id===me()||!tok()||offNow())return;var t=Date.now();if(pvSeen[id]&&t-pvSeen[id]<18e5)return;pvSeen[id]=t;rest("rpc/bengu_profile_view","POST",{p_profile:id}).catch(function(){})};
 
@@ -19251,7 +19289,7 @@ function usd(n){return Number(n||0).toLocaleString("pt-PT",{minimumFractionDigit
 function get(p){return fetch(U+"/rest/v1/"+p,{headers:hd()}).then(function(r){if(!r.ok)throw new Error("x");return r.json()})}
 function rpc(n,a){return fetch(U+"/rest/v1/rpc/"+n,{method:"POST",headers:hd(),body:JSON.stringify(a||{})}).then(function(r){return r.text().then(function(t){var j=null;try{j=t?JSON.parse(t):null}catch(e){}if(!r.ok)throw new Error((j&&j.message)||("Erro "+r.status));return j})})}
 if(!document.getElementById("bgw-css")){var st=el("style");st.id="bgw-css";st.textContent="@keyframes bgwpulse{0%,100%{box-shadow:0 0 0 0 rgba(47,191,113,.7)}50%{box-shadow:0 0 0 10px rgba(47,191,113,0)}}";document.head.append(st)}
-window.bgWalletDeposit=function(done,purpose){
+window.bgWalletDeposit=function(done,purpose,prefill){
  if(!tok()){alert("Inicie sessão.");return}
  var ov=el("div","position:fixed;inset:0;z-index:100030;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center"),
   box=el("div","background:#14163a;color:#fff;width:100%;max-width:480px;max-height:90vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom,0px));box-sizing:border-box;border-top:3px solid #E8B424;font:15px/1.4 system-ui,sans-serif"),
@@ -19272,7 +19310,7 @@ window.bgWalletDeposit=function(done,purpose){
    wrap.append(b)});
   var am=el("input",IN),cu=el("select",IN),rf=el("input",IN),py=el("input",IN),go=el("button","width:100%;border:0;border-radius:10px;padding:12px;font-weight:900;background:linear-gradient(135deg,#FFD84D,#E8B424 55%,#C98A0C);color:#12183A;margin-top:8px","Enviar comprovativo de pagamento"),mg=el("div","font-size:12px;margin-top:6px");
   am.type="number";am.step="0.01";am.placeholder="Valor pago";["USD","MZN","EUR"].forEach(function(c){var op=el("option","",c);op.value=c;cu.append(op)});
-  rf.placeholder="Referência / ID da transação *";py.placeholder="Nome do titular da conta que pagou (opcional)";
+  if(prefill>0){am.value=String(prefill);cu.value="USD"}rf.placeholder="Referência / ID da transação *";py.placeholder="Nome do titular da conta que pagou (opcional)";
   go.onclick=function(){var v=Number(am.value);if(!sel)return say("Escolha a forma de pagamento.");if(!(v>0))return say("Indique o valor pago.");if(rf.value.trim().length<3)return say("Indique a referência da transação.");
    go.disabled=true;rpc("bengu_wallet_deposit_request",{p_method_name:sel.name,p_method_kind:sel.kind,p_amount:v,p_currency:cu.value,p_reference:(purpose?"["+purpose+"] ":"")+rf.value.trim(),p_payer:py.value.trim()||null}).then(function(){mg.style.color="#2fbf71";mg.textContent="Comprovativo enviado. O administrador vai confirmar o pagamento.";setTimeout(function(){ov.remove();done&&done()},1200)}).catch(function(e){go.disabled=false;say(e.message)})};
   function say(t){mg.style.color="#ff9b9b";mg.textContent=t}
@@ -19324,7 +19362,7 @@ window.bgWalletCard=function(o){
      if(admin){row.append(el("div","font-size:11.5px;opacity:.75",(r.payer?"Titular: "+r.payer+" · ":"")+"Ref.: "+(r.reference||"—")+" · "+new Date(r.created_at).toLocaleString("pt-PT")));
       var bx=el("div","display:flex;gap:6px;margin-top:6px"),ok=el("button","flex:1;border:0;border-radius:8px;padding:8px;font-weight:800;background:#2fbf71;color:#fff","✔ Aprovar"),no=el("button","flex:1;border:0;border-radius:8px;padding:8px;font-weight:800;background:#B71C1C;color:#fff","✖ Rejeitar");
       ok.onclick=function(){var v=prompt("Valor recebido na carteira do administrador (US$):",cur==="USD"?String(amt):"");if(v===null)return;v=Number(String(v).replace(",","."));if(!(v>0)){alert("Valor inválido.");return}ok.disabled=no.disabled=true;
-       var pm=/^\[(\w+)\]/.exec(r.reference||""),src=pm&&/selo/i.test(pm[1])?"selo":"other";
+       var pm=/^\[([^\]]+)\]/.exec(r.reference||""),src=pm&&/selo/i.test(pm[1])?"selo":"other";
        fetch(U+"/rest/v1/bengu_wallet_deposits?id=eq."+encodeURIComponent(r.id),{method:"PATCH",headers:Object.assign(hd(),{Prefer:"return=minimal"}),body:JSON.stringify({status:"approved",credited_usd:v})}).then(function(x){if(!x.ok)throw new Error("Sem permissão para confirmar (wallet.sql).")}).then(function(){return rpc("bengu_wallet_credit",{p_user:null,p_source:src,p_amount:v,p_note:"Pagamento de "+(names[r.user_id]||"utilizador")+" · "+(r.method_name||"")})}).then(refresh).catch(function(e){ok.disabled=no.disabled=false;alert(e.message)})};
       no.onclick=function(){var n=prompt("Motivo (opcional):")||null;ok.disabled=no.disabled=true;rpc("bengu_wallet_deposit_review",{p_id:r.id,p_status:"rejected",p_credit_usd:null,p_note:n}).then(refresh).catch(function(e){ok.disabled=no.disabled=false;alert(e.message)})};
       bx.append(ok,no);row.append(bx)}

@@ -19001,7 +19001,7 @@ window.bgWalletCard=function(o){
  return card};
 })();
 </script>
-<script>/* BENGU: live de vídeo em direto (não é videoconferência). O anfitrião começa sozinho, sem título; qualquer utilizador da Bengu pode ver; os seguidores são avisados primeiro. WebRTC com sinalização pelo Realtime do Supabase. */
+<script>/* BENGU: live de vídeo em direto (não é videoconferência). O anfitrião começa sozinho, sem título; qualquer utilizador da Bengu pode ver, gostar e comentar; os seguidores são avisados primeiro. Ao terminar: Guardar ou Eliminar. WebRTC com sinalização pelo Realtime do Supabase. */
 (function(){
 var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",LS="sb-cnpkgauzhoyzlhtcexiv-auth-token";
 var ICE={iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"}]},MAXV=8,RED="#d62828";
@@ -19016,63 +19016,100 @@ function full(){var ov=el("div","position:fixed;inset:0;z-index:100090;backgroun
 function vidEl(){var v=el("video","flex:1;min-height:0;width:100%;object-fit:cover;background:#000");v.playsInline=true;v.setAttribute("playsinline","");v.autoplay=true;return v}
 function chan(name){return window.__sb.channel(name,{config:{broadcast:{self:false}}})}
 function send(ch,o){try{ch.send({type:"broadcast",event:"sig",payload:o})}catch(e){}}
+function fmt(ms){var s=Math.max(0,Math.floor(ms/1000)),h=Math.floor(s/3600),m=Math.floor(s%3600/60),r=s%60,p=function(n){return String(n).padStart(2,"0")};return(h?h+":":"")+p(m)+":"+p(r)}
+function cmBox(bottom){return el("div","position:absolute;left:12px;right:12px;bottom:"+bottom+";max-height:34%;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;pointer-events:none")}
+function addMsg(box,name,text){var d=el("div","align-self:flex-start;max-width:90%;background:rgba(0,0,0,.55);border-radius:12px;padding:4px 10px;font-size:14px;word-break:break-word");d.append(el("b","",String(name||"Utilizador").slice(0,30)+" "),document.createTextNode(String(text||"").slice(0,200)));box.append(d);while(box.children.length>8)box.removeChild(box.firstChild)}
+function heart(ov){try{var h=el("div","position:absolute;right:"+(14+Math.floor(Math.random()*40))+"px;bottom:96px;font-size:28px;pointer-events:none;z-index:5","❤️");ov.append(h);var a=h.animate([{transform:"translateY(0)",opacity:1},{transform:"translateY(-260px)",opacity:0}],{duration:1800,easing:"ease-out"});a.onfinish=function(){h.remove()}}catch(e){}}
+function pickMime(){var c=["video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4","video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"];for(var i=0;i<c.length;i++){try{if(window.MediaRecorder&&MediaRecorder.isTypeSupported(c[i]))return c[i]}catch(e){}}return""}
 /* ---- canal global: aviso de início aos seguidores ---- */
-var G=null,Gok=false,fol={},folT=0,pillT=0;
+var G=null,Gok=false,fol={},folT=0;
 function loadFol(){var u=me();if(!u||Date.now()-folT<300000)return;folT=Date.now();rest("follows?select=following_id&follower_id=eq."+encodeURIComponent(u)+"&limit=5000").then(function(r){var o={};(r||[]).forEach(function(x){o[x.following_id]=1});fol=o}).catch(function(){})}
 function glob(){if(G||!window.__sb||!tok())return G;G=chan("bglive-global");
  G.on("broadcast",{event:"sig"},function(m){var p=m&&m.payload||{};if(p.t==="start"){loadFol();if(p.host!==me()&&fol[p.host])toast(p);pill()}else if(p.t==="end")pill()}).subscribe(function(s){Gok=(s==="SUBSCRIBED")});return G}
-function toast(p){var d=el("button","position:fixed;left:10px;right:10px;top:calc(10px + env(safe-area-inset-top,0px));z-index:2147483000;border:0;border-radius:14px;padding:12px;background:"+RED+";color:#fff;font:800 14px system-ui,sans-serif;text-align:left","🔴 "+(p.name||"Alguém que segue")+" está em direto — toque para ver");d.onclick=function(){d.remove();watch({id:p.id,host_id:p.host,title:p.title},p.name)};document.body.append(d);setTimeout(function(){d.remove()},12000)}
+function toast(p){var d=el("button","position:fixed;left:10px;right:10px;top:calc(10px + env(safe-area-inset-top,0px));z-index:2147483000;border:0;border-radius:14px;padding:12px;background:"+RED+";color:#fff;font:800 14px system-ui,sans-serif;text-align:left","🔴 "+(p.name||"Alguém que segue")+" está em direto — toque para ver");d.onclick=function(){d.remove();watch({id:p.id,host_id:p.host,title:p.title,started_at:p.at},p.name)};document.body.append(d);setTimeout(function(){d.remove()},12000)}
 /* ---- anfitrião ---- */
 window.bgLiveStart=function(title){
  if(!tok()||!me()){alert("Inicie sessão.");return}
  if(!navigator.mediaDevices||!window.RTCPeerConnection||!window.__sb){alert("Este navegador não permite transmitir em direto.");return}
- var ov=full(),vid=vidEl(),top=el("div","position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;background:linear-gradient(#000a,#0000)"),
-  badge=el("div","font-weight:900;background:"+RED+";border-radius:8px;padding:4px 8px","🔴 AO VIVO"),cnt=el("div","flex:1;font-weight:700","A iniciar…"),end=el("button",BTN+"background:"+RED,"Terminar"),
-  bar=el("div","position:absolute;left:0;right:0;bottom:0;display:flex;gap:10px;justify-content:center;padding:12px 12px calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(#0000,#000a)"),
-  flip=el("button",BTN+"background:#2a2f66","🔄 Virar câmara"),mic=el("button",BTN+"background:#2a2f66","🎤 Microfone ligado"),msg=el("div","position:absolute;left:16px;right:16px;top:50%;text-align:center;font-weight:700");
- vid.muted=true;top.append(badge,cnt,end);bar.append(flip,mic);ov.style.position="fixed";ov.append(vid,top,bar,msg);
- var stream=null,id=null,beat=null,ch=null,peers={},facing="user",done=false,wl=null;
- function paint(){var n=0;for(var k in peers){if(peers[k].pc.connectionState==="connected")n++}cnt.textContent=n+(n===1?" espectador":" espectadores")}
+ var ov=full(),vid=vidEl(),top=el("div","position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;background:linear-gradient(#000a,#0000);z-index:3"),
+  badge=el("div","font-weight:900;background:"+RED+";border-radius:8px;padding:4px 8px;font-variant-numeric:tabular-nums;white-space:nowrap","🔴 AO VIVO · 00:00"),cnt=el("div","flex:1;font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis","A iniciar…"),end=el("button",BTN+"background:"+RED,"Terminar"),
+  bar=el("div","position:absolute;left:0;right:0;bottom:0;display:flex;gap:10px;justify-content:center;padding:12px 12px calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(#0000,#000a);z-index:3"),
+  flip=el("button",BTN+"background:#2a2f66","🔄 Virar câmara"),mic=el("button",BTN+"background:#2a2f66","🎤 Microfone ligado"),msg=el("div","position:absolute;left:16px;right:16px;top:50%;text-align:center;font-weight:700"),
+  cm=cmBox("calc(76px + env(safe-area-inset-bottom,0px))");
+ vid.muted=true;top.append(badge,cnt,end);bar.append(flip,mic);ov.append(vid,top,cm,bar,msg);
+ var stream=null,id=null,beat=null,tmr=null,ch=null,peers={},facing="user",done=false,wl=null,t0=0,dur=0,likes=0,ncm=0,
+  rec=null,cur=[],segs=[],recB=0,recOff=false,mime=pickMime();
+ function paint(){var n=0;for(var k in peers){if(peers[k].pc.connectionState==="connected")n++}cnt.textContent="👁 "+n+" · ❤️ "+likes}
+ function tick(){if(t0)badge.textContent="🔴 AO VIVO · "+fmt(Date.now()-t0)}
  function drop(k){var p=peers[k];if(!p)return;try{p.pc.close()}catch(e){}delete peers[k];paint()}
+ function recStart(){if(recOff||!stream||!window.MediaRecorder)return;try{cur=[];var o={videoBitsPerSecond:1500000};if(mime)o.mimeType=mime;var r=new MediaRecorder(stream,o);rec=r;
+  r.ondataavailable=function(e){if(e.data&&e.data.size){cur.push(e.data);recB+=e.data.size;if(recB>400*1048576){recOff=true;try{r.stop()}catch(x){}}}};
+  r.onstop=function(){if(cur.length)segs.push(new Blob(cur,{type:r.mimeType||mime||"video/webm"}));cur=[];if(r._cb){var f=r._cb;r._cb=null;f()}};r.start(4000)}catch(e){rec=null}}
+ function recStop(cb){var r=rec;rec=null;if(!r||r.state==="inactive"){if(cb)cb();return}r._cb=cb;try{r.stop()}catch(e){if(cb)cb()}}
  function newPeer(k){var pc=new RTCPeerConnection(ICE),p={pc:pc,q:[],rd:false};peers[k]=p;
   stream.getTracks().forEach(function(t){pc.addTrack(t,stream)});
   pc.onicecandidate=function(e){if(e.candidate)send(ch,{t:"ice",to:k,from:"host",d:e.candidate})};
   pc.onconnectionstatechange=function(){var s=pc.connectionState;if(s==="failed"||s==="closed")drop(k);else paint()};
-  pc.createOffer().then(function(o){return pc.setLocalDescription(o)}).then(function(){send(ch,{t:"offer",to:k,from:"host",d:pc.localDescription})}).catch(function(){drop(k)})}
+  pc.createOffer().then(function(o){return pc.setLocalDescription(o)}).then(function(){send(ch,{t:"offer",to:k,from:"host",d:pc.localDescription});send(ch,{t:"likes",to:k,n:likes})}).catch(function(){drop(k)})}
  function onSig(p){if(!p||p.to!=="host")return;var k=p.from;
   if(p.t==="join"){if(peers[k])drop(k);if(Object.keys(peers).length>=MAXV){send(ch,{t:"full",to:k,from:"host"});return}newPeer(k)}
   else if(p.t==="answer"&&peers[k]){peers[k].pc.setRemoteDescription(p.d).then(function(){peers[k].rd=true;peers[k].q.forEach(function(c){peers[k]&&peers[k].pc.addIceCandidate(c).catch(function(){})});peers[k].q=[]}).catch(function(){})}
   else if(p.t==="ice"&&peers[k]){if(peers[k].rd)peers[k].pc.addIceCandidate(p.d).catch(function(){});else peers[k].q.push(p.d)}
+  else if(p.t==="chat"&&typeof p.text==="string"&&p.text.trim()){var nm=String(p.name||"Utilizador").slice(0,30),tx=p.text.trim().slice(0,200);ncm++;addMsg(cm,nm,tx);send(ch,{t:"chat",to:"all",from:"host",name:nm,text:tx})}
+  else if(p.t==="like"){likes++;paint();heart(ov);send(ch,{t:"likes",to:"all",n:likes})}
   else if(p.t==="leave")drop(k)}
- function stop(){if(done)return;done=true;if(beat)clearInterval(beat);if(ch){send(ch,{t:"end",to:"all",from:"host"});setTimeout(function(){try{window.__sb.removeChannel(ch)}catch(e){}},400)}
-  if(G&&Gok)send(G,{t:"end",id:id});for(var k in peers)drop(k);if(stream)stream.getTracks().forEach(function(t){t.stop()});try{if(wl)wl.release()}catch(e){}
+ function halt(){if(done)return;done=true;dur=t0?Date.now()-t0:0;if(beat)clearInterval(beat);if(tmr)clearInterval(tmr);if(ch){send(ch,{t:"end",to:"all",from:"host"});var c0=ch;setTimeout(function(){try{window.__sb.removeChannel(c0)}catch(e){}},400)}
+  if(G&&Gok&&id)send(G,{t:"end",id:id});for(var k in peers)drop(k);if(stream)stream.getTracks().forEach(function(t){t.stop()});try{if(wl)wl.release()}catch(e){}
   if(id)fetch(U+"/rest/v1/bengu_lives?id=eq."+id,{method:"PATCH",headers:hd({Prefer:"return=minimal"}),body:JSON.stringify({status:"ended",ended_at:new Date().toISOString()}),keepalive:true}).catch(function(){});
-  ov.remove();window.removeEventListener("pagehide",stop);setTimeout(pill,1500)}
- end.onclick=function(){if(confirm("Terminar o direto?"))stop()};window.addEventListener("pagehide",stop);
+  window.removeEventListener("pagehide",onHide);setTimeout(pill,1500)}
+ function onHide(){recStop();halt()}
+ function summary(){ov.replaceChildren();var box=el("div","margin:auto;width:calc(100% - 40px);max-width:380px;background:#14163a;border-radius:18px;padding:20px;text-align:center"),info=el("div","font-size:13px;margin:6px 0;opacity:.9;min-height:18px");
+  box.append(el("div","font-size:20px;font-weight:900;margin-bottom:6px","Live terminada"),el("div","opacity:.85;margin-bottom:12px","⏱ "+fmt(dur)+" · ❤️ "+likes+" · 💬 "+ncm));
+  var dl=el("button",BTN+"background:"+RED+";display:block;width:100%;margin:8px 0","🗑 Eliminar");
+  if(segs.length){var sv=el("button",BTN+"background:#2fbf71;display:block;width:100%;margin:8px 0","💾 Guardar");
+   sv.onclick=function(){var d=new Date(),ds=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    segs.forEach(function(b,i){var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="bengu-live-"+ds+(segs.length>1?"-parte"+(i+1):"")+(String(b.type).indexOf("mp4")>=0?".mp4":".webm");document.body.append(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href)},60000)});
+    info.textContent="Guardado no telemóvel"+(segs.length>1?" (em "+segs.length+" partes, por ter virado a câmara).":".");sv.remove();dl.textContent="Fechar";dl.style.background="#2a2f66";dl.onclick=function(){ov.remove()}};box.append(sv)}
+  else box.append(el("div","font-size:13px;opacity:.75;margin-bottom:6px","A gravação não está disponível neste telemóvel."));
+  dl.onclick=function(){if(!confirm("Eliminar esta live"+(segs.length?" e a gravação":"")+"?"))return;segs=[];if(id)fetch(U+"/rest/v1/bengu_lives?id=eq."+id,{method:"DELETE",headers:hd(),keepalive:true}).catch(function(){});ov.remove()};
+  box.append(dl,info);ov.append(box)}
+ function finish(){recStop(function(){halt();summary()})}
+ end.onclick=function(){if(confirm("Terminar o direto?"))finish()};window.addEventListener("pagehide",onHide);
  mic.onclick=function(){var on=true;stream.getAudioTracks().forEach(function(t){t.enabled=!t.enabled;on=t.enabled});mic.textContent=on?"🎤 Microfone ligado":"🔇 Microfone desligado"};
  flip.onclick=function(){facing=facing==="user"?"environment":"user";navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:facing}},audio:false}).then(function(ns){var nt=ns.getVideoTracks()[0],old=stream.getVideoTracks()[0];
-   for(var k in peers){peers[k].pc.getSenders().forEach(function(s){if(s.track&&s.track.kind==="video")s.replaceTrack(nt)})}
-   if(old){stream.removeTrack(old);old.stop()}stream.addTrack(nt);vid.srcObject=stream;vid.style.transform=facing==="user"?"scaleX(-1)":"none"}).catch(function(){facing=facing==="user"?"environment":"user"})};
+   recStop(function(){for(var k in peers){peers[k].pc.getSenders().forEach(function(s){if(s.track&&s.track.kind==="video")s.replaceTrack(nt)})}
+    if(old){stream.removeTrack(old);old.stop()}stream.addTrack(nt);vid.srcObject=stream;vid.style.transform=facing==="user"?"scaleX(-1)":"none";recStart()})}).catch(function(){facing=facing==="user"?"environment":"user"})};
  navigator.mediaDevices.getUserMedia({video:{facingMode:"user"},audio:true}).then(function(s){stream=s;vid.srcObject=s;vid.style.transform="scaleX(-1)";vid.play().catch(function(){});
   return rest("bengu_lives","POST",{host_id:me(),title:(title||"Direto").slice(0,80),filter:"Normal"},{Prefer:"return=representation"})})
- .then(function(r){id=r[0].id;ch=chan("bglive:"+id);ch.on("broadcast",{event:"sig"},function(m){onSig(m&&m.payload)}).subscribe();
+ .then(function(r){id=r[0].id;t0=Date.now();tmr=setInterval(tick,1000);recStart();ch=chan("bglive:"+id);ch.on("broadcast",{event:"sig"},function(m){onSig(m&&m.payload)}).subscribe();
   beat=setInterval(function(){rest("bengu_lives?id=eq."+id,"PATCH",{last_seen:new Date().toISOString()},{Prefer:"return=minimal"}).catch(function(){})},30000);
   try{if(navigator.wakeLock)navigator.wakeLock.request("screen").then(function(l){wl=l}).catch(function(){})}catch(e){}
   paint();glob();loadFol();
-  rest("profiles?select=name&id=eq."+encodeURIComponent(me())).catch(function(){return null}).then(function(pr){var nm=pr&&pr[0]&&pr[0].name||"";var n=0,t=setInterval(function(){n++;if(G&&Gok){clearInterval(t);send(G,{t:"start",id:id,host:me(),title:title||"Direto",name:nm})}else if(n>20)clearInterval(t)},500)});
+  rest("profiles?select=name&id=eq."+encodeURIComponent(me())).catch(function(){return null}).then(function(pr){var nm=pr&&pr[0]&&pr[0].name||"";var n=0,t=setInterval(function(){n++;if(G&&Gok){clearInterval(t);send(G,{t:"start",id:id,host:me(),title:title||"Direto",name:nm,at:new Date(t0).toISOString()})}else if(n>20)clearInterval(t)},500)});
   pill()})
- .catch(function(e){msg.textContent=(e&&e.name==="NotAllowedError")?"Sem acesso à câmara. Permita a câmara e o microfone nas definições do telemóvel.":"Não foi possível iniciar o direto: "+(e&&e.message||"erro");if(stream)stream.getTracks().forEach(function(t){t.stop()});stream=null;end.textContent="Fechar";end.onclick=function(){ov.remove()}})};
+ .catch(function(e){msg.textContent=(e&&e.name==="NotAllowedError")?"Sem acesso à câmara. Permita a câmara e o microfone nas definições do telemóvel.":"Não foi possível iniciar o direto: "+(e&&e.message||"erro");if(stream)stream.getTracks().forEach(function(t){t.stop()});stream=null;end.textContent="Fechar";end.onclick=function(){window.removeEventListener("pagehide",onHide);ov.remove()}})};
 /* ---- espectador ---- */
 function watch(live,hostName){
  if(!tok()||!window.__sb||!window.RTCPeerConnection){alert("Inicie sessão para ver a live.");return}
- var ov=full(),vid=vidEl(),top=el("div","position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;background:linear-gradient(#000a,#0000)"),
-  badge=el("div","font-weight:900;background:"+RED+";border-radius:8px;padding:4px 8px","🔴 AO VIVO"),nm=el("div","flex:1;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap",(hostName||"")+(live.title&&live.title!=="Direto"?" · "+live.title:"")),
-  out=el("button",BTN+"background:#2a2f66","Sair"),msg=el("div","position:absolute;left:16px;right:16px;top:50%;text-align:center;font-weight:700","A ligar ao direto…");
- top.append(badge,nm,out);ov.append(vid,top,msg);
- var sid=Math.random().toString(36).slice(2),ch=chan("bglive:"+live.id),pc=null,q=[],rd=false,tries=0,tmr=null,closed=false;
+ var ov=full(),vid=vidEl(),top=el("div","position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;background:linear-gradient(#000a,#0000);z-index:3"),
+  t0=Date.parse(live.started_at)||Date.now(),
+  badge=el("div","font-weight:900;background:"+RED+";border-radius:8px;padding:4px 8px;font-variant-numeric:tabular-nums;white-space:nowrap","🔴 AO VIVO · "+fmt(Date.now()-t0)),nm=el("div","flex:1;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap",(hostName||"")+(live.title&&live.title!=="Direto"?" · "+live.title:"")),
+  lk=el("div","font-weight:700;font-size:13px;white-space:nowrap","❤️ 0"),out=el("button",BTN+"background:#2a2f66","Sair"),msg=el("div","position:absolute;left:16px;right:16px;top:50%;text-align:center;font-weight:700","A ligar ao direto…"),
+  cm=cmBox("calc(66px + env(safe-area-inset-bottom,0px))"),
+  bar=el("div","position:absolute;left:0;right:0;bottom:0;display:flex;gap:8px;align-items:center;padding:10px 12px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(#0000,#000b);z-index:3"),
+  inp=el("input","flex:1;min-width:0;border:1px solid #ffffff55;border-radius:22px;padding:10px 14px;background:#0008;color:#fff;font:15px system-ui,sans-serif;outline:none"),
+  snd=el("button",BTN+"background:#2a2f66;padding:10px 14px","Enviar"),lb=el("button","border:0;border-radius:50%;width:44px;height:44px;background:"+RED+";font-size:20px","❤️");
+ inp.placeholder="Comentar…";inp.maxLength=200;top.append(badge,nm,lk,out);bar.append(inp,snd,lb);ov.append(vid,top,cm,bar,msg);
+ var sid=Math.random().toString(36).slice(2),ch=chan("bglive:"+live.id),pc=null,q=[],rd=false,tries=0,tmr=null,tt=null,closed=false,myName="Utilizador",lastC=0,lastL=0,nLikes=0;
+ tt=setInterval(function(){badge.textContent="🔴 AO VIVO · "+fmt(Date.now()-t0)},1000);
+ rest("profiles?select=name&id=eq."+encodeURIComponent(me())).then(function(r){if(r&&r[0]&&r[0].name)myName=r[0].name}).catch(function(){});
  function say(t){msg.textContent=t;msg.style.display=t?"block":"none"}
- function close(){if(closed)return;closed=true;clearInterval(tmr);send(ch,{t:"leave",to:"host",from:sid});try{if(pc)pc.close()}catch(e){}setTimeout(function(){try{window.__sb.removeChannel(ch)}catch(e){}},300);ov.remove()}
+ function close(){if(closed)return;closed=true;clearInterval(tmr);clearInterval(tt);send(ch,{t:"leave",to:"host",from:sid});try{if(pc)pc.close()}catch(e){}setTimeout(function(){try{window.__sb.removeChannel(ch)}catch(e){}},300);ov.remove()}
  out.onclick=close;
+ function sendC(){var t=inp.value.trim();if(!t||Date.now()-lastC<1000)return;lastC=Date.now();inp.value="";send(ch,{t:"chat",to:"host",from:sid,name:myName,text:t.slice(0,200)})}
+ snd.onclick=sendC;inp.onkeydown=function(e){if(e.key==="Enter")sendC()};
+ lb.onclick=function(){if(Date.now()-lastL<250)return;lastL=Date.now();heart(ov);send(ch,{t:"like",to:"host",from:sid})};
+ function ended(){bar.style.display="none"}
  ch.on("broadcast",{event:"sig"},function(m){var p=m&&m.payload;if(!p||closed||(p.to!==sid&&p.to!=="all"))return;
   if(p.t==="offer"&&!pc){pc=new RTCPeerConnection(ICE);
    pc.ontrack=function(e){vid.srcObject=e.streams[0];vid.play().catch(function(){vid.muted=true;vid.play().catch(function(){})});say("")};
@@ -19080,8 +19117,10 @@ function watch(live,hostName){
    pc.onconnectionstatechange=function(){if(pc&&pc.connectionState==="failed")say("A ligação falhou. Saia e tente de novo.")};
    pc.setRemoteDescription(p.d).then(function(){rd=true;q.forEach(function(c){pc.addIceCandidate(c).catch(function(){})});q=[];return pc.createAnswer()}).then(function(a){return pc.setLocalDescription(a)}).then(function(){send(ch,{t:"answer",to:"host",from:sid,d:pc.localDescription})}).catch(function(){say("Não foi possível ligar ao direto.")})}
   else if(p.t==="ice"&&pc){if(rd)pc.addIceCandidate(p.d).catch(function(){});else q.push(p.d)}
+  else if(p.t==="chat"&&typeof p.text==="string")addMsg(cm,p.name,p.text);
+  else if(p.t==="likes"&&typeof p.n==="number"){if(p.n>nLikes&&nLikes>0&&p.to==="all")heart(ov);nLikes=p.n;lk.textContent="❤️ "+nLikes}
   else if(p.t==="full")say("Esta live atingiu o limite de espectadores neste momento.");
-  else if(p.t==="end"){say("A live terminou.");try{if(pc)pc.close()}catch(e){}setTimeout(close,2500)}}).subscribe(function(s){if(s!=="SUBSCRIBED")return;
+  else if(p.t==="end"){say("A live terminou.");ended();try{if(pc)pc.close()}catch(e){}setTimeout(close,3000)}}).subscribe(function(s){if(s!=="SUBSCRIBED")return;
   function join(){send(ch,{t:"join",to:"host",from:sid})}join();
   tmr=setInterval(function(){if(pc||closed)return;if(++tries>8){clearInterval(tmr);say("Não foi possível ligar. A live pode ter terminado ou a sua rede não permite a ligação.")}else join()},4000)})}
 window.bgLiveWatch=watch;
@@ -19090,7 +19129,7 @@ var pillEl=null,cur=[];
 function openList(){var ov=el("div","position:fixed;inset:0;z-index:100085;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center"),b=el("div","background:#14163a;color:#fff;width:100%;max-width:520px;max-height:80vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom,0px));box-sizing:border-box;font:15px/1.4 system-ui,sans-serif");
  ov.onclick=function(e){if(e.target===ov)ov.remove()};b.append(el("div","font-weight:900;font-size:18px;margin-bottom:8px","🔴 Ao vivo agora"));
  cur.forEach(function(x){var r=el("div","display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid #2a2f6a"),t=el("div","flex:1;min-width:0");
-  t.append(el("div","font-weight:800",x.name||"Utilizador"),el("div","font-size:12px;opacity:.75",(fol[x.host_id]?"A quem segue · ":"")+(x.title&&x.title!=="Direto"?x.title+" · ":"")+"desde "+new Date(x.started_at).toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"})));
+  t.append(el("div","font-weight:800",x.name||"Utilizador"),el("div","font-size:12px;opacity:.75",(fol[x.host_id]?"A quem segue · ":"")+(x.title&&x.title!=="Direto"?x.title+" · ":"")+"há "+fmt(Date.now()-Date.parse(x.started_at))));
   var g=el("button",BTN+"background:"+RED,x.host_id===me()?"A sua":"Ver");if(x.host_id===me())g.disabled=true;g.onclick=function(){ov.remove();watch(x,x.name)};r.append(t,g);b.append(r)});
  ov.append(b);document.body.append(ov)}
 function pill(){if(!tok()||!me()){if(pillEl){pillEl.remove();pillEl=null}return}loadFol();

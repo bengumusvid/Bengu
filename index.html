@@ -19050,7 +19050,7 @@ window.bgLiveStart=function(title){
  function adapt(){var n=Object.keys(peers).length||1,br=Math.max(150000,Math.min(2500000,Math.floor(6000000/n)));for(var k in peers){try{peers[k].pc.getSenders().forEach(function(sd){if(sd.track&&sd.track.kind==="video"&&sd.getParameters&&sd.setParameters){var pr=sd.getParameters();if(!pr.encodings||!pr.encodings.length)pr.encodings=[{}];pr.encodings[0].maxBitrate=br;sd.setParameters(pr).catch(function(){})}})}catch(e){}}}
  function drop(k){var p=peers[k];if(!p)return;try{p.pc.close()}catch(e){}delete peers[k];paint();adapt()}
  function recStart(){if(recOff||!stream||!window.MediaRecorder)return;try{cur=[];var o={videoBitsPerSecond:1500000};if(mime)o.mimeType=mime;var r=new MediaRecorder(stream,o);rec=r;
-  r.ondataavailable=function(e){if(e.data&&e.data.size){cur.push(e.data);recB+=e.data.size}}};
+  r.ondataavailable=function(e){if(e.data&&e.data.size){cur.push(e.data);recB+=e.data.size}};
   r.onstop=function(){if(cur.length)segs.push(new Blob(cur,{type:r.mimeType||mime||"video/webm"}));cur=[];if(r._cb){var f=r._cb;r._cb=null;f()}};r.start(4000)}catch(e){rec=null}}
  function recStop(cb){var r=rec;rec=null;if(!r||r.state==="inactive"){if(cb)cb();return}r._cb=cb;try{r.stop()}catch(e){if(cb)cb()}}
  function newPeer(k){var pc=new RTCPeerConnection(ICE),p={pc:pc,q:[],rd:false};peers[k]=p;

@@ -504,7 +504,7 @@ setTimeout(premWarn,6000);document.addEventListener("visibilitychange",function(
          Para ativar: preencha client (ca-pub-XXXXXXXXXXXXXXXX) e slot (numero do bloco de anuncios).
          Enquanto estiverem vazios, nenhum anuncio e mostrado. every = 1 anuncio a cada N publicacoes. */
       /* BENGU 4.9.3 - JOGOS DO MUNDO (TheSportsDB). key "3" = chave de teste gratuita; para uso a sério crie a sua chave gratuita em thesportsdb.com */
-      window.BENGU_SPORTS = { key: "3" };
+      
       window.BENGU_ADS = { client: "ca-pub-1053880648239353", slot: "6428804751", every: 5 };
       window.__bgAdsCfg = window.BENGU_ADS; try{ if(localStorage.getItem("bg_cookie_ok")!=="1") window.BENGU_ADS = { client: "", slot: "", every: 5 }; }catch(e){ window.BENGU_ADS = { client: "", slot: "", every: 5 }; }
     </script>
@@ -1148,6 +1148,17 @@ function ph(t){var n=Date.now(),a=+new Date(t.starts_at),b=+new Date(t.ends_at);
 var HD=function(t){return h("h3",{style:"color:"+G},t)};
 function sp(t){return SP[t&&t.sport]||SP.futebol}
 function regOpen(t){return !t.reg_closed&&Date.now()<+new Date(t.ends_at)}
+/* BENGU: cada vez que o organizador guarda algo no torneio, a classificação é publicada (ou actualizada) no feed */
+var PUBSTD=false;
+function stdText(t,P,rows,gn){var L=[P.ico+" Classificação · "+t.name],ln=function(rs){rs.forEach(function(s,i){L.push((i+1)+". "+s.t.name+" — "+s.p+" pts · "+s.j+"J "+s.v+"V"+(P.draw?" "+s.e+"E":"")+" "+s.d+"D · "+s.gm+":"+s.gs)})};
+ if(gn.length){gn.forEach(function(g){L.push("","Grupo "+g);ln(rows.filter(function(r){return r.t.group_name==g}))});var rs=rows.filter(function(r){return !r.t.group_name});if(rs.length){L.push("","Sem grupo");ln(rs)}}else ln(rows);
+ L.push("","#Bengu #Torneio");return L.join("\n")}
+function stdPublish(t,P,rows,gn){var me=uid();if(!me||!rows.length)return;var tx=stdText(t,P,rows,gn),sk="bg_std:"+t.id,old=null;
+ try{old=JSON.parse(localStorage.getItem(sk))}catch(e){}
+ if(old&&old.tx===tx)return;
+ var save=function(id){try{localStorage.setItem(sk,JSON.stringify({id:id,tx:tx}))}catch(e){}},
+ ins=function(){return api("posts","POST",{user_id:me,type:"text",body:tx,media:[],visibility:"public",allow_download:false}).then(function(r){save(r&&r[0]&&r[0].id);msg("📣 Classificação publicada no feed.",1)})};
+ (old&&old.id?api("posts?id=eq."+old.id+"&user_id=eq."+me,"PATCH",{body:tx}).then(function(r){if(r&&r.length){save(old.id);msg("📣 Classificação actualizada no feed.",1)}else return ins()}):ins()).catch(function(){msg("Guardado, mas não foi possível publicar a classificação no feed.")})}
 function strip(t){return window.bgEvStrip?window.bgEvStrip(regOpen(t)):""}
 function lines(v){var seen={},o=[];String(v||"").split(/[\n;,]+/).forEach(function(n){n=n.trim();var k=n.toLowerCase();if(n.length>=2&&!seen[k]){seen[k]=1;o.push(n)}});return o}
 function area(ph){return h("textarea",{placeholder:ph,rows:4,style:S})}
@@ -1197,7 +1208,7 @@ function create(){curT=null;var sel=h("select",{style:S},Object.keys(SP).map(fun
  box.replaceChildren(HD("Criar torneio"),h("label",{style:DIM},["Sports",sel]),h("label",{style:DIM},["Tipo de torneio",fm]),n,d,h("label",{style:DIM},["Start",a]),h("label",{style:DIM},["End",b]),btn("Criar",function(){if(!need())return;
   if(n.value.trim().length<3||!a.value||!b.value)return msg("Indique nome, início e fim.");
   api("tournaments","POST",Object.assign(fm.value=="campeonato"?{format:"campeonato"}:{},{owner_id:uid(),sport:sel.value,name:n.value.trim(),description:d.value.trim(),starts_at:new Date(a.value).toISOString(),ends_at:new Date(b.value).toISOString()})).then(function(r){dots();detail(r[0])}).catch(fail)}))}
-function detail(t){var me=uid(),own=!!(me&&t.owner_id==me),again=function(){detail(t)},P=sp(t);curT=t;curOwn=own;
+function detail(t){var me=uid(),own=!!(me&&t.owner_id==me),again=function(){PUBSTD=true;detail(t)},P=sp(t);curT=t;curOwn=own;
  Promise.all([api("tournament_teams?select=*&tournament_id=eq."+t.id+"&order=created_at"),api("tournament_matches?select=*&tournament_id=eq."+t.id+"&order=played_at"),api("tournament_players?select=*&tournament_id=eq."+t.id).catch(function(){return[]}),api("tournament_match_goals?select=*&tournament_id=eq."+t.id+"&order=created_at").catch(function(){return[]})]).then(function(r){
   var fmt=t.format||"grupos",T=r[0],M=r[1],PL=r[2]||[],MG=r[3]||[],tm={},st={},PM={};
   T.forEach(function(x){tm[x.id]=x;st[x.id]={t:x,fc:0,j:0,v:0,e:0,d:0,gm:0,gs:0,p:0}});PL.forEach(function(p){PM[p.id]=p});
@@ -1212,6 +1223,7 @@ function detail(t){var me=uid(),own=!!(me&&t.owner_id==me),again=function(){deta
    return h("tr",{style:"border-top:1px solid #2f6b45"},cells.map(function(c){return h("td",{style:"padding:5px 2px"},c)}))})))};
   var tb=mkTb(rows);
   var GL="ABCDEFGHIJKL".split(""),gnames=[];rows.forEach(function(r){var g=r.t.group_name;if(g&&gnames.indexOf(g)<0)gnames.push(g)});gnames.sort();
+  if(own&&PUBSTD){PUBSTD=false;stdPublish(t,P,rows,gnames)}
   var grpTb=function(){if(!gnames.length)return h("div",{style:"overflow-x:auto"},tb);var c=[];gnames.forEach(function(g){c.push(h("b",{style:"display:block;margin-top:8px"},"Grupo "+g),h("div",{style:"overflow-x:auto"},mkTb(rows.filter(function(r){return r.t.group_name==g}))))});var rest=rows.filter(function(r){return !r.t.group_name});if(rest.length)c.push(h("b",{style:"display:block;margin-top:8px"},"Sem grupo"),h("div",{style:"overflow-x:auto"},mkTb(rest)));return h("div",{},c)};
   var out=[HD(P.ico+" "+t.name),h("div",{style:DIM},P.nome+" · "+(fmt=="campeonato"?"Campeonato":"Fase de grupos + eliminatórias")+" · "+ph(t)),strip(t),h("div",{},[btn("📤 Share",function(){var u2=location.origin+location.pathname,tx=P.ico+" "+t.name+" · Bengu";if(navigator.share)navigator.share({title:"Bengu",text:tx,url:u2}).catch(function(){});else if(navigator.clipboard)navigator.clipboard.writeText(tx+" "+u2).then(function(){msg("Ligação copiada.",1)})}),(own&&Date.now()<+new Date(t.ends_at))?btn(t.reg_closed?"🔓 Reabrir inscrições":"🔒 Fechar inscrições",function(){var v=!t.reg_closed;api("tournaments?id=eq."+t.id,"PATCH",{reg_closed:v}).then(function(){t.reg_closed=v;again()}).catch(fail)}):"",(own||window.__bgAdm===!0)?btn("🗑 Apagar torneio",function(){if(!confirm("Apagar este torneio e todas as equipas, jogos e jogadores? Não pode ser desfeito."))return;api("rpc/delete_tournament","POST",{p_tournament:String(t.id)}).then(function(){dots();list()}).catch(fail)}):""]),t.description?h("p",{},t.description):"",h("div",{style:CARD},[h("b",{},"Standings"),rows.length?grpTb():h("p",{style:DIM},"No teams yet."),h("div",{style:DIM+";margin-top:6px"},"Points: win "+P.w+(P.draw?" · draw "+P.dr:"")+" · loss "+P.l+". Tiebreak: goal difference and "+(P.draw?"goals":"points")+" scored.")])];
   var KOM=M.filter(function(x){return x.stage&&x.stage!="grupo"});
@@ -1414,7 +1426,7 @@ function sheet(title){var o=h("div",{style:"position:fixed;inset:0;z-index:99998
 /* BENGU 4.7: notícias (Mundo, África, Moçambique, Desporto) com publicação, denúncia e apagar */
 (function(){var st=document.createElement("style");st.textContent="@keyframes bgnOpenLR{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}.bgnews-open{animation:bgnOpenLR .8s ease-out both}@keyframes bgnUnfold{0%{transform:perspective(46px) rotateY(86deg);filter:brightness(.55)}16%,100%{transform:perspective(46px) rotateY(0);filter:brightness(1)}}.bgn-front{transform-box:view-box;transform-origin:3px 12px;animation:bgnUnfold 6s ease-out infinite}[aria-label] svg:has(.bgn-front),svg:has(.bgn-front){filter:drop-shadow(1.5px 2.5px 1.5px rgba(0,0,0,.4))}@keyframes bgnTick{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}.bgn-mast span{display:inline-block;padding-left:100%;animation:bgnTick 14s linear infinite}";document.head.append(st)})();
 var FEEDS=[
- {k:"desporto",get n(){return BG_L("Sports","Desporto")},c:1,u:"https://news.google.com/rss/headlines/section/topic/SPORTS?hl=pt-PT&gl=PT&ceid=PT:pt-150"},
+ {k:"desporto",get n(){return BG_L("Sports","Desporto")},c:1},
  {k:"jornal",get n(){return BG_L("📰 Newspaper","📰 Jornal")},j:1}];
 var NC={},NSK="bg_news_seen";
 function seenGet(){try{return JSON.parse(localStorage.getItem(NSK))||{}}catch(e){return{}}}
@@ -1424,6 +1436,7 @@ function rssCGet(u){try{return JSON.parse(localStorage.getItem("bg_rss:"+u))}cat
 function rssCSet(u,items){try{localStorage.setItem("bg_rss:"+u,JSON.stringify({t:Date.now(),items:items}))}catch(e){}}
 function rssFetch(f){return fetch("https://api.rss2json.com/v1/api.json?rss_url="+encodeURIComponent(f.u)).then(function(r){return r.json()}).then(function(j){if(!j||j.status!=="ok"||!j.items)throw new Error("rss");return j.items.slice(0,30).map(function(it){return{title:it.title,link:it.link,desc:it.description||it.content||"",thumb:it.thumbnail||(it.enclosure&&it.enclosure.link)||"",t:Date.parse(String(it.pubDate||"").replace(" ","T")+"Z")||0}})})}
 function rssItems(f){
+ if(!f.u)return Promise.resolve([]);
  if(RSSP[f.u])return RSSP[f.u];
  var c=rssCGet(f.u);
  if(c&&c.items&&c.items.length&&Date.now()-c.t<300000)return Promise.resolve(c.items);
@@ -1443,6 +1456,9 @@ function shareNews(t,x,u){var d={title:"Bengu",text:t+(x?"\n"+x:""),url:u};if(na
 function nmsg(e){var t=(e&&e.message)||"Erro.";if(/schema cache|does not exist|Could not find/i.test(t))t="Não foi possível concluir. Tente novamente mais tarde.";return t}
 function when(s){try{return new Date(s).toLocaleString("pt-PT",{dateStyle:"short",timeStyle:"short"})}catch(e){return""}}
 function shrink(file){return new Promise(function(ok,no){var img=new Image(),u=URL.createObjectURL(file);img.onload=function(){var m=1280,w=img.width,hh=img.height,s=Math.min(1,m/Math.max(w,hh)),c=document.createElement("canvas");c.width=Math.round(w*s);c.height=Math.round(hh*s);c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(function(b){b?ok(b):no(new Error("Foto inválida."))},"image/jpeg",.82)};img.onerror=function(){no(new Error("Foto inválida."))};img.src=u})}
+/* BENGU: notícia gravada => publicada automaticamente no feed */
+function newsToFeed(o,pu){var me=uid(),tx="📰 "+o.title+(o.body?"\n\n"+o.body:"")+"\n\n— "+o.author_name+" · Bengu Notícias";
+ return api("posts","POST",{user_id:me,type:pu?"media":"text",body:tx,media:pu?[{kind:"image",url:pu,name:"noticia.jpg"}]:[],visibility:"public",allow_download:false})}
 function addNews(f,done){var me=uid();if(!me){alert(BG_L("Log in to publish.","Inicie sessão para publicar."));return}
  var b=sheet(BG_L("➕ New story · ","➕ Nova notícia · ")+f.n),blob=null,inp=function(ph){return h("input",{placeholder:ph,style:"width:100%;box-sizing:border-box;padding:10px;border:1px solid #cfd4e3;border-radius:10px;margin:6px 0;font:inherit"})},ti=inp(BG_L("Story title","Título da notícia")),au=inp("Nome do autor"),tx=h("textarea",{placeholder:BG_L("Story text (optional)","Texto da notícia (opcional)"),rows:"5",style:"width:100%;box-sizing:border-box;padding:10px;border:1px solid #cfd4e3;border-radius:10px;margin:6px 0;font:inherit"}),
  pv=h("img",{style:"display:none;max-width:100%;border-radius:10px;margin-top:8px"}),
@@ -1455,16 +1471,16 @@ function addNews(f,done){var me=uid();if(!me){alert(BG_L("Log in to publish.","I
  fi.addEventListener("change",function(){if(fi.files[0])setPhoto(fi.files[0])});
  go.addEventListener("click",function(){var t=ti.value.trim();if(t.length<5){alert(BG_L("Write a title with at least 5 letters.","Escreva um título com pelo menos 5 letras."));return}var an=au.value.trim();if(an.length<2){alert("Escreva o nome do autor.");return}go.disabled=true;go.textContent=BG_L("Publishing…","A publicar…");
   var pth=me+"/"+Date.now()+".jpg",up=blob?fetch(U+"/storage/v1/object/news-media/"+pth,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"image/jpeg","cache-control":"max-age=31536000"},body:blob}).then(function(r){if(!r.ok)throw new Error(BG_L("Could not upload the photo. Please try again later.","Não foi possível enviar a foto. Tente novamente mais tarde."));return BG_R2+"/news-media/"+pth}):Promise.resolve(null);
-  up.then(function(pu){var o={section:f.k,author_id:me,author_name:an.slice(0,80),title:t,body:tx.value.trim()||null};if(pu)o.photo_url=pu;return api("bengu_news","POST",o)}).then(function(){b.parentNode.remove();seenSet(f.k,Date.now()+1000);done()}).catch(function(e){alert(nmsg(e));go.disabled=false;go.textContent="Publicar"})});
+  up.then(function(pu){var o={section:f.k,author_id:me,author_name:an.slice(0,80),title:t,body:tx.value.trim()||null};if(pu)o.photo_url=pu;return api("bengu_news","POST",o).then(function(){return newsToFeed(o,pu).catch(function(){})})}).then(function(){b.parentNode.remove();seenSet(f.k,Date.now()+1000);done()}).catch(function(e){alert(nmsg(e));go.disabled=false;go.textContent="Publicar"})});
  b.append(h("p",{style:"margin:10px 0 4px;font-size:13px;opacity:.7"},BG_L("Only publish true information. Fake news can be reported and deleted by the administrator.","Publique apenas informação verdadeira. Notícias falsas podem ser denunciadas e apagadas pelo administrador.")),ti,au,tx,box,fi,pv,go);api("profiles?select=name&id=eq."+me).then(function(r){if(r&&r[0]&&r[0].name&&!au.value)au.value=r[0].name}).catch(function(){})}
 var GCACHE={},gseq=0;
 function dayEv(K,sp2,d){var k=sp2+"|"+d,c=GCACHE[k];if(c&&Date.now()-c.t<600000)return Promise.resolve(c.v);
- return fetch("https://www.thesportsdb.com/api/v1/json/"+K+"/eventsday.php?d="+d+"&s="+sp2).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){var v=j&&j.events||[];GCACHE[k]={t:Date.now(),v:v};return v}).catch(function(){return null})}
+ return Promise.resolve(null)}
 /* BENGU 4.9.14 - LA LIGA (Campeonato Espanhol) sempre em destaque nos jogos a realizar e realizados */
 var LIGA="🇪🇸 Espanha · La Liga (Campeonato Espanhol)";
 function isLiga(l){l=String(l||"");return /^\s*la\s?liga\s*$/i.test(l)||(/spain|espanha|españa|spanish/i.test(l)&&/la\s?liga|primera/i.test(l)&&!/liga\s?2|segunda|hypermotion|women|femen|\bb\b|rfef/i.test(l))}
 function ligaEv(up){var K=(window.BENGU_SPORTS&&window.BENGU_SPORTS.key)||"3",k="liga|"+up,c=GCACHE[k];if(c&&Date.now()-c.t<600000)return Promise.resolve(c.v);
- return fetch("https://www.thesportsdb.com/api/v1/json/"+K+"/"+(up?"eventsnextleague.php":"eventspastleague.php")+"?id=4335").then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){var now=Date.now(),v=[];
+ return Promise.resolve({events:[]}).then(function(j){var now=Date.now(),v=[];
   ((j&&j.events)||[]).forEach(function(e){if(!e||!e.strHomeTeam||!e.strAwayTeam)return;var ts=e.strTimestamp?Date.parse(/Z|[+-]\d\d:?\d\d$/.test(e.strTimestamp)?e.strTimestamp:e.strTimestamp+"Z"):Date.parse((e.dateEvent||"")+"T"+(e.strTime||"00:00:00")+"Z"),
    done=e.intHomeScore!=null&&e.intHomeScore!==""&&e.intAwayScore!=null&&e.intAwayScore!=="";if(up?(done||(ts||0)<now-72e5):!done)return;e.strLeague=LIGA;v.push({e:e,t:ts||0,done:done})});
   GCACHE[k]={t:Date.now(),v:v};return v}).catch(function(){return[]})}
@@ -1984,14 +2000,11 @@ window.bengu_news_open=function(){var b=sheet(BG_L("📰 News","📰 Notícias")
   var out=[subBar()];if(pc)out.push(pc);if(!order.length)out.push(h("p",{style:"opacity:.7"},up?"Não há jogos marcados para os próximos dias.":BG_L("No results from recent days yet.","Ainda sem resultados dos últimos dias.")));
   order.forEach(function(k){var c=h("div",{style:"background:#fff;border-radius:12px;padding:10px 12px;margin-bottom:10px"},[h("div",{style:"font-weight:800;margin-bottom:4px"},k)]);
    lg[k].forEach(function(x){var e=x.e,sc=(x.done||x.live)&&e.intHomeScore!=null&&e.intAwayScore!=null;c.append(h("div",{style:"display:flex;align-items:center;gap:6px;padding:6px 0;border-top:1px solid #eef0f6;font-size:14px"},[h("span",{style:"width:74px;flex:none;font-size:12px;opacity:.7"},x.pst?"Adiado":x.t?new Date(x.t).toLocaleString("pt-PT",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"—"),h("span",{style:"flex:1;text-align:right;font-weight:700"},e.strHomeTeam),h("b",{style:"min-width:46px;text-align:center"+(x.live?";color:#E53935":"")},sc?e.intHomeScore+" – "+e.intAwayScore:"vs"),h("span",{style:"flex:1;font-weight:700"},e.strAwayTeam+(x.live?" 🔴":""))].concat((x.mine||admin)&&x.id?mineBtns(x):[])))});out.push(c)});
-  out.push(h("div",{style:"font-size:12px;opacity:.6;margin:6px 0"},"Jogos do mundo · dados "+src+" · 📣 = publicado por utilizadores · horas no seu fuso horário."));
+  out.push(h("div",{style:"font-size:12px;opacity:.6;margin:6px 0"},"Jogos publicados por utilizadores do Bengu · horas no seu fuso horário."));
   list.replaceChildren.apply(list,out)}
  function games(){var up=sub==1,seq=++gseq,sp2=spt;list.replaceChildren(subBar(),h("p",{},"A carregar jogos…"));
-  Promise.all([(sp2=="Soccer"?sbGames(up):Promise.resolve(null)).then(function(r){return r&&r.ev.length?r:tsGames(up,sp2)}).catch(function(){return null}),usrGames(up,sp2),
-   tok()?api("sports_user_games?select=id,home,away,league,kickoff,fee_usd,pay_method&status=eq.pending_payment&order=created_at.desc&limit=50").catch(function(){return[]}):Promise.resolve([]),sp2=="Soccer"?ligaEv(up):Promise.resolve([])]).then(function(z){if(seq!=gseq)return;
-   var r=z[0],ev=(r?r.ev:[]).concat(z[1]);ev=sp2=="Soccer"?mergeLiga(ev,z[3]):ev;
-   if(!r&&!ev.length&&!(z[2]&&z[2].length)){list.replaceChildren(subBar(),h("p",{},"Não foi possível carregar os jogos agora. Tente de novo."));return}
-   drawEv(up,ev,r?r.src:"Bengu",pendCard(z[2]))})}
+  Promise.all([usrGames(up,sp2).catch(function(){return[]}),tok()?api("sports_user_games?select=id,home,away,league,kickoff,fee_usd,pay_method&status=eq.pending_payment&order=created_at.desc&limit=50").catch(function(){return[]}):Promise.resolve([])]).then(function(z){if(seq!=gseq)return;
+   drawEv(up,z[0],"Bengu",pendCard(z[1]))})}
  var JPV={};
 function jPrev(cd,n){var w=h("div",{style:"background:#fff;border:1px solid #e3e0d6;border-radius:8px;overflow:hidden;margin:8px 0;min-height:140px;position:relative;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;color:#555"},BG_L("📄 Loading page 1…","📄 A carregar a página 1…")),done=false;
  w.addEventListener("click",function(){openPdf(n)});cd.append(w);
@@ -2020,10 +2033,9 @@ function jView(c,f,emb){var out=[],ad=h("button",{style:"width:100%;padding:12px
   loadTab(f,true).then(function(c){seenSet(f.k,c.latest||Date.now());dotState();drawTabs();if(f.j){jView(c,f);return}var out=f.k=="desporto"?[subBar()]:[];
    if(f.c){var ad=h("button",{style:"width:100%;padding:12px;border:0;border-radius:12px;background:#43A047;color:#fff;font-family:var(--bg-font);font-weight:700;font-size:17px;letter-spacing:.4px;margin-bottom:10px"},BG_L("➕ Add news","➕ Adicionar notícia"));ad.addEventListener("click",function(){addNews(f,function(){show(cur)})});out.push(ad);
     c.com.forEach(function(n){out.push(card(n,f))});if(!c.com.length)out.push(h("p",{style:"opacity:.7"},BG_L("No news has been published by members yet.","Ainda não há notícias publicadas por membros.")));
-    out.push(h("div",{style:"font-family:var(--bg-font);font-style:italic;font-weight:700;font-size:21px;letter-spacing:.3px;margin:14px 0 8px"},BG_L("Other news","Outras notícias")))}
+    if(c.rss.length)out.push(h("div",{style:"font-family:var(--bg-font);font-style:italic;font-weight:700;font-size:21px;letter-spacing:.3px;margin:14px 0 8px"},BG_L("Other news","Outras notícias")))}
    if(f.k=="africa"||f.k=="mundo"){jView(c,f,1).forEach(function(x){out.push(x)});out.push(h("div",{style:"font-family:var(--bg-font);font-style:italic;font-weight:700;font-size:21px;letter-spacing:.3px;margin:14px 0 8px"},BG_L("Other news","Outras notícias")))}
    c.rss.forEach(function(it){var sh=h("button",{style:"margin-top:6px;padding:5px 12px;border:0;border-radius:8px;font-weight:700;background:#eef0f6;color:#12183A"},BG_L("📤 Share","📤 Partilhar"));sh.addEventListener("click",function(){shareNews(it.title,"",it.link)});out.push(h("div",{style:"background:#fff;border-radius:12px;padding:12px;margin-bottom:8px"},[h("div",{style:"display:block;color:#12183A;cursor:pointer",on:{click:function(){openArticle(it)}}},[h("div",{style:"font-weight:700;line-height:1.3"},it.title),h("div",{style:"font-size:12px;opacity:.65;margin-top:4px"},it.t?when(it.t):"")]),sh]))});
-   if(!c.rss.length)out.push(newsErr());
    list.replaceChildren.apply(list,out)}).catch(function(){list.replaceChildren(newsErr())})}
  drawTabs();show(0);refreshDots().then(drawTabs);
  if(tok())api("rpc/is_admin","POST",{}).then(function(a){if(a===true){admin=true;show(cur)}}).catch(function(){})};
@@ -13450,8 +13462,19 @@ function dx({ post: e, me: t, users: us, onClose: r, say: n }) {
       else l();
       r();
     },
+    cp = (site) => {
+      try {
+        navigator.clipboard.writeText(i + " " + s).catch(() => {});
+      } catch {}
+      n(x("copied"));
+      a(site);
+    },
     d = [
       ["WhatsApp", "#25D366", () => a(`https://wa.me/?text=${o(i + " " + s)}`)],
+      ["Threads", "#000000", () => a(`https://www.threads.net/intent/post?text=${o(i + " " + s)}`), "Th"],
+      ["Instagram", "#E4405F", () => cp("https://www.instagram.com/"), "IG"],
+      ["TikTok", "#010101", () => cp("https://www.tiktok.com/"), "TT"],
+      ["YouTube", "#FF0000", () => cp("https://www.youtube.com/"), "YT"],
       [
         "Facebook",
         "#1877F2",
@@ -13518,7 +13541,7 @@ function dx({ post: e, me: t, users: us, onClose: r, say: n }) {
         }),
         u.jsx("div", {
           className: "grid grid-cols-4 gap-3",
-          children: d.map(([p, w, f]) =>
+          children: d.map(([p, w, f, ic]) =>
             u.jsxs(
               "button",
               {
@@ -13531,7 +13554,7 @@ function dx({ post: e, me: t, users: us, onClose: r, say: n }) {
                     className:
                       "flex items-center justify-center rounded-full font-bold text-white",
                     style: { width: 52, height: 52, background: w },
-                    children: p[0],
+                    children: ic || p[0],
                   }),
                   u.jsx("span", {
                     className: "text-xs",

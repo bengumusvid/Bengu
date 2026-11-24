@@ -460,7 +460,7 @@ XMLHttpRequest.prototype.send=function(body){
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.56.0_12.11.2026" />
+    <meta name="bengu-build" content="4.56.1_24.11.2026" />
 <script>/* BENGU 4.55: selos. Verde = selo (conta verificada); cor do Bengu (#FFB020) = Premium. Lista pequena guardada no telemóvel; só atualiza com internet, no máximo de 6 em 6 horas. */
 (function(){var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",KEY="bg_badges";
 function build(rows){var m={},now=Date.now();(rows||[]).forEach(function(r){if(r.verified)m[r.user_id]="v";else if(r.premium_until&&new Date(r.premium_until).getTime()>now)m[r.user_id]="p"});return m}
@@ -18884,10 +18884,10 @@ window.bgWalletDeposit=function(done){
   box=el("div","background:#14163a;color:#fff;width:100%;max-width:480px;max-height:90vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom,0px));box-sizing:border-box;border-top:3px solid #E8B424;font:15px/1.4 system-ui,sans-serif"),
   IN="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid #2a2f6a;background:#0f1233;color:#fff;margin:5px 0;font:inherit";
  ov.onclick=function(e){if(e.target===ov)ov.remove()};ov.append(box);document.body.append(ov);
- box.append(el("div","font-weight:900;font-size:18px;color:#F5B520;margin-bottom:6px","➕ Depositar na carteira"),el("div","font-size:12px;opacity:.75;margin-bottom:8px","Escolha a forma de pagamento, pague e envie a referência. O valor entra na carteira (a verde) quando o administrador confirmar."),el("p","opacity:.7","A carregar…"));
+ box.append(el("div","font-weight:900;font-size:18px;color:#F5B520;margin-bottom:6px","➕ Depositar na carteira"),el("div","font-size:12px;opacity:.75;margin-bottom:8px","Escolha a forma de pagamento, pague e envie a referência. O valor entra na carteira (a verde) assim que o pagamento for confirmado."),el("p","opacity:.7","A carregar…"));
  get("bengu_payment_methods?select=id,kind,name,account,holder,instructions&active=eq.true&order=sort.asc,id.asc").catch(function(){return null}).then(function(ms){
   box.lastChild.remove();
-  if(!ms||!ms.length){box.append(el("p","color:#ff9b9b;font-size:13px","Ainda não há formas de depósito ativas. O administrador deve adicionar M-Pesa, e-Mola, Visa ou contas internacionais."),close0());return}
+  if(!ms||!ms.length){box.append(el("p","color:#ff9b9b;font-size:13px","Os depósitos estão temporariamente indisponíveis. Tente novamente mais tarde."),close0());return}
   var sel=null,info=el("div","background:#1b1f48;border-radius:12px;padding:10px;margin:8px 0;font-size:13px;display:none"),wrap=el("div","display:flex;flex-direction:column;gap:6px");
   var KN={mpesa:"M-Pesa",emola:"e-Mola",mkesh:"mKesh",visa:"💳 Visa / cartão",paypal:"PayPal",wise:"🌍 Wise / Payoneer",swift:"🌍 Transferência internacional",bank:"🏦 Banco",other:"Outra forma"};
   ms.forEach(function(m){var b=el("button","border:2px solid transparent;border-radius:10px;padding:10px;text-align:left;background:#2a2f66;color:#fff;font-size:14px;font-weight:700",(KN[m.kind]||m.kind)+" · "+m.name);
@@ -18901,7 +18901,7 @@ window.bgWalletDeposit=function(done){
   am.type="number";am.step="0.01";am.placeholder="Valor pago";["USD","MZN","EUR"].forEach(function(c){var op=el("option","",c);op.value=c;cu.append(op)});
   rf.placeholder="Referência / ID da transação *";py.placeholder="Nome do titular da conta que pagou (opcional)";
   go.onclick=function(){var v=Number(am.value);if(!sel)return say("Escolha a forma de pagamento.");if(!(v>0))return say("Indique o valor pago.");if(rf.value.trim().length<3)return say("Indique a referência da transação.");
-   go.disabled=true;rpc("bengu_wallet_deposit_request",{p_method_name:sel.name,p_method_kind:sel.kind,p_amount:v,p_currency:cu.value,p_reference:rf.value.trim(),p_payer:py.value.trim()||null}).then(function(){mg.style.color="#2fbf71";mg.textContent="Pedido enviado. Será creditado quando confirmado.";setTimeout(function(){ov.remove();done&&done()},1200)}).catch(function(e){go.disabled=false;say(e.message+" (wallet.sql?)")})};
+   go.disabled=true;rpc("bengu_wallet_deposit_request",{p_method_name:sel.name,p_method_kind:sel.kind,p_amount:v,p_currency:cu.value,p_reference:rf.value.trim(),p_payer:py.value.trim()||null}).then(function(){mg.style.color="#2fbf71";mg.textContent="Pedido enviado. Será creditado assim que o pagamento for confirmado.";setTimeout(function(){ov.remove();done&&done()},1200)}).catch(function(e){go.disabled=false;say(e.message)})};
   function say(t){mg.style.color="#ff9b9b";mg.textContent=t}
   box.append(el("div","font-weight:700;font-size:13px","1. Forma de pagamento"),wrap,info,el("div","font-weight:700;font-size:13px;margin-top:8px","2. Valor e referência"),am,cu,rf,py,go,mg,close0())});
  function close0(){var c=el("button","width:100%;border:0;background:none;color:#8b93c9;margin-top:8px;font-size:13px","Fechar");c.onclick=function(){ov.remove()};return c}
@@ -18955,7 +18955,7 @@ window.bgWalletCard=function(o){
   function tile(l,v){var d=el("div","background:#0A0E24;border-radius:10px;padding:8px;text-align:center;border-top:3px solid #E8B424");d.append(el("div","font-size:14px;font-weight:800;color:"+(v>0?GREEN:"#fff"),usd(v)),el("div","font-size:10.5px;color:#E8B424;opacity:.9",l));tiles.append(d)}
   if(admin){tile("Comissão (visualizações)",base);tile("PayPal",by.paypal||0);tile("Compra de selos",by.selo||0);tile("Outros serviços",by.other||0)}
   else{tile("Ganhos disponíveis",base);tile("Outros créditos",sum)}
-  if(rows===null){list.append(el("div","font-size:12px;opacity:.65","Histórico de entradas indisponível. Execute o wallet.sql no Supabase."))}
+  if(rows===null){list.append(el("div","font-size:12px;opacity:.65",(admin?"Histórico de entradas indisponível. Execute o wallet.sql no Supabase.":"Histórico de entradas indisponível de momento.")))}
   else if(!rows.length){list.append(el("div","font-size:12px;opacity:.65","Ainda sem entradas registadas."))}
   else{list.append(el("div","font-weight:800;font-size:13px;margin-bottom:4px;color:#F5B520","Entradas e saídas"));
    rows.forEach(function(r){var a=Number(r.amount_usd)||0,isNew=lastT>0&&Date.parse(r.created_at)>lastT,row=el("div","display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid rgba(232,180,36,.25);font-size:13px"),l=el("div","flex:1;min-width:0");

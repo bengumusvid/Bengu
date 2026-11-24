@@ -17675,12 +17675,12 @@ function snake(w){
  var AN=[Math.PI,-Math.PI/2,0,Math.PI/2];
  /* presas: insectos e ratos (fogem da cobra) */
  var KINDS=[
-  {e:"🐁",pts:30,sp:.9,fl:2.3,lump:.34,gr:1.4,sz:1.35,mouse:1},
-  {e:"🐀",pts:35,sp:.8,fl:2.2,lump:.38,gr:1.5,sz:1.45,mouse:1},
-  {e:"🦗",pts:10,sp:1.5,fl:2.7,lump:.2,gr:.7,sz:1.2},
-  {e:"🐜",pts:8,sp:1.3,fl:2.4,lump:.16,gr:.6,sz:1.05},
-  {e:"🐛",pts:12,sp:.7,fl:1.8,lump:.22,gr:.8,sz:1.25},
-  {e:"🦋",pts:15,sp:1.6,fl:2.8,lump:.18,gr:.8,sz:1.3,fly:1}];
+  {e:"🐁",pts:30,sp:.9,fl:2.3,lump:.34,gr:1.4,sz:2.1,mouse:1},
+  {e:"🐀",pts:35,sp:.8,fl:2.2,lump:.38,gr:1.5,sz:2.2,mouse:1},
+  {e:"🦗",pts:10,sp:1.5,fl:2.7,lump:.2,gr:.7,sz:1.8},
+  {e:"🐜",pts:8,sp:1.3,fl:2.4,lump:.16,gr:.6,sz:1.6},
+  {e:"🐛",pts:12,sp:.7,fl:1.8,lump:.22,gr:.8,sz:1.8},
+  {e:"🦋",pts:15,sp:1.6,fl:2.8,lump:.18,gr:.8,sz:1.9,fly:1}];
  function lv(){return 1+Math.floor(eaten/3)}
  function spd(){return Math.min(6.6,3.3+.3*(lv()-1))}
  function preyN(){return Math.min(4,2+Math.floor((lv()-1)/3))}
@@ -17719,7 +17719,10 @@ function snake(w){
   cx.fillStyle="rgba(0,0,0,.3)";cx.beginPath();cx.ellipse(SX(g),SY(g),sr,sr*.42,0,0,7);cx.fill();
   emoji(o.e,SX(b),SY(b),F*sz/b.f,false)}
  function drawPrey(p){var k=p.k,hop=k.fly?.25*Math.sin(tt*5+p.ph):Math.abs(Math.sin(tt*9+p.ph))*.12,z=(k.fly?.7:.4)+hop,b=pj(p.x,p.y,z);
-  shadow(p.x,p.y,k.sz*.4);emoji(k.e,SX(b),SY(b),F*k.sz/b.f,p.fx>0)}
+  var g0=pj(p.x,p.y,0),sz=F*k.sz/b.f,pul=.5+.5*Math.sin(tt*5+p.ph),rr=F*(.95+.3*pul)/g0.f,bx=SX(b),by=SY(b);
+  cx.strokeStyle="rgba(255,235,59,"+(.6+.35*pul)+")";cx.lineWidth=3;cx.beginPath();cx.ellipse(SX(g0),SY(g0),rr,rr*.42,0,0,7);cx.stroke();
+  var gl=cx.createRadialGradient(bx,by,0,bx,by,sz*.8);gl.addColorStop(0,"rgba(255,245,157,.6)");gl.addColorStop(1,"rgba(255,245,157,0)");cx.fillStyle=gl;cx.beginPath();cx.arc(bx,by,sz*.8,0,7);cx.fill();
+  shadow(p.x,p.y,k.sz*.35);emoji(k.e,bx,by,sz,p.fx>0)}
  function drawSeg(q,k){var p=pj(q.x,q.y,q.r),r=F*q.r/p.f,sx=SX(p),sy=SY(p),band=Math.sin((q.s-trav)*4.6)>.3,infl=Math.min(1,q.bl/.2),
    hue=98-infl*58,sat=44+infl*16,li=46-Math.min(1,q.s/len)*10+(band?-8:0)+infl*12;
   var g=cx.createRadialGradient(sx-r*.35,sy-r*.45,r*.1,sx,sy,r);
@@ -17764,7 +17767,7 @@ function snake(w){
  function eat(p,j){preys.splice(j,1);var k=p.k,l0=lv();score+=k.pts*l0;eaten++;
   lumps.push({s:.5,w:k.mouse?.78:.55,a0:k.lump,amp:0,t:0,fade:0,g:k.gr});
   try{if(navigator.vibrate)navigator.vibrate(25)}catch(e){}
-  if(lv()!==l0){banner=1.6;bannerT="⬆ Nível "+lv();addOb(lv()%2?"tree":"car");if(lv()>=4)addOb("tree")}
+  if(lv()!==l0){banner=1.6;bannerT="⬆ Nível "+lv();if(lv()>=5)addOb(lv()%2?"tree":"car")}
   head()}
  function update(dt){
   tt+=dt;if(banner>0)banner-=dt;
@@ -17782,7 +17785,7 @@ function snake(w){
   for(i=lumps.length-1;i>=0;i--){var l=lumps[i];l.t+=dt;l.s+=2.3*dt;l.amp=Math.min(1,l.t/.35);if(l.s>=Math.max(1.8,Math.min(len*.62,5.4)))l.fade+=dt/.7;
    if(l.fade>=1){tlen+=l.g;lumps.splice(i,1)}}
   preys.forEach(function(p){movePrey(p,dt)});
-  for(var j=preys.length-1;j>=0;j--)if(dist(hx,hy,preys[j].x,preys[j].y)<.72)eat(preys[j],j);
+  for(var j=preys.length-1;j>=0;j--)if(dist(hx,hy,preys[j].x,preys[j].y)<.85)eat(preys[j],j);
   while(preys.length<preyN()&&addPrey()){}}
  function init(){hx=cols/2+1.2;hy=rows/2;ang=0;tdir=2;len=tlen=3.4;trav=0;path=[];plen=0;
   for(var i=0;i<40;i++){path.push({x:hx-i*.12,y:hy,d:i?.12:0});if(i)plen+=.12}
@@ -17790,7 +17793,7 @@ function snake(w){
   decor={p:[],t:[]};
   for(i=0;i<28;i++)decor.p.push({x:Math.random()*cols,y:Math.random()*rows,r:.8+Math.random()*2.2,c:["rgba(15,35,8,.22)","rgba(150,180,70,.10)","rgba(120,85,40,.14)"][i%3]});
   for(i=0;i<110;i++)decor.t.push({x:Math.random()*cols,y:Math.random()*rows,c:["#5d8a34","#6f9c3e","#4b7229"][i%3]});
-  addOb("tree");addOb("tree");addOb("car");addOb("tree");addPrey();addPrey();
+  addPrey();addPrey();
   head();holder.replaceChildren();setAct("idle");render()}
  function setAct(m){var r=el("div","display:flex;gap:10px;justify-content:center;align-items:center");
   if(m==="idle"){var p0=btn("⏸ Pausar",function(){},";opacity:.45");p0.disabled=true;r.append(btn("▶ Começar",start),p0)}

@@ -460,7 +460,7 @@ XMLHttpRequest.prototype.send=function(body){
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.56.4_24.11.2026" />
+    <meta name="bengu-build" content="4.56.6_24.11.2026" />
 <script>/* BENGU 4.55: selos. Verde = selo (conta verificada); cor do Bengu (#FFB020) = Premium. Lista pequena guardada no telemóvel; só atualiza com internet, no máximo de 6 em 6 horas. */
 (function(){var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",KEY="bg_badges";
 function build(rows){var m={},now=Date.now();(rows||[]).forEach(function(r){if(r.verified)m[r.user_id]="v";else if(r.premium_until&&new Date(r.premium_until).getTime()>now)m[r.user_id]="p"});return m}
@@ -15435,11 +15435,12 @@ u.jsxs("div", {
                         className: "text-[11px] mt-1",
                         style: { color: k.mute },
                         children:
-                          BG_L("Used to log in. If it already exists, the system adds a number.", "Serve para entrar. Se já existir, o sistema acrescenta um número."),
+                          BG_L("Used to log in.", "Serve para entrar."),
                       }),
                   ],
                 }),
                 z && u.jsxs("div", { children: [
+                  u.jsx("div", { className: "flex gap-2 mb-2", children: [["email", BG_L("Email", "Email")], ["phone", BG_L("Phone", "Telefone")]].map((mm) => u.jsx("button", { key: mm[0], type: "button", onClick: () => { o(mm[0]); sctc(""); G(""); }, className: "flex-1 py-2 rounded-lg text-sm font-bold", style: { ...Ae(a === mm[0]), border: "1px solid " + k.line }, children: mm[1] })) }),
                   u.jsx("input", { value: ctc, onChange: (X) => sctc(a === "email" ? X.target.value.trim() : X.target.value.replace(/[^\d+\s\-()]/g, "")), placeholder: a === "email" ? BG_L("name@email.com","nome@email.com") : BG_L("+ country code and number","+ indicativo e número"), "aria-label": a === "email" ? "Email" : "Telefone", type: a === "email" ? "email" : "tel", inputMode: a === "email" ? "email" : "tel", autoComplete: a === "email" ? "email" : "tel", className: te, style: be }),
                   a === "email" && u.jsx("div", { className: "text-[11px] mt-1", style: { color: k.mute }, children: BG_L("Register with a real email.","Regista com email verdadeiro.") }),
                   a === "phone" && u.jsx("div", { className: "text-[11px] mt-1", style: { color: k.mute }, children: "Escreva o número com o indicativo do país, começando por +. Vai entrar com este número e a palavra-passe, sem código SMS." }),

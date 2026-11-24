@@ -18050,7 +18050,7 @@ function domino(w){
  w.append(info,tbl,st,acts,hand,holder);init();return function(){clearTimeout(tm)}}
 /* ---------- Premium e selos ---------- */
 /* Selo verde ✓ = conta verificada. Estrela ★ na cor do Bengu (#FFB020) = conta Premium. */
-var KINDS=[["mpesa","M-Pesa"],["emola","e-Mola"],["mkesh","mKesh"],["paypal","PayPal"],["bank","Banco (NIB/IBAN)"],["other","Outra forma"]],
+var KINDS=[["mpesa","M-Pesa"],["emola","e-Mola"],["mkesh","mKesh"],["visa","Visa / cartão"],["paypal","PayPal"],["wise","Wise / Payoneer (estrangeiro)"],["swift","Transferência internacional (SWIFT/IBAN)"],["bank","Banco (NIB/IBAN)"],["other","Outra forma"]],
  CHOICE="border:0;border-radius:10px;padding:10px;text-align:left;background:#2a2f66;color:#fff;font-size:14px";
 function kindName(k){for(var i=0;i<KINDS.length;i++)if(KINDS[i][0]===k)return KINDS[i][1];return k||""}
 function money(p){return Number(p.price||0).toLocaleString("pt-PT")+" "+(p.currency||"MZN")}
@@ -18870,7 +18870,7 @@ if(document.body)start();else document.addEventListener("DOMContentLoaded",start
 <script>/* BENGU: carteira de valor real (administrador e utilizadores). Entradas de dinheiro aparecem a VERDE. Requer wallet.sql para o histórico de entradas. */
 (function(){
 var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",LS="sb-cnpkgauzhoyzlhtcexiv-auth-token",GREEN="#2fbf71";
-var SRC={followers:"👥 Seguidores",views:"👀 Visualizações",paypal:"🅿️ PayPal",selo:"✅ Compra de selo",other:"➕ Outros serviços"};
+var SRC={deposit:"💳 Depósito",followers:"👥 Seguidores",views:"👀 Visualizações",paypal:"🅿️ PayPal",selo:"✅ Compra de selo",other:"➕ Outros serviços"};
 function tok(){try{return JSON.parse(localStorage.getItem(LS)).access_token}catch(e){return null}}
 function hd(){return{apikey:K,Authorization:"Bearer "+(tok()||K),"Content-Type":"application/json"}}
 function el(t,css,txt){var e=document.createElement(t);if(css)e.style.cssText=css;if(txt!=null)e.textContent=txt;return e}
@@ -18878,6 +18878,34 @@ function usd(n){return Number(n||0).toLocaleString("pt-PT",{minimumFractionDigit
 function get(p){return fetch(U+"/rest/v1/"+p,{headers:hd()}).then(function(r){if(!r.ok)throw new Error("x");return r.json()})}
 function rpc(n,a){return fetch(U+"/rest/v1/rpc/"+n,{method:"POST",headers:hd(),body:JSON.stringify(a||{})}).then(function(r){return r.text().then(function(t){var j=null;try{j=t?JSON.parse(t):null}catch(e){}if(!r.ok)throw new Error((j&&j.message)||("Erro "+r.status));return j})})}
 if(!document.getElementById("bgw-css")){var st=el("style");st.id="bgw-css";st.textContent="@keyframes bgwpulse{0%,100%{box-shadow:0 0 0 0 rgba(47,191,113,.7)}50%{box-shadow:0 0 0 10px rgba(47,191,113,0)}}";document.head.append(st)}
+window.bgWalletDeposit=function(done){
+ if(!tok()){alert("Inicie sessão.");return}
+ var ov=el("div","position:fixed;inset:0;z-index:100030;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center"),
+  box=el("div","background:#14163a;color:#fff;width:100%;max-width:480px;max-height:90vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom,0px));box-sizing:border-box;border-top:3px solid #E8B424;font:15px/1.4 system-ui,sans-serif"),
+  IN="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid #2a2f6a;background:#0f1233;color:#fff;margin:5px 0;font:inherit";
+ ov.onclick=function(e){if(e.target===ov)ov.remove()};ov.append(box);document.body.append(ov);
+ box.append(el("div","font-weight:900;font-size:18px;color:#F5B520;margin-bottom:6px","➕ Depositar na carteira"),el("div","font-size:12px;opacity:.75;margin-bottom:8px","Escolha a forma de pagamento, pague e envie a referência. O valor entra na carteira (a verde) quando o administrador confirmar."),el("p","opacity:.7","A carregar…"));
+ get("bengu_payment_methods?select=id,kind,name,account,holder,instructions&active=eq.true&order=sort.asc,id.asc").catch(function(){return null}).then(function(ms){
+  box.lastChild.remove();
+  if(!ms||!ms.length){box.append(el("p","color:#ff9b9b;font-size:13px","Ainda não há formas de depósito ativas. O administrador deve adicionar M-Pesa, e-Mola, Visa ou contas internacionais."),close0());return}
+  var sel=null,info=el("div","background:#1b1f48;border-radius:12px;padding:10px;margin:8px 0;font-size:13px;display:none"),wrap=el("div","display:flex;flex-direction:column;gap:6px");
+  var KN={mpesa:"M-Pesa",emola:"e-Mola",mkesh:"mKesh",visa:"💳 Visa / cartão",paypal:"PayPal",wise:"🌍 Wise / Payoneer",swift:"🌍 Transferência internacional",bank:"🏦 Banco",other:"Outra forma"};
+  ms.forEach(function(m){var b=el("button","border:2px solid transparent;border-radius:10px;padding:10px;text-align:left;background:#2a2f66;color:#fff;font-size:14px;font-weight:700",(KN[m.kind]||m.kind)+" · "+m.name);
+   b.onclick=function(){sel=m;[].forEach.call(wrap.children,function(x){x.style.borderColor="transparent"});b.style.borderColor="#E8B424";info.style.display="block";info.replaceChildren();
+    if(m.account)info.append(el("div","","Conta / número: "),el("b","font-size:15px;word-break:break-all",m.account));
+    if(m.holder)info.append(el("div","opacity:.8","Em nome de: "+m.holder));
+    if(m.instructions)info.append(el("div","margin-top:6px;white-space:pre-wrap;opacity:.9",m.instructions));
+    var u=/https?:\/\/[^\s]+/.exec(m.instructions||"");if(u){var lk=el("button","width:100%;margin-top:8px;border:0;border-radius:10px;padding:10px;font-weight:800;background:#3b4ba8;color:#fff","🔗 Abrir página de pagamento");lk.onclick=function(){window.open(u[0],"_blank","noopener")};info.append(lk)}};
+   wrap.append(b)});
+  var am=el("input",IN),cu=el("select",IN),rf=el("input",IN),py=el("input",IN),go=el("button","width:100%;border:0;border-radius:10px;padding:12px;font-weight:900;background:linear-gradient(135deg,#FFD84D,#E8B424 55%,#C98A0C);color:#12183A;margin-top:8px","Enviar pedido de depósito"),mg=el("div","font-size:12px;margin-top:6px");
+  am.type="number";am.step="0.01";am.placeholder="Valor pago";["USD","MZN","EUR"].forEach(function(c){var op=el("option","",c);op.value=c;cu.append(op)});
+  rf.placeholder="Referência / ID da transação *";py.placeholder="Nome do titular da conta que pagou (opcional)";
+  go.onclick=function(){var v=Number(am.value);if(!sel)return say("Escolha a forma de pagamento.");if(!(v>0))return say("Indique o valor pago.");if(rf.value.trim().length<3)return say("Indique a referência da transação.");
+   go.disabled=true;rpc("bengu_wallet_deposit_request",{p_method_name:sel.name,p_method_kind:sel.kind,p_amount:v,p_currency:cu.value,p_reference:rf.value.trim(),p_payer:py.value.trim()||null}).then(function(){mg.style.color="#2fbf71";mg.textContent="Pedido enviado. Será creditado quando confirmado.";setTimeout(function(){ov.remove();done&&done()},1200)}).catch(function(e){go.disabled=false;say(e.message+" (wallet.sql?)")})};
+  function say(t){mg.style.color="#ff9b9b";mg.textContent=t}
+  box.append(el("div","font-weight:700;font-size:13px","1. Forma de pagamento"),wrap,info,el("div","font-weight:700;font-size:13px;margin-top:8px","2. Valor e referência"),am,cu,rf,py,go,mg,close0())});
+ function close0(){var c=el("button","width:100%;border:0;background:none;color:#8b93c9;margin-top:8px;font-size:13px","Fechar");c.onclick=function(){ov.remove()};return c}
+};
 window.bgWalletCard=function(o){
  var admin=!!o.admin,key=admin?"admin":(o.uid||"me"),card=el("div","background:linear-gradient(145deg,#12183A,#1b2250);border-radius:16px;padding:14px;margin:0 0 12px;border:1px solid #E8B424;box-shadow:0 6px 20px rgba(0,0,0,.35)");
  var hd0=el("div","display:flex;align-items:center;gap:8px"),lg=el("span","display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#FFD84D,#E8B424 55%,#C98A0C);color:#0A0E24;font-weight:900;font-size:16px","B");
@@ -18885,6 +18913,35 @@ window.bgWalletCard=function(o){
  var big=el("div","font-size:30px;font-weight:900;margin:6px 0 2px;color:#fff","…"),sub=el("div","font-size:12px;opacity:.75",admin?"Valor real: comissão, PayPal, compra de selos e outros serviços de pagamento.":"Valor real pago pelos seus seguidores e visualizações."),flash=el("div","display:none;margin-top:8px;padding:6px 10px;border-radius:10px;background:"+GREEN+";color:#fff;font-weight:800;font-size:13px;animation:bgwpulse 1.4s 3");
  var tiles=el("div","display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px"),list=el("div","margin-top:10px");
  card.append(big,sub,flash,tiles,list);
+ var dep=el("div","margin-top:10px");
+ function refresh(){var p=card.parentNode;if(p){p.replaceChild(window.bgWalletCard(o),card)}}
+ var GOLDB="width:100%;border:0;border-radius:10px;padding:11px;font-weight:900;background:linear-gradient(135deg,#FFD84D,#E8B424 55%,#C98A0C);color:#12183A;margin-top:10px";
+ if(!admin){var db=el("button",GOLDB,"➕ Depositar na carteira");db.onclick=function(){window.bgWalletDeposit(refresh)};card.insertBefore(db,list)}
+ card.append(dep);
+ var ST={pending:["⏳ Em análise","#F5B520"],approved:["✔ Aprovado","#2fbf71"],rejected:["✖ Rejeitado","#ff7b7b"]};
+ function loadDeps(){
+  var q=admin?"bengu_wallet_deposits?select=*&status=eq.pending&order=created_at.asc&limit=30":"bengu_wallet_deposits?select=id,method_name,amount,currency,status,credited_usd,created_at&user_id=eq."+encodeURIComponent(o.uid||"")+"&order=created_at.desc&limit=8";
+  get(q).then(function(rows){
+   if(!rows||!rows.length)return;
+   dep.append(el("div","font-weight:800;font-size:13px;color:#F5B520;margin:4px 0",admin?"Depósitos por aprovar":"Os meus depósitos"));
+   var names={};
+   (admin?get("profiles?select=id,name&id=in.("+rows.map(function(r){return r.user_id}).join(",")+")").catch(function(){return[]}):Promise.resolve([])).then(function(ps){
+    (ps||[]).forEach(function(x){names[x.id]=x.name});
+    rows.forEach(function(r){
+     var row=el("div","padding:8px 0;border-top:1px solid rgba(232,180,36,.25);font-size:13px"),top=el("div","display:flex;justify-content:space-between;gap:8px"),
+      amt=Number(r.amount)||0,cur=r.currency||"USD",stt=ST[r.status]||[r.status,"#fff"];
+     top.append(el("b","",(admin?(names[r.user_id]||"Utilizador")+" · ":"")+amt.toLocaleString("pt-PT")+" "+cur+" · "+(r.method_name||"")),el("span","font-weight:800;color:"+stt[1]+";white-space:nowrap",stt[0]));
+     row.append(top);
+     if(admin){row.append(el("div","font-size:11.5px;opacity:.75",(r.payer?"Titular: "+r.payer+" · ":"")+"Ref.: "+(r.reference||"—")+" · "+new Date(r.created_at).toLocaleString("pt-PT")));
+      var bx=el("div","display:flex;gap:6px;margin-top:6px"),ok=el("button","flex:1;border:0;border-radius:8px;padding:8px;font-weight:800;background:#2fbf71;color:#fff","✔ Aprovar"),no=el("button","flex:1;border:0;border-radius:8px;padding:8px;font-weight:800;background:#B71C1C;color:#fff","✖ Rejeitar");
+      ok.onclick=function(){var v=prompt("Valor a creditar na carteira (US$):",cur==="USD"?String(amt):"");if(v===null)return;v=Number(String(v).replace(",","."));if(!(v>0)){alert("Valor inválido.");return}ok.disabled=no.disabled=true;
+       rpc("bengu_wallet_deposit_review",{p_id:r.id,p_status:"approved",p_credit_usd:v,p_note:null}).then(refresh).catch(function(e){ok.disabled=no.disabled=false;alert(e.message)})};
+      no.onclick=function(){var n=prompt("Motivo (opcional):")||null;ok.disabled=no.disabled=true;rpc("bengu_wallet_deposit_review",{p_id:r.id,p_status:"rejected",p_credit_usd:null,p_note:n}).then(refresh).catch(function(e){ok.disabled=no.disabled=false;alert(e.message)})};
+      bx.append(ok,no);row.append(bx)}
+     else if(r.status==="approved"&&r.credited_usd)row.append(el("div","font-size:11.5px;color:#2fbf71","+"+usd(r.credited_usd)+" creditados"));
+     dep.append(row)})})
+  }).catch(function(){})}
+ loadDeps();
  var lastSeen=Number(localStorage.getItem("bg_wal_b_"+key))||0,lastT=Number(localStorage.getItem("bg_wal_t_"+key))||0;
  var q=admin?"bengu_wallet_entries?select=id,source,amount_usd,note,created_at&user_id=is.null&order=created_at.desc&limit=40":"bengu_wallet_entries?select=id,source,amount_usd,note,created_at&user_id=eq."+encodeURIComponent(o.uid||"")+"&order=created_at.desc&limit=40";
  Promise.all([get(q).catch(function(){return null}),admin?rpc("bengu_admin_commission_wd_summary").catch(function(){return null}):Promise.resolve(null)]).then(function(z){

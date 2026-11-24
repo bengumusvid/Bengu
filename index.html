@@ -18607,6 +18607,22 @@ function upDoc(blob){var path=me()+"/"+Date.now()+Math.random().toString(36).sli
 function delDoc(path){if(!path)return Promise.resolve();return fetch(U+"/storage/v1/object/verification-docs/"+path,{method:"DELETE",headers:hd()}).catch(function(){})}
 
 /* Pedir verificação (utilizador) */
+function liveSelfie(){return new Promise(function(ok,no){
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){no(new Error("Este navegador não abre a câmara. Usa o Chrome ou a app."));return}
+ navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:1280},height:{ideal:1280}},audio:false}).then(function(stream){
+  var code=String(Math.floor(1000+Math.random()*9000)),ov=el("div","position:fixed;inset:0;z-index:100060;background:#000;display:flex;flex-direction:column;color:#fff;font:15px system-ui,sans-serif"),
+   v=el("video","flex:1;min-height:0;width:100%;object-fit:cover;transform:scaleX(-1);background:#000"),
+   tp=el("div","position:absolute;left:0;right:0;top:0;padding:calc(12px + env(safe-area-inset-top,0px)) 14px 12px;background:linear-gradient(#000c,#0000);text-align:center;font-weight:700","Mostra o rosto e o documento · código "+code),
+   bar=el("div","display:flex;gap:12px;justify-content:center;padding:14px 12px calc(16px + env(safe-area-inset-bottom,0px));background:#000"),
+   shoot=el("button","border:0;border-radius:30px;padding:14px 26px;font-weight:900;font-size:16px;background:#FFB020;color:#12183A","📸 Tirar foto"),cx=el("button","border:0;border-radius:30px;padding:14px 20px;font-weight:800;background:#2a2f66;color:#fff","Cancelar");
+  v.muted=true;v.playsInline=true;v.setAttribute("playsinline","");v.srcObject=stream;v.play().catch(function(){});
+  function stop(){try{stream.getTracks().forEach(function(t){t.stop()})}catch(e){}ov.remove()}
+  cx.onclick=function(){stop();no(new Error("Cancelado"))};
+  shoot.onclick=function(){if(!v.videoWidth){return}var sc=Math.min(1,1280/Math.max(v.videoWidth,v.videoHeight)),w=Math.round(v.videoWidth*sc),h=Math.round(v.videoHeight*sc),c=document.createElement("canvas");c.width=w;c.height=h;var g=c.getContext("2d");g.drawImage(v,0,0,w,h);
+   g.fillStyle="rgba(0,0,0,.65)";g.fillRect(0,h-34,w,34);g.fillStyle="#fff";g.font="bold 16px sans-serif";g.fillText("BENGU · "+new Date().toLocaleString("pt-PT")+" · cód. "+code,10,h-11);
+   c.toBlob(function(b){stop();b?ok(b):no(new Error("Não foi possível tirar a foto"))},"image/jpeg",.85)};
+  bar.append(cx,shoot);ov.append(v,tp,bar);document.body.append(ov)
+ }).catch(function(){no(new Error("Permite o acesso à câmara para tirar a selfie."))})})}
 function ddays(t){return Math.ceil((Date.parse(t)-Date.now())/864e5)}
 function planPick(box,onPick){var PL=[{k:"Mensal",c:"monthly",l:"Mensal · 6,75 US$ por mês",v:6.75},{k:"Anual",c:"yearly",l:"Anual · 60 US$ por ano",v:60}],st={plan:PL[0]},pw=el("div","display:flex;flex-direction:column;gap:6px;margin:6px 0"),bs=[];
  function pp(){bs.forEach(function(x,i){x.style.background=PL[i]===st.plan?"#FFB020":"#2a2f66";x.style.color=PL[i]===st.plan?"#12183A":"#fff"});onPick(st.plan)}
@@ -18642,14 +18658,17 @@ function verifyForm(box,b){
  function pf(label,hint,cam){var i=el("input",INP),p=el("img","display:none;max-width:100%;max-height:170px;border-radius:10px;margin-top:8px");i.type="file";i.accept="image/*";if(cam)i.setAttribute("capture","user");
   i.onchange=function(){var f=i.files&&i.files[0];if(!f){p.style.display="none";return}p.src=URL.createObjectURL(f);p.style.display="block"};
   return{i:i,els:[lab(label),el("div","font-size:11.5px;opacity:.7;margin-bottom:4px",hint),i,p]}}
- var fr=pf("Documento — frente","Bilhete de identidade, passaporte ou carta de condução. Tudo legível.",false),vs=pf("Documento — verso","Se for passaporte, envia a página dos dados outra vez ou a página seguinte.",false),sf=pf("Selfie agora","Tira uma selfie com o rosto bem visível, sem filtros, a segurar o documento.",true),sel;
+ var fr=pf("Documento — frente","Bilhete de identidade, passaporte ou carta de condução. Tudo legível.",false),vs=pf("Documento — verso","Se for passaporte, envia a página dos dados outra vez ou a página seguinte.",false),sf=selfieField(),sel;
+ function selfieField(){var st={b:null},bt=el("button",BTN+";background:#2a2f66;color:#fff;width:100%","📷 Abrir a câmara e tirar selfie"),p=el("img","display:none;max-width:100%;max-height:170px;border-radius:10px;margin-top:8px");
+  bt.onclick=function(){liveSelfie().then(function(bl){st.b=bl;p.src=URL.createObjectURL(bl);p.style.display="block";bt.textContent="📷 Tirar outra selfie"}).catch(function(e){if(e&&e.message!=="Cancelado")toast(e.message||"Não foi possível abrir a câmara")})};
+  return{blob:function(){return st.b},els:[lab("Selfie agora (só pela câmara)"),el("div","font-size:11.5px;opacity:.7;margin-bottom:4px","Tira a selfie na hora, com o rosto bem visível, sem filtros, a segurar o documento. Não é possível escolher fotos guardadas."),bt,p]}}
  nm.placeholder="Nome completo (exatamente como no documento)";nm.maxLength=120;
  rs.placeholder="Porque deves ter o selo? (ex.: criador de conteúdos, marca, figura pública)";rs.maxLength=500;rs.rows=3;rs.style.resize="vertical";
  rf.placeholder="Referência / ID da transação do pagamento";rf.maxLength=120;
  box.append(lab("Plano do selo"));sel=planPick(box,function(){});payBtn(box,sel);
  box.append(lab("Referência do pagamento"),rf,lab("Nome completo"),nm,lab("Motivo"),rs);fr.els.concat(vs.els,sf.els).forEach(function(x){box.append(x)});
  box.append(go,el("div","font-size:11px;opacity:.7;margin-top:10px","Paga o plano escolhido diretamente à carteira Bengu do administrador, escreve a referência e envia o pedido. Cada documento só pode verificar uma conta."));
- go.onclick=function(){var n=nm.value.trim(),why=rs.value.trim(),ref=rf.value.trim(),f1=fr.i.files[0],f2=vs.i.files[0],f3=sf.i.files[0];
+ go.onclick=function(){var n=nm.value.trim(),why=rs.value.trim(),ref=rf.value.trim(),f1=fr.i.files[0],f2=vs.i.files[0],f3=sf.blob();
   if(ref.length<3){toast("Escreve a referência do pagamento");return}
   if(n.length<3){toast("Escreve o teu nome completo");return}
   if(why.length<10){toast("Explica o motivo (mínimo 10 letras)");return}
@@ -18667,7 +18686,7 @@ function showDoc(path){signed(path).then(function(u){var o=el("div","position:fi
 function compareDocs(r){var L=[["Frente",r.doc_path],["Verso",r.doc_back_path],["Selfie",r.selfie_path]].filter(function(x){return x[1]&&x[1]!=="-"});
  if(!L.length){toast("Sem documentos");return}
  var o=el("div","position:fixed;inset:0;z-index:100040;background:rgba(0,0,0,.95);overflow:auto;padding:12px;color:#fff;font:14px system-ui,sans-serif"),g=el("div","display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px"),x=el("button",BTN+";background:#B71C1C;color:#fff;position:sticky;top:0;margin-bottom:8px","✕ Fechar");x.onclick=function(){o.remove()};
- o.append(x,el("div","font-weight:800;margin-bottom:8px","Confirma: o rosto da selfie é o do documento, frente e verso coincidem e o nome é "+(r.full_name||"")),g);document.body.append(o);
+ o.append(x,el("div","font-weight:800;margin-bottom:8px","A selfie foi tirada na hora (data, hora e código escritos na foto). Confirma: o rosto é o do documento, frente e verso coincidem e o nome é "+(r.full_name||"")),g);document.body.append(o);
  L.forEach(function(it){var c=el("div","background:#1b1f48;border-radius:10px;padding:6px"),im=el("img","width:100%;border-radius:8px");c.append(el("div","font-weight:800;margin:2px 4px 6px",it[0]),im);g.append(c);signed(it[1]).then(function(u){im.src=u}).catch(function(){c.append(el("div","color:#ff9b9b","Não foi possível abrir"))})})}
 function approveDialog(r,go){var o=el("div","position:fixed;inset:0;z-index:100045;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:14px"),bx=el("div","background:#14163a;color:#fff;border-radius:16px;padding:16px;max-width:420px;width:100%;border:2px solid #2E9E4F;font:14px/1.45 system-ui,sans-serif"),ck=[],okb=el("button",BTN+";background:#2E9E4F;color:#fff;margin-top:12px;width:100%","✓ Confirmar e ativar o selo"),no=el("button","border:0;background:none;color:#8b93c9;width:100%;margin-top:6px;font-size:13px","Cancelar"),num=el("input",INP);
  bx.append(el("div","font-weight:900;font-size:17px;color:#2E9E4F;margin-bottom:8px","Verificação de identidade"));

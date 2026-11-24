@@ -18636,7 +18636,8 @@ function verifyForm(box,b){
   shrink(f,1600).then(upDoc).then(function(p){path=p;return rest("bengu_badge_requests","POST",{user_id:me(),full_name:n,reason:why,doc_path:p},{Prefer:"return=minimal"})}).then(function(){toast("Pedido enviado ✅");b.replaceChildren();viewVerify(b)}).catch(function(e){
    delDoc(path);go.disabled=false;go.textContent="Enviar pedido";
    var m=String(e&&e.message||"");toast(/23505|duplicate/i.test(m)?"Já tens um pedido em análise":/bucket not found|does not exist|schema cache/i.test(m)?"Ainda não disponível. Tente mais tarde.":"Não foi possível enviar. Tenta de novo")})};
- box.append(lab("Nome completo"),nm,lab("Motivo"),rs,lab("Foto do documento"),fi,pv,go)}
+ var pay=el("button",BTN+";margin-top:10px;background:#2a2f66;color:#fff","💳 Pagar ao administrador (carteira móvel ou banco)");pay.onclick=function(){if(window.bgWalletDeposit)window.bgWalletDeposit(null,"Selo")};
+ box.append(lab("Nome completo"),nm,lab("Motivo"),rs,lab("Foto do documento"),fi,pv,go,el("div","font-size:11px;opacity:.7;margin-top:12px","Se o selo exigir pagamento, paga diretamente à carteira Bengu do administrador e envia o comprovativo:"),pay)}
 
 /* Pedidos de verificação (administrador, dentro da aba Selos) */
 function showDoc(path){
@@ -19250,16 +19251,16 @@ function usd(n){return Number(n||0).toLocaleString("pt-PT",{minimumFractionDigit
 function get(p){return fetch(U+"/rest/v1/"+p,{headers:hd()}).then(function(r){if(!r.ok)throw new Error("x");return r.json()})}
 function rpc(n,a){return fetch(U+"/rest/v1/rpc/"+n,{method:"POST",headers:hd(),body:JSON.stringify(a||{})}).then(function(r){return r.text().then(function(t){var j=null;try{j=t?JSON.parse(t):null}catch(e){}if(!r.ok)throw new Error((j&&j.message)||("Erro "+r.status));return j})})}
 if(!document.getElementById("bgw-css")){var st=el("style");st.id="bgw-css";st.textContent="@keyframes bgwpulse{0%,100%{box-shadow:0 0 0 0 rgba(47,191,113,.7)}50%{box-shadow:0 0 0 10px rgba(47,191,113,0)}}";document.head.append(st)}
-window.bgWalletDeposit=function(done){
+window.bgWalletDeposit=function(done,purpose){
  if(!tok()){alert("Inicie sessão.");return}
  var ov=el("div","position:fixed;inset:0;z-index:100030;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center"),
   box=el("div","background:#14163a;color:#fff;width:100%;max-width:480px;max-height:90vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom,0px));box-sizing:border-box;border-top:3px solid #E8B424;font:15px/1.4 system-ui,sans-serif"),
   IN="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid #2a2f6a;background:#0f1233;color:#fff;margin:5px 0;font:inherit";
  ov.onclick=function(e){if(e.target===ov)ov.remove()};ov.append(box);document.body.append(ov);
- box.append(el("div","font-weight:900;font-size:18px;color:#F5B520;margin-bottom:6px","➕ Depositar na carteira"),el("div","font-size:12px;opacity:.75;margin-bottom:8px","Escolha a forma de pagamento, pague e envie a referência. O valor entra na carteira (a verde) assim que o pagamento for confirmado."),el("p","opacity:.7","A carregar…"));
+ box.append(el("div","font-weight:900;font-size:18px;color:#F5B520;margin-bottom:6px","💳 Pagar ao administrador"),el("div","font-size:12px;opacity:.75;margin-bottom:8px","Pague diretamente à carteira Bengu do administrador, por carteira móvel ou conta bancária, e envie a referência da transação. O administrador confirma o pagamento."),el("p","opacity:.7","A carregar…"));
  get("bengu_payment_methods?select=id,kind,name,account,holder,instructions&active=eq.true&order=sort.asc,id.asc").catch(function(){return null}).then(function(ms){
   box.lastChild.remove();
-  if(!ms||!ms.length){box.append(el("p","color:#ff9b9b;font-size:13px","Os depósitos estão temporariamente indisponíveis. Tente novamente mais tarde."),close0());return}
+  if(!ms||!ms.length){box.append(el("p","color:#ff9b9b;font-size:13px","Os pagamentos estão temporariamente indisponíveis. Tente novamente mais tarde."),close0());return}
   var sel=null,info=el("div","background:#1b1f48;border-radius:12px;padding:10px;margin:8px 0;font-size:13px;display:none"),wrap=el("div","display:flex;flex-direction:column;gap:6px");
   var KN={mpesa:"M-Pesa",emola:"e-Mola",mkesh:"mKesh",visa:"💳 Visa / cartão",paypal:"PayPal",wise:"🌍 Wise / Payoneer",swift:"🌍 Transferência internacional",bank:"🏦 Banco",other:"Outra forma"};
   ms.forEach(function(m){var b=el("button","border:2px solid transparent;border-radius:10px;padding:10px;text-align:left;background:#2a2f66;color:#fff;font-size:14px;font-weight:700",(KN[m.kind]||m.kind)+" · "+m.name);
@@ -19269,33 +19270,49 @@ window.bgWalletDeposit=function(done){
     if(m.instructions)info.append(el("div","margin-top:6px;white-space:pre-wrap;opacity:.9",m.instructions));
     var u=/https?:\/\/[^\s]+/.exec(m.instructions||"");if(u){var lk=el("button","width:100%;margin-top:8px;border:0;border-radius:10px;padding:10px;font-weight:800;background:#3b4ba8;color:#fff","🔗 Abrir página de pagamento");lk.onclick=function(){window.open(u[0],"_blank","noopener")};info.append(lk)}};
    wrap.append(b)});
-  var am=el("input",IN),cu=el("select",IN),rf=el("input",IN),py=el("input",IN),go=el("button","width:100%;border:0;border-radius:10px;padding:12px;font-weight:900;background:linear-gradient(135deg,#FFD84D,#E8B424 55%,#C98A0C);color:#12183A;margin-top:8px","Enviar pedido de depósito"),mg=el("div","font-size:12px;margin-top:6px");
+  var am=el("input",IN),cu=el("select",IN),rf=el("input",IN),py=el("input",IN),go=el("button","width:100%;border:0;border-radius:10px;padding:12px;font-weight:900;background:linear-gradient(135deg,#FFD84D,#E8B424 55%,#C98A0C);color:#12183A;margin-top:8px","Enviar comprovativo de pagamento"),mg=el("div","font-size:12px;margin-top:6px");
   am.type="number";am.step="0.01";am.placeholder="Valor pago";["USD","MZN","EUR"].forEach(function(c){var op=el("option","",c);op.value=c;cu.append(op)});
   rf.placeholder="Referência / ID da transação *";py.placeholder="Nome do titular da conta que pagou (opcional)";
   go.onclick=function(){var v=Number(am.value);if(!sel)return say("Escolha a forma de pagamento.");if(!(v>0))return say("Indique o valor pago.");if(rf.value.trim().length<3)return say("Indique a referência da transação.");
-   go.disabled=true;rpc("bengu_wallet_deposit_request",{p_method_name:sel.name,p_method_kind:sel.kind,p_amount:v,p_currency:cu.value,p_reference:rf.value.trim(),p_payer:py.value.trim()||null}).then(function(){mg.style.color="#2fbf71";mg.textContent="Pedido enviado. Será creditado assim que o pagamento for confirmado.";setTimeout(function(){ov.remove();done&&done()},1200)}).catch(function(e){go.disabled=false;say(e.message)})};
+   go.disabled=true;rpc("bengu_wallet_deposit_request",{p_method_name:sel.name,p_method_kind:sel.kind,p_amount:v,p_currency:cu.value,p_reference:(purpose?"["+purpose+"] ":"")+rf.value.trim(),p_payer:py.value.trim()||null}).then(function(){mg.style.color="#2fbf71";mg.textContent="Comprovativo enviado. O administrador vai confirmar o pagamento.";setTimeout(function(){ov.remove();done&&done()},1200)}).catch(function(e){go.disabled=false;say(e.message)})};
   function say(t){mg.style.color="#ff9b9b";mg.textContent=t}
   box.append(el("div","font-weight:700;font-size:13px","1. Forma de pagamento"),wrap,info,el("div","font-weight:700;font-size:13px;margin-top:8px","2. Valor e referência"),am,cu,rf,py,go,mg,close0())});
  function close0(){var c=el("button","width:100%;border:0;background:none;color:#8b93c9;margin-top:8px;font-size:13px","Fechar");c.onclick=function(){ov.remove()};return c}
 };
+window.bgWalletSend=function(me0,avail,done){
+ var ov=el("div","position:fixed;inset:0;z-index:100030;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center"),
+  box=el("div","background:#14163a;color:#fff;width:100%;max-width:480px;max-height:90vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom,0px));box-sizing:border-box;border-top:3px solid #2fbf71;font:15px/1.4 system-ui,sans-serif"),
+  IN="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid #2a2f6a;background:#0f1233;color:#fff;margin:5px 0;font:inherit",
+  sq=el("input",IN),res=el("div","display:flex;flex-direction:column;gap:4px"),am=el("input",IN),nt=el("input",IN),mg=el("div","font-size:13px;margin-top:6px"),chosen=null,tm=null,
+  go=el("button","width:100%;border:0;border-radius:10px;padding:12px;font-weight:900;background:linear-gradient(135deg,#2fbf71,#1e9a57);color:#fff;margin-top:8px","💸 Enviar"),
+  cl=el("button","width:100%;border:0;background:none;color:#8b93c9;margin-top:8px;font-size:13px","Fechar");
+ ov.onclick=function(e){if(e.target===ov)ov.remove()};cl.onclick=function(){ov.remove()};
+ sq.placeholder="Procurar utilizador pelo nome";am.type="number";am.step="0.01";am.placeholder="Valor a enviar (US$)";nt.placeholder="Nota (opcional)";nt.maxLength=80;
+ function say(t,ok){mg.textContent=t;mg.style.color=ok?GREEN:"#ff9b9b"}
+ sq.oninput=function(){clearTimeout(tm);var v=sq.value.trim().replace(/[*,()%]/g,"");res.replaceChildren();chosen=null;if(v.length<2)return;
+  tm=setTimeout(function(){get("profiles?select=id,name&name=ilike.*"+encodeURIComponent(v)+"*&limit=8").then(function(ps){res.replaceChildren();(ps||[]).filter(function(p){return p.id!==me0}).forEach(function(p){var b=el("button","border:2px solid transparent;border-radius:8px;padding:8px;text-align:left;background:#2a2f66;color:#fff",p.name||"Utilizador");
+   b.onclick=function(){chosen=p;[].forEach.call(res.children,function(x){x.style.borderColor="transparent"});b.style.borderColor="#2fbf71"};res.append(b)})}).catch(function(){})},300)};
+ go.onclick=function(){var v=Number(am.value);if(!chosen)return say("Escolha o utilizador.");if(!(v>0))return say("Indique o valor.");if(v>avail+0.0001)return say("Saldo insuficiente ("+usd(avail)+").");
+  if(!confirm("Enviar "+usd(v)+" para "+(chosen.name||"utilizador")+"? Não pode ser anulado."))return;go.disabled=true;
+  rpc("bengu_wallet_transfer",{p_to:chosen.id,p_amount:v,p_note:nt.value.trim()||null}).then(function(){say("Enviado "+usd(v)+" para "+(chosen.name||"utilizador")+".",true);setTimeout(function(){ov.remove();done&&done()},1100)}).catch(function(e){go.disabled=false;say(e.message)})};
+ box.append(el("div","font-weight:900;font-size:18px;color:#2fbf71;margin-bottom:4px","💸 Enviar valor real"),el("div","font-size:12px;opacity:.75;margin-bottom:8px","Disponível para enviar: "+usd(avail)+". O valor sai da sua carteira e entra de imediato na carteira do outro utilizador."),sq,res,am,nt,go,mg,cl);ov.append(box);document.body.append(ov)};
 window.bgWalletCard=function(o){
  var admin=!!o.admin,key=admin?"admin":(o.uid||"me"),card=el("div","background:linear-gradient(145deg,#12183A,#1b2250);border-radius:16px;padding:14px;margin:0 0 12px;border:1px solid #E8B424;box-shadow:0 6px 20px rgba(0,0,0,.35)");
  var hd0=el("div","display:flex;align-items:center;gap:8px"),lg=el("span","display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#FFD84D,#E8B424 55%,#C98A0C);color:#0A0E24;font-weight:900;font-size:16px","B");
  hd0.append(lg,el("span","font-weight:800;font-size:15px;color:#F5B520",admin?"Carteira do Bengu":"A minha carteira"));card.append(hd0);
- var big=el("div","font-size:30px;font-weight:900;margin:6px 0 2px;color:#fff","…"),sub=el("div","font-size:12px;opacity:.75",admin?"Valor real: comissão, PayPal, compra de selos e outros serviços de pagamento.":"Valor real pago pelos seus seguidores e visualizações."),flash=el("div","display:none;margin-top:8px;padding:6px 10px;border-radius:10px;background:"+GREEN+";color:#fff;font-weight:800;font-size:13px;animation:bgwpulse 1.4s 3");
+ var big=el("div","font-size:30px;font-weight:900;margin:6px 0 2px;color:#fff","…"),sub=el("div","font-size:12px;opacity:.75",admin?"Valor real: comissão, PayPal, compra de selos e outros serviços de pagamento.":""),flash=el("div","display:none;margin-top:8px;padding:6px 10px;border-radius:10px;background:"+GREEN+";color:#fff;font-weight:800;font-size:13px;animation:bgwpulse 1.4s 3");
  var tiles=el("div","display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px"),list=el("div","margin-top:10px");
  card.append(big,sub,flash,tiles,list);
- var dep=el("div","margin-top:10px");
+ var dep=el("div","margin-top:10px"),curBal=0;
  function refresh(){var p=card.parentNode;if(p){p.replaceChild(window.bgWalletCard(o),card)}}
  var GOLDB="width:100%;border:0;border-radius:10px;padding:11px;font-weight:900;background:linear-gradient(135deg,#FFD84D,#E8B424 55%,#C98A0C);color:#12183A;margin-top:10px";
- if(!admin){var db=el("button",GOLDB,"➕ Depositar na carteira");db.onclick=function(){window.bgWalletDeposit(refresh)};card.insertBefore(db,list)}
  card.append(dep);
  var ST={pending:["⏳ Em análise","#F5B520"],approved:["✔ Aprovado","#2fbf71"],rejected:["✖ Rejeitado","#ff7b7b"]};
  function loadDeps(){
   var q=admin?"bengu_wallet_deposits?select=*&status=eq.pending&order=created_at.asc&limit=30":"bengu_wallet_deposits?select=id,method_name,amount,currency,status,credited_usd,created_at&user_id=eq."+encodeURIComponent(o.uid||"")+"&order=created_at.desc&limit=8";
   get(q).then(function(rows){
    if(!rows||!rows.length)return;
-   dep.append(el("div","font-weight:800;font-size:13px;color:#F5B520;margin:4px 0",admin?"Depósitos por aprovar":"Os meus depósitos"));
+   dep.append(el("div","font-weight:800;font-size:13px;color:#F5B520;margin:4px 0",admin?"Pagamentos por confirmar":"Os meus pagamentos"));
    var names={};
    (admin?get("profiles?select=id,name&id=in.("+rows.map(function(r){return r.user_id}).join(",")+")").catch(function(){return[]}):Promise.resolve([])).then(function(ps){
     (ps||[]).forEach(function(x){names[x.id]=x.name});
@@ -19306,8 +19323,9 @@ window.bgWalletCard=function(o){
      row.append(top);
      if(admin){row.append(el("div","font-size:11.5px;opacity:.75",(r.payer?"Titular: "+r.payer+" · ":"")+"Ref.: "+(r.reference||"—")+" · "+new Date(r.created_at).toLocaleString("pt-PT")));
       var bx=el("div","display:flex;gap:6px;margin-top:6px"),ok=el("button","flex:1;border:0;border-radius:8px;padding:8px;font-weight:800;background:#2fbf71;color:#fff","✔ Aprovar"),no=el("button","flex:1;border:0;border-radius:8px;padding:8px;font-weight:800;background:#B71C1C;color:#fff","✖ Rejeitar");
-      ok.onclick=function(){var v=prompt("Valor a creditar na carteira (US$):",cur==="USD"?String(amt):"");if(v===null)return;v=Number(String(v).replace(",","."));if(!(v>0)){alert("Valor inválido.");return}ok.disabled=no.disabled=true;
-       rpc("bengu_wallet_deposit_review",{p_id:r.id,p_status:"approved",p_credit_usd:v,p_note:null}).then(refresh).catch(function(e){ok.disabled=no.disabled=false;alert(e.message)})};
+      ok.onclick=function(){var v=prompt("Valor recebido na carteira do administrador (US$):",cur==="USD"?String(amt):"");if(v===null)return;v=Number(String(v).replace(",","."));if(!(v>0)){alert("Valor inválido.");return}ok.disabled=no.disabled=true;
+       var pm=/^\[(\w+)\]/.exec(r.reference||""),src=pm&&/selo/i.test(pm[1])?"selo":"other";
+       fetch(U+"/rest/v1/bengu_wallet_deposits?id=eq."+encodeURIComponent(r.id),{method:"PATCH",headers:Object.assign(hd(),{Prefer:"return=minimal"}),body:JSON.stringify({status:"approved",credited_usd:v})}).then(function(x){if(!x.ok)throw new Error("Sem permissão para confirmar (wallet.sql).")}).then(function(){return rpc("bengu_wallet_credit",{p_user:null,p_source:src,p_amount:v,p_note:"Pagamento de "+(names[r.user_id]||"utilizador")+" · "+(r.method_name||"")})}).then(refresh).catch(function(e){ok.disabled=no.disabled=false;alert(e.message)})};
       no.onclick=function(){var n=prompt("Motivo (opcional):")||null;ok.disabled=no.disabled=true;rpc("bengu_wallet_deposit_review",{p_id:r.id,p_status:"rejected",p_credit_usd:null,p_note:n}).then(refresh).catch(function(e){ok.disabled=no.disabled=false;alert(e.message)})};
       bx.append(ok,no);row.append(bx)}
      else if(r.status==="approved"&&r.credited_usd)row.append(el("div","font-size:11.5px;color:#2fbf71","+"+usd(r.credited_usd)+" creditados"));
@@ -19320,13 +19338,14 @@ window.bgWalletCard=function(o){
   var rows=z[0],sm=z[1],sum=0,by={};
   (rows||[]).forEach(function(r){var a=Number(r.amount_usd)||0;sum+=a;by[r.source]=(by[r.source]||0)+a});
   var base=admin?(sm?Number(sm.available)||0:0):(Number(o.balance)||0),bal=base+sum;
-  big.textContent=usd(bal);big.style.color=bal>0?GREEN:"#fff";
+  curBal=bal;big.textContent=usd(bal);big.style.color=bal>0?GREEN:"#fff";
   var up=bal>lastSeen+0.004&&lastSeen>0;
   if(up){flash.style.display="block";flash.textContent="⬆ Entrou "+usd(bal-lastSeen)+" na carteira"}
   try{localStorage.setItem("bg_wal_b_"+key,String(bal));localStorage.setItem("bg_wal_t_"+key,String(Date.now()))}catch(e){}
   function tile(l,v){var d=el("div","background:#0A0E24;border-radius:10px;padding:8px;text-align:center;border-top:3px solid #E8B424");d.append(el("div","font-size:14px;font-weight:800;color:"+(v>0?GREEN:"#fff"),usd(v)),el("div","font-size:10.5px;color:#E8B424;opacity:.9",l));tiles.append(d)}
   if(admin){tile("Comissão (visualizações)",base);tile("PayPal",by.paypal||0);tile("Compra de selos",by.selo||0);tile("Outros serviços",by.other||0)}
-  else{tile("Ganhos disponíveis",base);tile("Outros créditos",sum)}
+  else{tile("Ganhos disponíveis",base);tile("Outros créditos",sum);
+   var sb=el("button","grid-column:1/3;border:0;border-radius:10px;padding:11px;font-weight:900;background:linear-gradient(135deg,#2fbf71,#1e9a57);color:#fff","💸 Enviar para outro utilizador");sb.onclick=function(){if(sum<=0){alert("Só pode enviar valor que já esteja creditado na sua carteira (Outros créditos).");return}window.bgWalletSend(o.uid,sum,refresh)};tiles.append(sb)}
   if(rows===null){list.append(el("div","font-size:12px;opacity:.65",(admin?"Histórico de entradas indisponível. Execute o wallet.sql no Supabase.":"Histórico de entradas indisponível de momento.")))}
   else if(!rows.length){list.append(el("div","font-size:12px;opacity:.65","Ainda sem entradas registadas."))}
   else{list.append(el("div","font-weight:800;font-size:13px;margin-bottom:4px;color:#F5B520","Entradas e saídas"));
@@ -19340,7 +19359,20 @@ window.bgWalletCard=function(o){
   am.type="number";am.step="0.01";am.placeholder="Valor em US$ (negativo para saída)";nt.placeholder="Nota (ex.: PayPal #123, selo de Maria)";
   go.onclick=function(){var v=Number(am.value);if(!v){ms.textContent="Indique um valor.";ms.style.color="#ff9b9b";return}go.disabled=true;
    rpc("bengu_wallet_credit",{p_user:null,p_source:s1.value,p_amount:v,p_note:nt.value.trim()||null}).then(function(){ms.textContent="Registado.";ms.style.color=GREEN;setTimeout(function(){var p=card.parentNode;if(p){var n=window.bgWalletCard(o);p.replaceChild(n,card)}},600)}).catch(function(e){go.disabled=false;ms.textContent=e.message+" (wallet.sql?)";ms.style.color="#ff9b9b"})};
-  f.append(el("div","font-weight:800;font-size:13px;color:#F5B520","Registar PayPal, selos e outros serviços"),s1,am,nt,go,ms);card.append(f)}
+  f.append(el("div","font-weight:800;font-size:13px;color:#F5B520","Registar PayPal, selos e outros serviços"),s1,am,nt,go,ms);card.append(f);
+  var IN2="width:100%;box-sizing:border-box;padding:9px;border-radius:8px;border:1px solid #2a2f6a;background:#0f1233;color:#fff;margin:4px 0",
+   tf=el("div","margin-top:12px;padding-top:10px;border-top:1px solid rgba(232,180,36,.4)"),sq=el("input",IN2),res=el("div","display:flex;flex-direction:column;gap:4px"),chosen=null,tam=el("input",IN2),tnt=el("input",IN2),tmr=null,
+   tgo=el("button","width:100%;border:0;border-radius:10px;padding:10px;font-weight:900;background:linear-gradient(135deg,#2fbf71,#1e9a57);color:#fff;margin-top:4px","💸 Transferir para a carteira do utilizador"),tms=el("div","font-size:12px;margin-top:6px");
+  sq.placeholder="Procurar utilizador pelo nome";tam.type="number";tam.step="0.01";tam.placeholder="Valor real a transferir (US$)";tnt.placeholder="Nota (opcional)";
+  sq.oninput=function(){clearTimeout(tmr);var v=sq.value.trim().replace(/[*,()%]/g,"");res.replaceChildren();chosen=null;if(v.length<2)return;
+   tmr=setTimeout(function(){get("profiles?select=id,name&name=ilike.*"+encodeURIComponent(v)+"*&limit=8").then(function(ps){res.replaceChildren();(ps||[]).forEach(function(p){var b=el("button","border:2px solid transparent;border-radius:8px;padding:8px;text-align:left;background:#2a2f66;color:#fff",p.name||"Utilizador");
+    b.onclick=function(){chosen=p;[].forEach.call(res.children,function(x){x.style.borderColor="transparent"});b.style.borderColor="#E8B424"};res.append(b)})}).catch(function(){})},300)};
+  function tsay(t,ok){tms.textContent=t;tms.style.color=ok?GREEN:"#ff9b9b"}
+  tgo.onclick=function(){var v=Number(tam.value);if(!chosen)return tsay("Escolha o utilizador.");if(!(v>0))return tsay("Indique o valor.");if(v>curBal+0.0001)return tsay("Saldo insuficiente na carteira do Bengu ("+usd(curBal)+").");
+   if(!confirm("Transferir "+usd(v)+" da carteira do Bengu para a carteira de "+(chosen.name||"utilizador")+"?"))return;tgo.disabled=true;var n=tnt.value.trim();
+   rpc("bengu_wallet_credit",{p_user:chosen.id,p_source:"other",p_amount:v,p_note:"Transferência do Bengu"+(n?" · "+n:"")}).then(function(){
+    return rpc("bengu_wallet_credit",{p_user:null,p_source:"other",p_amount:-v,p_note:"Transferido para "+(chosen.name||"utilizador")+(n?" · "+n:"")}).catch(function(e){throw new Error("Utilizador creditado, mas falhou o débito na carteira do Bengu: "+e.message+". Registe a saída manualmente.")})}).then(function(){tsay("Transferido "+usd(v)+" para "+(chosen.name||"utilizador")+".",true);setTimeout(function(){var p=card.parentNode;if(p)p.replaceChild(window.bgWalletCard(o),card)},900)}).catch(function(e){tgo.disabled=false;tsay(e.message)})};
+  tf.append(el("div","font-weight:800;font-size:13px;color:#F5B520","Transferir valor real para a carteira de um utilizador"),sq,res,tam,tnt,tgo,tms);card.append(tf)}
  return card};
 })();
 </script>

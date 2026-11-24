@@ -14250,7 +14250,7 @@ function hx({ minor: e, allowDefault: t, onPublish: r, onError: n }) {
               u.jsx("p", {
                 className: "mt-3 text-sm",
                 style: { color: k.mute },
-                children: x(e ? "liveMinor" : "liveNote"),
+                children: e ? x("liveMinor") : null,
               }),
             ],
           })

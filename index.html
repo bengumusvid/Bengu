@@ -4366,6 +4366,10 @@ function clean(h){return String(h).replace(/<script[\s\S]*?<\/script>/gi,"").rep
 function docxHtml(url){return Promise.all([lib("mammoth"),fetch(url).then(function(r){if(!r.ok)throw 0;return r.arrayBuffer()})]).then(function(a){return a[0].convertToHtml({arrayBuffer:a[1]})}).then(function(r){return clean(r.value)})}
 var PG="background:#fff;color:#000;font:16px/1.55 'Times New Roman',Georgia,serif;padding:22px 18px;box-sizing:border-box;word-break:break-word;";
 var CSS="<style>.bgw img{max-width:100%}.bgw table{border-collapse:collapse;width:100%}.bgw td,.bgw th{border:1px solid #999;padding:4px 6px}.bgw h1{font-size:26px}.bgw h2{font-size:21px}</style>";
+/* pré-visualização do .docx no cartão do feed */
+var PC={};
+window.bgDocxPreview=function(box,url,tap){var w=mk("div",PG+"max-height:230px;overflow:hidden;position:relative;border-radius:8px;cursor:pointer;margin:0 16px 8px;padding:14px 16px;font-size:14px;color:#555",L("Loading preview…","A carregar pré-visualização…"));w.className="bgw";w.onclick=tap;box.replaceChildren(w);
+ (PC[url]||(PC[url]=docxHtml(url))).then(function(h){w.style.color="#000";w.innerHTML=CSS+h.replace(/<img[^>]*>/gi,"");w.append(mk("div","position:absolute;left:0;right:0;bottom:0;padding:28px 10px 8px;background:linear-gradient(rgba(255,255,255,0),#fff 70%);text-align:center;font:700 12px system-ui,sans-serif;color:#1E88E5",L("Tap to read the document","Toque para ler o documento")))}).catch(function(){delete PC[url];box.replaceChildren()})};
 /* ler .docx dentro da app */
 window.bgDocxInto=function(box,url,fail){var info=mk("p","text-align:center;opacity:.7;padding:24px",L("Opening…","A abrir…"));box.append(info);
  docxHtml(url).then(function(h){info.remove();var w=mk("div",PG+"max-width:820px;margin:10px auto;border-radius:6px;min-height:60vh;overflow-x:auto");w.className="bgw";w.innerHTML=CSS+h;box.append(w)}).catch(function(){info.remove();fail()})};
@@ -7079,10 +7083,26 @@ function K_({ post: e, users: t, mine: mn_, onDeleteItem: dit_, onDownloadItem: 
           },
           c,
         ),
+        /\.docx$/i.test(String(l.name || l.url || "").split("?")[0]) && u.jsx(BgDocPrev, { url: l.url, onOpen: () => { bgCountPost(e); window.bgDocView && window.bgDocView(l.url, l.name, { post: e, item: l, mine: !!mn_ }); } }),
         grp && u.jsx(BgItemBar, { post: e, item: l, dl: dlIt_ }),
       ] }, "d" + c)),
     ],
   });
+}
+function BgDocPrev({ url, onOpen }) {
+  const ref = B.useRef(null);
+  B.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let io;
+    const go = () => window.bgDocxPreview && window.bgDocxPreview(el, url, onOpen);
+    if ("IntersectionObserver" in window) {
+      io = new IntersectionObserver((es) => { if (es[0].isIntersecting) { io.disconnect(); go(); } }, { rootMargin: "300px 0px" });
+      io.observe(el);
+    } else go();
+    return () => { io && io.disconnect(); };
+  }, [url]);
+  return u.jsx("div", { ref });
 }
 function BgPgSlot({ row, again }) {
   const ref = B.useRef(null);

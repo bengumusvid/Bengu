@@ -18879,8 +18879,9 @@ function get(p){return fetch(U+"/rest/v1/"+p,{headers:hd()}).then(function(r){if
 function rpc(n,a){return fetch(U+"/rest/v1/rpc/"+n,{method:"POST",headers:hd(),body:JSON.stringify(a||{})}).then(function(r){return r.text().then(function(t){var j=null;try{j=t?JSON.parse(t):null}catch(e){}if(!r.ok)throw new Error((j&&j.message)||("Erro "+r.status));return j})})}
 if(!document.getElementById("bgw-css")){var st=el("style");st.id="bgw-css";st.textContent="@keyframes bgwpulse{0%,100%{box-shadow:0 0 0 0 rgba(47,191,113,.7)}50%{box-shadow:0 0 0 10px rgba(47,191,113,0)}}";document.head.append(st)}
 window.bgWalletCard=function(o){
- var admin=!!o.admin,key=admin?"admin":(o.uid||"me"),card=el("div","background:#1b1f48;border-radius:14px;padding:14px;margin:0 0 12px;border:1px solid #2a2f66");
- card.append(el("div","font-weight:800;font-size:14px;opacity:.9",admin?"👛 Carteira do Bengu":"👛 A minha carteira"));
+ var admin=!!o.admin,key=admin?"admin":(o.uid||"me"),card=el("div","background:linear-gradient(145deg,#12183A,#1b2250);border-radius:16px;padding:14px;margin:0 0 12px;border:1px solid #E8B424;box-shadow:0 6px 20px rgba(0,0,0,.35)");
+ var hd0=el("div","display:flex;align-items:center;gap:8px"),lg=el("span","display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#FFD84D,#E8B424 55%,#C98A0C);color:#0A0E24;font-weight:900;font-size:16px","B");
+ hd0.append(lg,el("span","font-weight:800;font-size:15px;color:#F5B520",admin?"Carteira do Bengu":"A minha carteira"));card.append(hd0);
  var big=el("div","font-size:30px;font-weight:900;margin:6px 0 2px;color:#fff","…"),sub=el("div","font-size:12px;opacity:.75",admin?"Valor real: comissão, PayPal, compra de selos e outros serviços de pagamento.":"Valor real pago pelos seus seguidores e visualizações."),flash=el("div","display:none;margin-top:8px;padding:6px 10px;border-radius:10px;background:"+GREEN+";color:#fff;font-weight:800;font-size:13px;animation:bgwpulse 1.4s 3");
  var tiles=el("div","display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px"),list=el("div","margin-top:10px");
  card.append(big,sub,flash,tiles,list);
@@ -18894,23 +18895,23 @@ window.bgWalletCard=function(o){
   var up=bal>lastSeen+0.004&&lastSeen>0;
   if(up){flash.style.display="block";flash.textContent="⬆ Entrou "+usd(bal-lastSeen)+" na carteira"}
   try{localStorage.setItem("bg_wal_b_"+key,String(bal));localStorage.setItem("bg_wal_t_"+key,String(Date.now()))}catch(e){}
-  function tile(l,v){var d=el("div","background:#0f1233;border-radius:10px;padding:8px;text-align:center");d.append(el("div","font-size:14px;font-weight:800;color:"+(v>0?GREEN:"#fff"),usd(v)),el("div","font-size:10.5px;opacity:.7",l));tiles.append(d)}
+  function tile(l,v){var d=el("div","background:#0A0E24;border-radius:10px;padding:8px;text-align:center;border-top:3px solid #E8B424");d.append(el("div","font-size:14px;font-weight:800;color:"+(v>0?GREEN:"#fff"),usd(v)),el("div","font-size:10.5px;color:#E8B424;opacity:.9",l));tiles.append(d)}
   if(admin){tile("Comissão (visualizações)",base);tile("PayPal",by.paypal||0);tile("Compra de selos",by.selo||0);tile("Outros serviços",by.other||0)}
   else{tile("Ganhos disponíveis",base);tile("Outros créditos",sum)}
   if(rows===null){list.append(el("div","font-size:12px;opacity:.65","Histórico de entradas indisponível. Execute o wallet.sql no Supabase."))}
   else if(!rows.length){list.append(el("div","font-size:12px;opacity:.65","Ainda sem entradas registadas."))}
-  else{list.append(el("div","font-weight:700;font-size:13px;margin-bottom:4px","Entradas e saídas"));
-   rows.forEach(function(r){var a=Number(r.amount_usd)||0,isNew=lastT>0&&Date.parse(r.created_at)>lastT,row=el("div","display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid #2a2f66;font-size:13px"),l=el("div","flex:1;min-width:0");
+  else{list.append(el("div","font-weight:800;font-size:13px;margin-bottom:4px;color:#F5B520","Entradas e saídas"));
+   rows.forEach(function(r){var a=Number(r.amount_usd)||0,isNew=lastT>0&&Date.parse(r.created_at)>lastT,row=el("div","display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid rgba(232,180,36,.25);font-size:13px"),l=el("div","flex:1;min-width:0");
     l.append(el("div","font-weight:700",(SRC[r.source]||r.source)+(isNew?"  🟢 novo":"")),el("div","font-size:11px;opacity:.7",new Date(r.created_at).toLocaleDateString("pt-PT")+(r.note?" · "+r.note:"")));
     row.append(l,el("div","font-weight:800;white-space:nowrap;color:"+(a>0?GREEN:"#ff7b7b"),(a>0?"+":"")+usd(a)));list.append(row)})}
  });
  if(admin){
-  var f=el("div","margin-top:12px;padding-top:10px;border-top:1px solid #2a2f66"),s1=el("select","width:100%;padding:9px;border-radius:8px;border:1px solid #2a2f6a;background:#0f1233;color:#fff;margin:4px 0"),am=el("input","width:100%;box-sizing:border-box;padding:9px;border-radius:8px;border:1px solid #2a2f6a;background:#0f1233;color:#fff;margin:4px 0"),nt=el("input","width:100%;box-sizing:border-box;padding:9px;border-radius:8px;border:1px solid #2a2f6a;background:#0f1233;color:#fff;margin:4px 0"),go=el("button","width:100%;border:0;border-radius:10px;padding:10px;font-weight:800;background:"+GREEN+";color:#fff;margin-top:4px","➕ Registar entrada na carteira"),ms=el("div","font-size:12px;margin-top:6px");
+  var f=el("div","margin-top:12px;padding-top:10px;border-top:1px solid rgba(232,180,36,.4)"),s1=el("select","width:100%;padding:9px;border-radius:8px;border:1px solid #2a2f6a;background:#0f1233;color:#fff;margin:4px 0"),am=el("input","width:100%;box-sizing:border-box;padding:9px;border-radius:8px;border:1px solid #2a2f6a;background:#0f1233;color:#fff;margin:4px 0"),nt=el("input","width:100%;box-sizing:border-box;padding:9px;border-radius:8px;border:1px solid #2a2f6a;background:#0f1233;color:#fff;margin:4px 0"),go=el("button","width:100%;border:0;border-radius:10px;padding:10px;font-weight:900;background:linear-gradient(135deg,#FFD84D,#E8B424 55%,#C98A0C);color:#12183A;margin-top:4px","➕ Registar entrada na carteira"),ms=el("div","font-size:12px;margin-top:6px");
   ["paypal","selo","other"].forEach(function(k){var op=el("option","",SRC[k]);op.value=k;s1.append(op)});
   am.type="number";am.step="0.01";am.placeholder="Valor em US$ (negativo para saída)";nt.placeholder="Nota (ex.: PayPal #123, selo de Maria)";
   go.onclick=function(){var v=Number(am.value);if(!v){ms.textContent="Indique um valor.";ms.style.color="#ff9b9b";return}go.disabled=true;
    rpc("bengu_wallet_credit",{p_user:null,p_source:s1.value,p_amount:v,p_note:nt.value.trim()||null}).then(function(){ms.textContent="Registado.";ms.style.color=GREEN;setTimeout(function(){var p=card.parentNode;if(p){var n=window.bgWalletCard(o);p.replaceChild(n,card)}},600)}).catch(function(e){go.disabled=false;ms.textContent=e.message+" (wallet.sql?)";ms.style.color="#ff9b9b"})};
-  f.append(el("div","font-weight:700;font-size:13px","Registar PayPal, selos e outros serviços"),s1,am,nt,go,ms);card.append(f)}
+  f.append(el("div","font-weight:800;font-size:13px;color:#F5B520","Registar PayPal, selos e outros serviços"),s1,am,nt,go,ms);card.append(f)}
  return card};
 })();
 </script>

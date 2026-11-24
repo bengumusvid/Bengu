@@ -17044,7 +17044,7 @@ window.bengu_app_switch=function(){
     box.append(el("div","font-weight:800;font-size:16px;margin-bottom:10px",on?"✅ O aplicativo está LIGADO":"⛔ O aplicativo está DESLIGADO"));
     var b=btn(on?"Desligar o aplicativo":"Ligar o aplicativo",on?"#B71C1C":"#2fbf71","#fff",function(){
       var nv=!on;if(!nv&&!confirm("Desligar o Bengu para TODOS os utilizadores (exceto o administrador)?"))return;b.disabled=true;
-      rpc("bengu_admin_set_flag",{p_key:"app_enabled",p_value:nv,p_user:null}).then(function(){f.app_enabled=nv;window.BG_FLAGS=window.BG_FLAGS||{};window.BG_FLAGS.app_enabled=nv;try{localStorage.setItem("bg_app_off",nv?"0":"1")}catch(e){}draw(f)}).catch(function(e){b.disabled=false;note(m.body,e.message,false)})});
+      rpc("bengu_admin_set_flag",{p_key:"app_enabled",p_value:nv,p_user:null}).then(function(){f.app_enabled=nv;window.BG_FLAGS=window.BG_FLAGS||{};window.BG_FLAGS.app_enabled=nv;try{localStorage.setItem("bg_app_off",nv?"0":"1")}catch(e){}draw(f)}).catch(function(e){b.disabled=false;note(m.body,/inv[aá]lida/i.test(e.message)?"O servidor ainda não aceita este interruptor. Execute o corrigir_interruptor_app.sql no Supabase.":e.message,false)})});
     b.style.width="100%";box.append(b)}
   rpc("bengu_admin_get_flags",{p_user:null}).then(function(f){draw(f||{})}).catch(function(e){box.append(el("p","color:#ff9b9b","Erro: "+e.message+" (confirme que o SQL 4.50 foi executado no Supabase)"))})
 };

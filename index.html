@@ -4364,6 +4364,7 @@ function lib(k){var d=LIBS[k],g=d[0],u=d[1].slice();if(window[g])return Promise.
  return new Promise(function(ok,no){(function next(){var s=u.shift();if(!s)return no(new Error("lib"));var e=document.createElement("script");e.src=s;e.onload=function(){window[g]?ok(window[g]):next()};e.onerror=next;document.head.append(e)})()})}
 function clean(h){return String(h).replace(/<script[\s\S]*?<\/script>/gi,"").replace(/\son\w+\s*=\s*("[^"]*"|'[^']*')/gi,"").replace(/javascript:/gi,"")}
 function docxHtml(url){return Promise.all([lib("mammoth"),fetch(url).then(function(r){if(!r.ok)throw 0;return r.arrayBuffer()})]).then(function(a){return a[0].convertToHtml({arrayBuffer:a[1]})}).then(function(r){return clean(r.value)})}
+function docxHtmlFile(f){return Promise.all([lib("mammoth"),f.arrayBuffer()]).then(function(a){return a[0].convertToHtml({arrayBuffer:a[1]})}).then(function(r){return clean(r.value)})}
 var PG="background:#fff;color:#000;font:16px/1.55 'Times New Roman',Georgia,serif;padding:22px 18px;box-sizing:border-box;word-break:break-word;";
 var CSS="<style>.bgw img{max-width:100%}.bgw table{border-collapse:collapse;width:100%}.bgw td,.bgw th{border:1px solid #999;padding:4px 6px}.bgw h1{font-size:26px}.bgw h2{font-size:21px}</style>";
 /* pré-visualização do .docx no cartão do feed */
@@ -4375,7 +4376,7 @@ window.bgDocxInto=function(box,url,fail){var info=mk("p","text-align:center;opac
  docxHtml(url).then(function(h){info.remove();var w=mk("div",PG+"max-width:820px;margin:10px auto;border-radius:6px;min-height:60vh;overflow-x:auto");w.className="bgw";w.innerHTML=CSS+h;box.append(w)}).catch(function(){info.remove();fail()})};
 function slug(t){return (t||"documento").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"-").slice(0,50)||"documento"}
 function save(b,n){var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=n;document.body.append(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1500)}
-window.bgDocEdit=function(o){o=o||{};if(!uid()){alert(L("Log in to Bengu first.","Inicie sessão no Bengu primeiro."));return}
+window.bgDocEdit=function(o){o=o||{};if(!o.onApply&&!uid()){alert(L("Log in to Bengu first.","Inicie sessão no Bengu primeiro."));return}
  var ov=mk("div","position:fixed;inset:0;z-index:100010;background:#14163a;display:flex;flex-direction:column;font-family:inherit;color:#fff"),dirty=false,busy=false;document.documentElement.style.overflow="hidden";
  var BS="border:0;border-radius:8px;background:#2c3068;color:#fff;font-weight:800;font-size:14px;min-width:36px;padding:7px 9px;flex:none",
   top=mk("div","display:flex;gap:8px;align-items:center;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top,0px));background:#1c1f4a"),
@@ -4410,11 +4411,12 @@ window.bgDocEdit=function(o){o=o||{};if(!uid()){alert(L("Log in to Bengu first."
  var ed=!!(o.post&&o.post.id);
  [["💾 Word (.docx)",function(){run(L("Creating Word file…","A criar ficheiro Word…"),function(){return mkDocx().then(function(b){save(b,slug(nm())+".docx")})})}],
   ["📄 PDF",function(){run(L("Creating PDF…","A criar PDF…"),function(){return mkPdf().then(function(b){save(b,slug(nm())+".pdf")})})}],
-  [ed?"✅ "+L("Update as Word","Atualizar em Word"):"📤 "+L("Publish Word","Publicar Word"),function(){run(L("Publishing…","A publicar…"),function(){return publish("docx")})}],
-  [ed?"📄 "+L("Replace with PDF","Substituir por PDF"):"📤 "+L("Publish PDF","Publicar PDF"),function(){run(L("Publishing…","A publicar…"),function(){return publish("pdf")})}]].forEach(function(x,i){
+  (o.onApply?["✔ "+L("Apply changes","Aplicar alterações"),function(){run(L("Applying…","A aplicar…"),function(){return mkDocx().then(function(b){var f=new File([b],slug(nm())+".docx",{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});dirty=false;ov.remove();document.documentElement.style.overflow="";o.onApply(f)})})}]:
+  [ed?"✅ "+L("Update as Word","Atualizar em Word"):"📤 "+L("Publish Word","Publicar Word"),function(){run(L("Publishing…","A publicar…"),function(){return publish("docx")})}]),
+  (o.onApply?null:[ed?"📄 "+L("Replace with PDF","Substituir por PDF"):"📤 "+L("Publish PDF","Publicar PDF"),function(){run(L("Publishing…","A publicar…"),function(){return publish("pdf")})}])].filter(Boolean).forEach(function(x,i){
   var b=mk("button","border:0;border-radius:10px;font-weight:800;font-size:13px;padding:10px 12px;flex:none;color:"+(i>1?"#14163a":"#fff")+";background:"+(i>1?"#F5A623":"#2c3068"),x[0]);b.onclick=x[1];ft.append(b)});
  bk.onclick=close;top.append(bk,ti);wrap.append(pg);ov.append(top,tb,wrap,msg,ft);document.body.append(ov);
- if(o.url){say(L("Opening…","A abrir…"));docxHtml(o.url).then(function(h){pg.innerHTML=CSS+h;say("")}).catch(function(){say(L("Could not open this document for editing.","Não foi possível abrir este documento para edição."))})}else pg.focus()};
+ if(o.url||o.file){say(L("Opening…","A abrir…"));(o.file?docxHtmlFile(o.file):docxHtml(o.url)).then(function(h){pg.innerHTML=CSS+h;say("")}).catch(function(){say(L("Could not open this document for editing.","Não foi possível abrir este documento para edição."))})}else pg.focus()};
 })();
 </script>
 
@@ -7042,7 +7044,7 @@ function K_({ post: e, users: t, mine: mn_, onDeleteItem: dit_, onDownloadItem: 
         }),
       o.map((l, c) => u.jsxs(B.Fragment, { children: [u.jsx(Wc, { song: l, queue: o, index: c }), grp && u.jsx(BgItemBar, { post: e, item: l.item, dl: dlIt_ })] }, l.key)),
       a.map((l, c) => u.jsxs("div", { children: [
-        u.jsxs(
+        !/\.docx$/i.test(String(l.name || l.url || "").split("?")[0]) && u.jsxs(
           "a",
           {
             href: l.url,
@@ -14735,6 +14737,18 @@ function hx({ minor: e, allowDefault: t, onPublish: r, onError: n }) {
                                       color: "#fff",
                                     },
                                     children: ["> ", bgLim("mb"), " MB"],
+                                  }),
+                                /\.docx$/i.test(Y.file.name || "") &&
+                                  u.jsx("button", {
+                                    onClick: () => window.bgDocEdit && window.bgDocEdit({
+                                      file: Y.file,
+                                      name: Y.file.name,
+                                      onApply: (nf) => z(ve, { file: nf, url: W(URL.createObjectURL(nf)), title: nf.name.replace(/\.[a-z0-9]{1,5}$/i, "") }),
+                                    }),
+                                    "aria-label": "Editar",
+                                    className: "absolute flex items-center gap-1 rounded-full px-2 text-[11px] font-bold",
+                                    style: { left: 4, bottom: 4, height: 26, background: k.saffron, color: k.onAccent },
+                                    children: "✏️ Editar",
                                   }),
                                 xe === "image" &&
                                   u.jsxs("button", {

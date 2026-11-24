@@ -1360,8 +1360,24 @@ function bgEng(kind,n,o){o=o||{};var id=String(n.id),st={likes:0,comments:0,like
  return bar}
 function nm(id){return api("profiles?select=name&id=eq."+id).then(function(r){return r[0]?r[0].name:"Utilizador"}).catch(function(){return"Utilizador"})}
 /* pedir e esperar autorização antes de abrir uma conversa */
-window.bgDurLbl=function(m){var L={1:"por 1 mês",6:"por 6 meses",12:"por 1 ano",24:"por 2 anos",60:"por 5 anos",0:"por tempo indeterminado"};return L[m]||""};
-window.bgChooseDur=function(cb){var o=document.createElement("div");o.style.cssText="position:fixed;inset:0;z-index:100070;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center";var c=document.createElement("div");c.style.cssText="background:#fff;color:#12183A;width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:18px;box-sizing:border-box;font:15px/1.4 system-ui,sans-serif";var t=document.createElement("b");t.textContent="Por quanto tempo quer conversar?";t.style.cssText="display:block;font-size:17px;margin-bottom:12px";c.append(t);[["1 mês",1],["6 meses",6],["1 ano",12],["2 anos",24],["5 anos",60],["Tempo indeterminado",0]].forEach(function(x){var b=document.createElement("button");b.type="button";b.textContent=x[0];b.style.cssText="display:block;width:100%;margin:6px 0;padding:12px;border:0;border-radius:12px;background:#eef0f6;color:#12183A;font-weight:700;font-size:15px";b.onclick=function(){o.remove();cb(x[1])};c.append(b)});var k=document.createElement("button");k.type="button";k.textContent="Cancelar";k.style.cssText="display:block;width:100%;margin-top:8px;padding:10px;border:0;background:none;color:#666";k.onclick=function(){o.remove()};c.append(k);o.onclick=function(e){if(e.target===o)o.remove()};o.append(c);document.body.append(o)};
+window.bgDurFmt=function(m){if(m===0)return "tempo indeterminado";var y=Math.floor(m/12),r=m%12,a=[];if(y)a.push(y+(y===1?" ano":" anos"));if(r)a.push(r+(r===1?" mês":" meses"));return a.join(" e ")};
+window.bgDurLbl=function(m){if(typeof m!=="number"||m<0)return "";return "por "+window.bgDurFmt(m)};
+/* uma única opção para definir o tempo: número + unidade (0 = tempo indeterminado) */
+window.bgDurForm=function(box,cur,onSave){
+ var n0=1,u0=1;if(typeof cur==="number"&&cur>0){if(cur%12===0){n0=cur/12;u0=12}else n0=cur}else if(cur===0){n0=0}
+ var wrap=document.createElement("div"),row=document.createElement("div"),inp=document.createElement("input"),sel=document.createElement("select"),info=document.createElement("div"),go=document.createElement("button");
+ var F="padding:12px;border:1px solid #cfd3e6;border-radius:12px;font:700 16px system-ui,sans-serif;color:#12183A;background:#fff;box-sizing:border-box;min-width:0";
+ row.style.cssText="display:flex;gap:8px;margin:8px 0";
+ inp.type="number";inp.min="0";inp.step="1";inp.setAttribute("inputmode","numeric");inp.value=String(n0);inp.style.cssText=F+";flex:1";
+ sel.style.cssText=F+";flex:1";[["meses",1],["anos",12]].forEach(function(x){var o=document.createElement("option");o.value=String(x[1]);o.textContent=x[0];sel.append(o)});sel.value=String(u0);
+ info.style.cssText="font-size:13px;margin:2px 2px 10px";
+ go.type="button";go.textContent="Guardar duração";go.style.cssText="display:block;width:100%;padding:12px;border:0;border-radius:12px;background:#12183A;color:#fff;font-weight:800;font-size:15px";
+ function months(){var n=Number(inp.value);if(inp.value===""||!isFinite(n)||n<0||Math.floor(n)!==n)return null;var m=n*Number(sel.value);return m>600?null:m}
+ function upd(){var m=months();info.textContent=m===null?"Indique um número inteiro (máximo 50 anos).":(m===0?"0 = Tempo indeterminado":"Duração: "+window.bgDurFmt(m));info.style.color=m===null?"#B71C1C":"#555"}
+ inp.oninput=upd;sel.onchange=upd;upd();
+ go.onclick=function(){var m=months();if(m===null){upd();return}go.disabled=true;onSave(m,window.bgDurFmt(m),function(){go.disabled=false})};
+ row.append(inp,sel);wrap.append(row,info,go);box.append(wrap)};
+window.bgChooseDur=function(cb){var o=document.createElement("div");o.style.cssText="position:fixed;inset:0;z-index:100070;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center";var c=document.createElement("div");c.style.cssText="background:#fff;color:#12183A;width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:18px;box-sizing:border-box;font:15px/1.4 system-ui,sans-serif";var t=document.createElement("b");t.textContent="Por quanto tempo quer conversar?";t.style.cssText="display:block;font-size:17px;margin-bottom:12px";c.append(t);window.bgDurForm(c,null,function(m){o.remove();cb(m)});var k=document.createElement("button");k.type="button";k.textContent="Cancelar";k.style.cssText="display:block;width:100%;margin-top:8px;padding:10px;border:0;background:none;color:#666";k.onclick=function(){o.remove()};c.append(k);o.onclick=function(e){if(e.target===o)o.remove()};o.append(c);document.body.append(o)};
 var bgGate0=function(id,go){var me=uid();if(!me){toast("Inicie sessão.");return}
  if(window.__bgAdm===true)return go();
  api("chat_requests?select=*&or=(and(requester_id.eq."+me+",target_id.eq."+id+"),and(requester_id.eq."+id+",target_id.eq."+me+"))").then(function(r){var q=r[0];
@@ -18763,7 +18779,7 @@ var OPTS=[["1 mês",1],["6 meses",6],["1 ano",12],["2 anos",24],["5 anos",60],["
 function ses(){try{return JSON.parse(localStorage.getItem(LS))}catch(e){return null}}
 function tok(){var x=ses();return x&&x.access_token}
 function uid(){var x=ses();return x&&x.user&&x.user.id}
-function lbl(m){for(var i=0;i<OPTS.length;i++)if(OPTS[i][1]===m)return OPTS[i][0];return "não definida"}
+function lbl(m){if(typeof m!=="number"||m<0)return "não definida";return m===0?"Tempo indeterminado":window.bgDurFmt(m)}
 function hd(){return{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/json"}}
 function pairFilter(me,other){return "or=(and(requester_id.eq."+me+",target_id.eq."+other+"),and(requester_id.eq."+other+",target_id.eq."+me+"))"}
 window.bgDurOpen=function(other){
@@ -18779,15 +18795,10 @@ window.bgDurOpen=function(other){
   var row=rows&&rows[0];
   if(!row||row.status!=="accepted"){st.textContent="A conversa ainda não está autorizada. Só pode definir a duração depois de a conversa ser aceite.";return}
   st.textContent="Duração atual: "+lbl(row.duration_months);
-  OPTS.forEach(function(o){
-   var b=document.createElement("button");b.type="button";b.textContent=o[0];
-   b.style.cssText="display:block;width:100%;margin:6px 0;padding:12px;border:0;border-radius:12px;background:#eef0f6;color:#12183A;font-weight:700;font-size:15px";
-   b.onclick=function(){
-    fetch(U+"/rest/v1/chat_requests?id=eq."+row.id,{method:"PATCH",headers:Object.assign(hd(),{Prefer:"return=minimal"}),body:JSON.stringify({duration_months:o[1]})})
-    .then(function(r){if(!r.ok)throw new Error("Não foi possível guardar.");ov.remove();alert("Duração definida: "+o[0]+".")})
-    .catch(function(e){alert(e.message)});
-   };
-   box.append(b);
+  window.bgDurForm(box,row.duration_months,function(m,txt,done){
+   fetch(U+"/rest/v1/chat_requests?id=eq."+row.id,{method:"PATCH",headers:Object.assign(hd(),{Prefer:"return=minimal"}),body:JSON.stringify({duration_months:m})})
+   .then(function(r){if(!r.ok)throw new Error("Não foi possível guardar.");ov.remove();alert("Duração definida: "+txt+".")})
+   .catch(function(e){done();alert(e.message)});
   });
  }).catch(function(){st.textContent="Não foi possível carregar a conversa agora."});
 };

@@ -460,7 +460,7 @@ XMLHttpRequest.prototype.send=function(body){
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#12183A" />
-    <meta name="bengu-build" content="4.56.1_24.11.2026" />
+    <meta name="bengu-build" content="4.56.2_24.11.2026" />
 <script>/* BENGU 4.55: selos. Verde = selo (conta verificada); cor do Bengu (#FFB020) = Premium. Lista pequena guardada no telemóvel; só atualiza com internet, no máximo de 6 em 6 horas. */
 (function(){var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",KEY="bg_badges";
 function build(rows){var m={},now=Date.now();(rows||[]).forEach(function(r){if(r.verified)m[r.user_id]="v";else if(r.premium_until&&new Date(r.premium_until).getTime()>now)m[r.user_id]="p"});return m}
@@ -7067,7 +7067,7 @@ function BgStrip({ idx, users, statuses, following, meUser, posts, onOpen, onTog
     return r;
   }, [extra, idx]);
   if (!items || !items.length) return null;
-  const W = 124, H = 196;
+  const W = 168, H = 260;
   const card = (it) => {
     const usr = it.user || {}, img = it.kind === "ad" ? it.img : usr.avatar;
     const go = () => (it.kind === "status" ? onStatus(it.id) : onOpen(it.kind === "ad" ? it.uid : it.id));
@@ -7078,23 +7078,23 @@ function BgStrip({ idx, users, statuses, following, meUser, posts, onOpen, onTog
         background: img ? "#000 center/cover no-repeat url(" + JSON.stringify(img) + ")" : (usr.color || "#3a3f7a"),
         border: it.kind === "status" ? "2px solid " + k.saffron : "1px solid " + k.line },
       children: [
-        !img && u.jsx("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 44 }, children: (usr.name || "?").split(" ").filter(Boolean).map((x) => x[0]).slice(0, 2).join("").toUpperCase() }),
+        !img && u.jsx("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 58 }, children: (usr.name || "?").split(" ").filter(Boolean).map((x) => x[0]).slice(0, 2).join("").toUpperCase() }),
         (it.kind !== "user") && u.jsx("span", { style: { position: "absolute", top: 6, left: 6, padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 800, background: k.saffron, color: "#12183A" }, children: it.kind === "ad" ? "📢 Anúncio" : "Estado" }),
-        u.jsxs("div", { style: { position: "absolute", left: 0, right: 0, bottom: 0, padding: "22px 8px 8px", background: "linear-gradient(transparent, rgba(0,0,0,.82))", color: "#fff" }, children: [
-          u.jsx("div", { style: { fontSize: 12, fontWeight: 700, lineHeight: 1.2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }, children: it.kind === "ad" ? it.title : usr.name }),
+        u.jsxs("div", { style: { position: "absolute", left: 0, right: 0, bottom: 0, padding: "28px 10px 10px", background: "linear-gradient(transparent, rgba(0,0,0,.82))", color: "#fff" }, children: [
+          u.jsx("div", { style: { fontSize: 15, fontWeight: 700, lineHeight: 1.2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }, children: it.kind === "ad" ? it.title : usr.name }),
           it.kind === "user" && u.jsx("button", { type: "button",
             onClick: (e) => { e.stopPropagation(); if (!followed) { setFol((p) => ({ ...p, [it.id]: 1 })); onToggle(it.id); } },
-            style: { marginTop: 6, width: "100%", padding: "5px 0", border: 0, borderRadius: 999, fontSize: 11, fontWeight: 800, background: followed ? "rgba(255,255,255,.25)" : k.saffron, color: followed ? "#fff" : "#12183A" },
+            style: { marginTop: 8, width: "100%", padding: "9px 0", border: 0, borderRadius: 999, fontSize: 14, fontWeight: 800, background: followed ? "rgba(255,255,255,.25)" : k.saffron, color: followed ? "#fff" : "#12183A" },
             children: followed ? "A seguir" : "Seguir" }),
         ] }),
       ],
     });
   };
-  return u.jsxs("div", { style: { background: k.card, padding: "12px 0", marginBottom: 8 }, children: [
-    u.jsx("div", { style: { padding: "0 14px 8px", fontSize: 12, fontWeight: 800, color: k.mute, textTransform: "uppercase" }, children: "Sugestões para si" }),
-    u.jsxs("div", { style: { display: "flex", gap: 10, overflowX: "auto", padding: "0 14px", scrollSnapType: "x proximity", WebkitOverflowScrolling: "touch" }, children: [
+  return u.jsxs("div", { style: { background: k.card, padding: "18px 0", marginBottom: 12 }, children: [
+    u.jsx("div", { style: { padding: "0 14px 12px", fontSize: 15, fontWeight: 800, color: k.mute, textTransform: "uppercase" }, children: "Sugestões para si" }),
+    u.jsxs("div", { style: { display: "flex", gap: 12, overflowX: "auto", padding: "0 14px", scrollSnapType: "x proximity", WebkitOverflowScrolling: "touch" }, children: [
       ...items.map(card),
-      u.jsx("button", { key: "more", type: "button", onClick: onMore, style: { flex: "0 0 auto", width: W, height: H, borderRadius: 14, border: "2px dashed " + k.line, background: "transparent", color: k.ink, fontWeight: 800, fontSize: 14 }, children: "Ver mais ›" }),
+      u.jsx("button", { key: "more", type: "button", onClick: onMore, style: { flex: "0 0 auto", width: W, height: H, borderRadius: 14, border: "2px dashed " + k.line, background: "transparent", color: k.ink, fontWeight: 800, fontSize: 17 }, children: "Ver mais ›" }),
     ] }),
   ] });
 }
@@ -7117,7 +7117,7 @@ function BgMergedFeed({ sd, Rr, all, adsOff, strip }) {
     children: items.flatMap((it, i) => {
       const out = [it.post ? u.jsx(es, { ...Rr(it.post) }, it.k) : u.jsx(BgPgSlot, { row: it.row, again }, it.k)];
       const nn = i + 1;
-      all && strip && nn >= 9 && (nn - 9) % 5 === 0 && out.push(u.jsx(BgStrip, { idx: (nn - 9) / 5, ...strip }, "strip" + nn));
+      all && strip && nn >= 29 && nn % 29 === 0 && out.push(u.jsx(BgStrip, { idx: nn / 29 - 1, ...strip }, "strip" + nn));
       bgAdsOn() &&
         !adsOff &&
         (i + 1) % Math.max(2, (window.BENGU_ADS && window.BENGU_ADS.every) || 5) === 0 &&

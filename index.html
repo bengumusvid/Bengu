@@ -64,7 +64,7 @@ var SI=window.setInterval.bind(window);
 window.setInterval=function(fn,ms){
  var a=[].slice.call(arguments,2);
  if(typeof fn==="function"&&ms>=3000){
-  if(ms<=5000)ms=15000;
+  if(ms<=5000)ms=30000;else if(ms<=15000)ms*=2;
   return SI(function(){if(document.visibilityState==="hidden")return;return fn.apply(this,a)},ms)
  }
  return SI.apply(window,arguments)
@@ -105,6 +105,80 @@ function addBtn(on){
  }
  new MutationObserver(function(){clearTimeout(tm);tm=setTimeout(put,300)}).observe(document.documentElement,{childList:true,subtree:true})
 }
+})();
+</script>
+<script>/* BENGU LITE · qualidade pela metade: fotos e vídeos são reduzidos ANTES do envio e as imagens chegam mais leves */
+(function(){
+if(!window.BENGU_LITE)return;
+var ctl=null,box=null;
+function ui(t,cancel){
+ if(!box){box=document.createElement("div");box.style.cssText="position:fixed;left:12px;right:12px;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:100020;padding:12px 14px;border-radius:14px;background:#12183A;color:#fff;font:600 14px system-ui,sans-serif;box-shadow:0 6px 22px rgba(0,0,0,.45);display:flex;align-items:center;gap:10px";
+  var m=document.createElement("span");m.style.flex="1";var b=document.createElement("button");b.type="button";b.textContent="Usar original";b.style.cssText="border:0;border-radius:10px;padding:8px 10px;font-weight:800;background:#F5A623;color:#12183A";b.onclick=function(){ctl&&(ctl.stop=true)};box.append(m,b);box._m=m;box._b=b;document.body.append(box)}
+ box._m.textContent=t;box._b.style.display=cancel?"":"none"}
+function hide(){if(box){box.remove();box=null}}
+function shrinkImg(f){
+ if(!/^image\/(jpeg|png|webp)$/.test(f.type)||f.size<60*1024)return Promise.resolve(f);
+ return createImageBitmap(f).then(function(bm){
+  var sc=Math.min(0.75,1600/Math.max(bm.width,bm.height)),c=document.createElement("canvas");c.width=Math.max(1,Math.round(bm.width*sc));c.height=Math.max(1,Math.round(bm.height*sc));
+  var x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(bm,0,0,c.width,c.height);
+  return new Promise(function(r){c.toBlob(r,"image/jpeg",0.5)}).then(function(bl){
+   return bl&&bl.size<f.size*0.9?new File([bl],(f.name||"foto").replace(/\.\w+$/,"")+".jpg",{type:"image/jpeg"}):f})
+ }).catch(function(){return f})}
+function shrinkVid(f){
+ return new Promise(function(res){
+  if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream||!(window.AudioContext||window.webkitAudioContext)||f.size<300*1024)return res(f);
+  var v=document.createElement("video"),url=URL.createObjectURL(f),done=false,timer=null,rec=null,ac=null;
+  function fin(o){if(done)return;done=true;clearInterval(timer);try{v.pause()}catch(e){}try{ac&&ac.close()}catch(e){}URL.revokeObjectURL(url);res(o)}
+  v.playsInline=true;v.preload="auto";v.src=url;v.onerror=function(){fin(f)};
+  v.onloadedmetadata=function(){
+   var d=v.duration;if(!isFinite(d)||d>300||!v.videoWidth)return fin(f);
+   var sc=Math.min(0.7,854/Math.max(v.videoWidth,v.videoHeight)),w=Math.max(2,Math.round(v.videoWidth*sc/2)*2),h=Math.max(2,Math.round(v.videoHeight*sc/2)*2),
+    c=document.createElement("canvas");c.width=w;c.height=h;var x=c.getContext("2d");
+   var vbps=Math.min(2500000,Math.max(250000,Math.round(f.size*8/d*0.5))),
+    types=["video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"],mt="";
+   for(var i=0;i<types.length;i++){if(MediaRecorder.isTypeSupported(types[i])){mt=types[i];break}}
+   if(!mt)return fin(f);
+   try{
+    ac=new (window.AudioContext||window.webkitAudioContext)();var dest=ac.createMediaStreamDestination();ac.createMediaElementSource(v).connect(dest);
+    var st=c.captureStream(24);dest.stream.getAudioTracks().forEach(function(t){st.addTrack(t)});
+    var chunks=[];rec=new MediaRecorder(st,{mimeType:mt,videoBitsPerSecond:vbps,audioBitsPerSecond:64000});
+    rec.ondataavailable=function(e){e.data&&e.data.size&&chunks.push(e.data)};
+    rec.onstop=function(){
+     if(ctl&&ctl.stop)return fin(f);
+     var ext=/mp4/.test(mt)?".mp4":".webm",bl=new Blob(chunks,{type:mt.split(";")[0]});
+     fin(bl.size&&bl.size<f.size*0.95?new File([bl],(f.name||"video").replace(/\.\w+$/,"")+ext,{type:bl.type}):f)};
+    v.onended=function(){rec.state!=="inactive"&&rec.stop()};
+    timer=setInterval(function(){
+     if(ctl&&ctl.stop){try{rec.state!=="inactive"&&rec.stop()}catch(e){}return fin(f)}
+     x.drawImage(v,0,0,w,h);ui("⚡ Lite: a reduzir o vídeo… "+Math.min(99,Math.round(v.currentTime/d*100))+"%",true)},40);
+    ac.resume&&ac.resume();rec.start(1000);
+    var p=v.play();p&&p.catch&&p.catch(function(){fin(f)})
+   }catch(e){fin(f)}
+  }})}
+document.addEventListener("change",function(e){
+ var i=e.target;if(!i||i.tagName!=="INPUT"||i.type!=="file"||i.__bgLite||!i.files||!i.files.length)return;
+ var fl=[].slice.call(i.files);
+ if(!fl.some(function(f){return/^(image\/(jpeg|png|webp)|video\/)/.test(f.type)}))return;
+ e.stopImmediatePropagation();
+ ctl={stop:false};var out=[],chain=Promise.resolve();
+ fl.forEach(function(f){chain=chain.then(function(){
+  if(/^image\//.test(f.type)){ui("⚡ Lite: a reduzir a foto…",false);return shrinkImg(f).then(function(o){out.push(o)})}
+  if(/^video\//.test(f.type)){ctl.stop=false;return shrinkVid(f).then(function(o){out.push(o)})}
+  out.push(f)})});
+ chain.catch(function(){out=fl}).then(function(){
+  hide();ctl=null;
+  try{var dt=new DataTransfer();out.forEach(function(f){dt.items.add(f)});i.files=dt.files}catch(x){}
+  i.__bgLite=1;i.dispatchEvent(new Event("change",{bubbles:true}));i.__bgLite=0})
+},true);
+/* imagens do Bengu chegam mais leves (metade da qualidade); se o servidor não suportar, voltam ao original */
+function slim(img){
+ if(window.__bgNoRender||img.__bgSlim)return;var s=img.currentSrc||img.src||"";
+ if(!/\/storage\/v1\/object\/public\//.test(s)||/[?&](width|quality)=/.test(s)||/\.(gif|svg)(\?|$)/i.test(s))return;
+ img.__bgSlim=1;img.addEventListener("error",function(){window.__bgNoRender=true;if(img.src!==s)img.src=s},{once:true});
+ img.src=s.replace("/storage/v1/object/public/","/storage/v1/render/image/public/")+(s.indexOf("?")<0?"?":"&")+"width=720&quality=50"}
+function scan(n){if(!n||n.nodeType!==1)return;if(n.tagName==="IMG")slim(n);else if(n.querySelectorAll)[].forEach.call(n.querySelectorAll("img"),slim)}
+new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(scan)})}).observe(document.documentElement,{childList:true,subtree:true});
+document.addEventListener("DOMContentLoaded",function(){scan(document.body)});
 })();
 </script>
 
@@ -2718,11 +2792,12 @@ function tabs(box,items,draw){var row=el("div","display:flex;gap:6px;margin:8px 
 window.bgPayStatus=function(){var TEST=["horacioeduardo1111@gmail.com","horacioeduardo12025@gmail.com"];return fetch(U+"/auth/v1/user",{headers:{apikey:K,Authorization:"Bearer "+tok()}}).then(function(r){return r.ok?r.json():{}}).catch(function(){return{}}).then(function(u){window.__bgTestAcct=TEST.indexOf(String((u&&u.email)||"").toLowerCase())>-1;if(window.__bgTestAcct)return true;return Promise.all([rpc("bengu_my_payout_status").catch(function(){return{approved:false}}),rpc("bengu_my_force_payout").catch(function(){return false})]).then(function(zz){var ps=zz[0]||{};return ps.approved===true||zz[1]===true})}).catch(function(){return false})};
 window.bengu_earnings_panel=function(){
  if(!tok()){alert("Inicie sessão.");return}
- var m=modal("💰 Ganhos estimados"),box=m.body;box.append(el("p","opacity:.7","A carregar…"));
+ var m=modal("👛 Carteira e ganhos"),box=m.body;box.append(el("p","opacity:.7","A carregar…"));
  Promise.all([rpc("bengu_creator_stats"),rpc("bengu_my_payout_status").catch(function(){return{reached:false,approved:false}}),rpc("bengu_my_force_payout").catch(function(){return false})]).then(function(zz){var s=zz[0],ps=zz[1]||{},okp=ps.approved===true||zz[2]===true||window.__bgTestAcct===true;
   var elig=(s.eligible===true||okp),k=s.rpm*s.creator_pct/100/1000,earn=function(v){return elig?v*k:0};
   var wk=s.weeks.length?s.weeks[s.weeks.length-1].views:0,mo=s.months.length?s.months[s.months.length-1].views:0,yr=s.months.reduce(function(a,x){return a+x.views},0);
   box.replaceChildren();
+  try{var wc0=window.bgWalletCard&&window.bgWalletCard({admin:false,balance:Number(s.available)||0,uid:me()});wc0&&box.append(wc0)}catch(e){}
   var g=el("div","display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px");
   [["Esta semana",earn(wk)],["Este mês",earn(mo)],["12 meses",earn(yr)]].forEach(function(q){var d=el("div","background:#1b1f48;border-radius:10px;padding:10px;text-align:center");d.append(el("div","font-size:15px;font-weight:800",usd(q[1])),el("div","font-size:11px;opacity:.7",q[0]));g.append(d)});if(window.BG_F("earnings_estimate"))box.append(g);
   if(window.__bgAdm===true&&window.BG_F("earnings_estimate"))box.append(el("p","font-size:11px;opacity:.65;margin:6px 0","Estimativa: visualizações das publicações de cada período × "+usd(s.rpm)+" por 1000 × "+s.creator_pct+"% para si. O valor real depende dos anúncios."));
@@ -2752,8 +2827,9 @@ setTimeout(function(){if(tok())rpc("bengu_my_payout_status").catch(function(){})
 /* ===== PAINEL DE COMISSÃO DO ADMINISTRADOR ===== */
 var admBtn=null,pendN=0;
 window.bengu_admin_earnings=function(){
- var m=modal("💰 Comissão do Bengu · v4.20"),box=m.body;box.append(el("p","opacity:.7","A carregar…"));
+ var m=modal("👛 Carteira do Bengu · comissão"),box=m.body;box.append(el("p","opacity:.7","A carregar…"));
  Promise.all([rpc("bengu_admin_commission"),rpc("bengu_admin_withdrawals"),rpc("bengu_admin_get_setting",{p_key:"usd_mzn_rate"}).catch(function(){return 64}),rpc("bengu_admin_get_setting",{p_key:"payout_auto"}).catch(function(){return 0}),rpc("bengu_admin_get_setting",{p_key:"adsense_quota_usd"}).catch(function(){return 0})]).then(function(z){var c=z[0],w=z[1];c.fx=z[2];var pa=Number(z[3])===1,aq=Number(z[4])||0;box.replaceChildren();
+  try{var wc1=window.bgWalletCard&&window.bgWalletCard({admin:true});wc1&&box.append(wc1)}catch(e){}
   var pp=el("div",CARD);pp.append(el("b","",BG_L("💳 User payouts","💳 Pagamento aos utilizadores")));
   var q1=el("div","display:flex;gap:6px;align-items:center;margin-top:6px"),qi=el("input",FLD+"margin:0;flex:1"),qb=el("button",G,BG_L("Save","Guardar"));qi.type="number";qi.step="0.01";qi.value=aq;qb.onclick=function(){rpc("bengu_admin_set_setting",{p_key:"adsense_quota_usd",p_value:Number(qi.value)}).then(function(){msg(pp,BG_L("Quota saved.","Cota guardada."),true);aq=Number(qi.value);qs()}).catch(function(e){msg(pp,e.message,false)})};q1.append(el("span","font-size:12px;flex:1.4",BG_L("AdSense quota received (US$)","Cota recebida do AdSense (US$)")),qi,qb);
   var qsx=el("div","font-size:12px;opacity:.85;margin:6px 0");function qs(){var rest2=aq-(c.paid_amount||0)-(c.pending_amount||0);qsx.textContent=BG_L("Quota: ","Cota: ")+usd(aq)+BG_L(" · Paid: "," · Pago: ")+usd(c.paid_amount||0)+BG_L(" · Pending: "," · Pendente: ")+usd(c.pending_amount||0)+BG_L(" · Free balance: "," · Saldo livre: ")+usd(rest2)+(rest2<0?BG_L(" ⚠️ requests exceed the quota"," ⚠️ pedidos acima da cota"):"")}qs();
@@ -6054,7 +6130,7 @@ function Ng({ post: e }) {
     r = !t.image && V_(t.color);
   return u.jsxs("div", {
     className:
-      "relative mx-4 mb-3 rounded-xl overflow-hidden flex items-center justify-center text-center",
+      "relative mb-3 overflow-hidden flex items-center justify-center text-center",
     style: { minHeight: 220, background: t.color || "#12183A" },
     children: [
       t.image &&
@@ -6927,7 +7003,102 @@ function BgPgSlot({ row, again }) {
   }, [row, again]);
   return u.jsx("div", { ref });
 }
-function BgMergedFeed({ sd, Rr, all, adsOff }) {
+function bgShuffle(a) {
+  a = a.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function bgSugPool(uid) {
+  if (window.__bgSugP && Date.now() - (window.__bgSugT || 0) < 300000) return window.__bgSugP;
+  window.__bgSugT = Date.now();
+  window.__bgSugP = Promise.resolve(me.from("profiles").select("*").neq("id", uid).limit(80)).then(
+    (r) => (Array.isArray(r.data) ? r.data.map(Xr) : []),
+    () => [],
+  );
+  return window.__bgSugP;
+}
+function BgStrip({ idx, users, statuses, following, meUser, posts, onOpen, onToggle, onStatus, onMore }) {
+  const [extra, setExtra] = B.useState(null);
+  const [fol, setFol] = B.useState({});
+  B.useEffect(() => {
+    let on = true;
+    bgSugPool(meUser && meUser.id).then((r) => { on && setExtra(r); });
+    return () => { on = false; };
+  }, [meUser && meUser.id]);
+  const items = B.useMemo(() => {
+    if (extra === null) return null;
+    window.__bgStripCache = window.__bgStripCache || {};
+    const C = window.__bgStripCache;
+    if (C[idx]) return C[idx];
+    const myId = meUser && meUser.id, fl = following || [];
+    const U = Object.assign({}, users || {});
+    (extra || []).forEach((x) => { if (x && x.id && !U[x.id]) U[x.id] = x; });
+    const withSt = {};
+    (statuses || []).forEach((x) => { if (x.userId && x.userId !== myId) withSt[x.userId] = 1; });
+    const pool = [];
+    Object.keys(withSt).forEach((id) => U[id] && pool.push({ kind: "status", id, user: U[id] }));
+    Object.keys(U).forEach((id) => {
+      if (id === myId || fl.includes(id) || withSt[id] || !U[id] || !U[id].name) return;
+      pool.push({ kind: "user", id, user: U[id] });
+    });
+    (posts || []).forEach((p) => {
+      const t = String(p.text || p.body || p.content || "");
+      if (t.indexOf("📢 ANÚNCIO") !== 0 || !p.userId || p.userId === myId) return;
+      const md = (Array.isArray(p.items) && p.items.length ? p.items : Array.isArray(p.media) ? p.media : []).filter((m) => m && m.url && m.kind !== "video");
+      if (!md.length) return;
+      const m1 = /^📢 ANÚNCIO · ([^\n]*)/.exec(t);
+      pool.push({ kind: "ad", id: "ad" + p.id, uid: p.userId, user: U[p.userId] || { name: "Bengu" }, img: md[0].url, title: m1 ? m1[1] : "Anúncio" });
+    });
+    window.__bgStripUsed = window.__bgStripUsed || {};
+    const pick = (excl) => {
+      const out = [], seen = {};
+      for (const it of bgShuffle(pool)) {
+        const key = it.kind === "ad" ? it.id : it.id;
+        if (seen[it.uid || it.id] || (excl && window.__bgStripUsed[key])) continue;
+        seen[it.uid || it.id] = 1; out.push(it);
+        if (out.length >= 10) break;
+      }
+      return out;
+    };
+    let r = pick(true);
+    if (r.length < 10) { window.__bgStripUsed = {}; r = pick(false); }
+    r.forEach((it) => { window.__bgStripUsed[it.id] = 1; });
+    C[idx] = r;
+    return r;
+  }, [extra, idx]);
+  if (!items || !items.length) return null;
+  const W = 124, H = 196;
+  const card = (it) => {
+    const usr = it.user || {}, img = it.kind === "ad" ? it.img : usr.avatar;
+    const go = () => (it.kind === "status" ? onStatus(it.id) : onOpen(it.kind === "ad" ? it.uid : it.id));
+    const followed = fol[it.id] || (following || []).includes(it.id);
+    return u.jsxs("div", {
+      key: it.id, role: "button", onClick: go,
+      style: { flex: "0 0 auto", width: W, height: H, borderRadius: 14, position: "relative", overflow: "hidden", cursor: "pointer", scrollSnapAlign: "start",
+        background: img ? "#000 center/cover no-repeat url(" + JSON.stringify(img) + ")" : (usr.color || "#3a3f7a"),
+        border: it.kind === "status" ? "2px solid " + k.saffron : "1px solid " + k.line },
+      children: [
+        !img && u.jsx("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 44 }, children: (usr.name || "?").split(" ").filter(Boolean).map((x) => x[0]).slice(0, 2).join("").toUpperCase() }),
+        (it.kind !== "user") && u.jsx("span", { style: { position: "absolute", top: 6, left: 6, padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 800, background: k.saffron, color: "#12183A" }, children: it.kind === "ad" ? "📢 Anúncio" : "Estado" }),
+        u.jsxs("div", { style: { position: "absolute", left: 0, right: 0, bottom: 0, padding: "22px 8px 8px", background: "linear-gradient(transparent, rgba(0,0,0,.82))", color: "#fff" }, children: [
+          u.jsx("div", { style: { fontSize: 12, fontWeight: 700, lineHeight: 1.2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }, children: it.kind === "ad" ? it.title : usr.name }),
+          it.kind === "user" && u.jsx("button", { type: "button",
+            onClick: (e) => { e.stopPropagation(); if (!followed) { setFol((p) => ({ ...p, [it.id]: 1 })); onToggle(it.id); } },
+            style: { marginTop: 6, width: "100%", padding: "5px 0", border: 0, borderRadius: 999, fontSize: 11, fontWeight: 800, background: followed ? "rgba(255,255,255,.25)" : k.saffron, color: followed ? "#fff" : "#12183A" },
+            children: followed ? "A seguir" : "Seguir" }),
+        ] }),
+      ],
+    });
+  };
+  return u.jsxs("div", { style: { background: k.card, padding: "12px 0", marginBottom: 8 }, children: [
+    u.jsx("div", { style: { padding: "0 14px 8px", fontSize: 12, fontWeight: 800, color: k.mute, textTransform: "uppercase" }, children: "Sugestões para si" }),
+    u.jsxs("div", { style: { display: "flex", gap: 10, overflowX: "auto", padding: "0 14px", scrollSnapType: "x proximity", WebkitOverflowScrolling: "touch" }, children: [
+      ...items.map(card),
+      u.jsx("button", { key: "more", type: "button", onClick: onMore, style: { flex: "0 0 auto", width: W, height: H, borderRadius: 14, border: "2px dashed " + k.line, background: "transparent", color: k.ink, fontWeight: 800, fontSize: 14 }, children: "Ver mais ›" }),
+    ] }),
+  ] });
+}
+function BgMergedFeed({ sd, Rr, all, adsOff, strip }) {
   const [pg, setPg] = B.useState([]);
   const [tick, setTick] = B.useState(0);
   const again = B.useCallback(() => setTick((n) => n + 1), []);
@@ -6945,6 +7116,8 @@ function BgMergedFeed({ sd, Rr, all, adsOff }) {
   return u.jsx(u.Fragment, {
     children: items.flatMap((it, i) => {
       const out = [it.post ? u.jsx(es, { ...Rr(it.post) }, it.k) : u.jsx(BgPgSlot, { row: it.row, again }, it.k)];
+      const nn = i + 1;
+      all && strip && nn >= 9 && (nn - 9) % 5 === 0 && out.push(u.jsx(BgStrip, { idx: (nn - 9) / 5, ...strip }, "strip" + nn));
       bgAdsOn() &&
         !adsOff &&
         (i + 1) % Math.max(2, (window.BENGU_ADS && window.BENGU_ADS.every) || 5) === 0 &&
@@ -8769,7 +8942,13 @@ function J_() {
                                 : "emptyAll",
                           ),
                         }),
-                      u.jsx(BgMergedFeed, { sd, Rr, all: Y === "all", adsOff: !!Bo }),
+                      u.jsx(BgMergedFeed, { sd, Rr, all: Y === "all", adsOff: !!Bo, strip: {
+                        users: E, statuses: S.filter((I) => !j.includes(I.userId)), following: O, meUser: h,
+                        posts: window.__bgPosts && window.__bgPosts.length ? window.__bgPosts : A,
+                        onOpen: td, onToggle: $g,
+                        onStatus: (uid) => { window.__bgOpenStatusUid = uid; we("status"); },
+                        onMore: () => ve("users"),
+                      } }),
                     ],
                   }),
                 ],
@@ -9776,6 +9955,10 @@ function X_({
         return nx ? { userId: nx, i: 0 } : null;
       }),
     C = () => o((O) => (O && O.i > 0 ? { ...O, i: O.i - 1 } : O));
+  B.useEffect(() => {
+    const w0 = window.__bgOpenStatusUid;
+    if (w0 && v[w0] && v[w0].length) { window.__bgOpenStatusUid = null; o({ userId: w0, i: 0 }); }
+  }, [r.length]);
   const [ps, sps] = B.useState(!1), [pg, spg] = B.useState(0), vr = B.useRef(null), hdR = B.useRef(0), pgR = B.useRef(0);
   const [stV, setStV] = B.useState(0), [stRx, setStRx] = B.useState({}), [stMine, setStMine] = B.useState(0);
   B.useEffect(() => {
@@ -11521,6 +11704,7 @@ function Ad_({ onBack: e, say: t }) {
       u.jsx("div", { className: "px-4 pb-2", children: u.jsx("button", { onClick: () => window.bengu_admin_earnings && window.bengu_admin_earnings(), className: "w-full rounded-xl py-3 text-sm font-bold", style: { background: k.saffron, color: k.onAccent }, children: "💰 Comissão e levantamentos" }) }),
       u.jsx("div", { className: "px-4 pb-2", children: u.jsx("button", { onClick: () => window.bengu_admin_members && window.bengu_admin_members(), className: "w-full rounded-xl py-3 text-sm font-bold", style: { background: k.card, color: k.ink, border: "1px solid " + k.line }, children: "👥 Inscritos e crescimento" }) }),
       u.jsx("div", { className: "px-4 pb-2", children: u.jsx("button", { onClick: () => window.bengu_pay_switches && window.bengu_pay_switches(), className: "w-full rounded-xl py-3 text-sm font-bold", style: { background: k.card, color: k.ink, border: "1px solid " + k.line }, children: "💳 Interruptores de pagamentos" }) }),
+      u.jsx("div", { className: "px-4 pb-2", children: u.jsx("button", { onClick: () => window.bengu_app_switch && window.bengu_app_switch(), className: "w-full rounded-xl py-3 text-sm font-bold", style: { background: k.card, color: k.ink, border: "1px solid " + k.line }, children: "🔌 Ligar / desligar o aplicativo" }) }),
       u.jsx("h2", {
         id: "bg-adm-users",
         className: "px-4 pt-3 pb-2 text-sm font-bold",
@@ -15933,7 +16117,7 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     el.sh.setAttribute("aria-pressed", shuffle ? "true" : "false"); el.sh.setAttribute("aria-label", shuffle ? T.shOn : T.shOff);
     el.rp.setAttribute("aria-label", rep === 2 ? T.rep1 : rep === 1 ? T.repAll : T.repOff);
     el.pBtn.innerHTML = au.paused ? sz(ICON.play, 16) : sz(ICON.pause, 16);
-    el.pill.className = !open && t && !stopped ? "on" : "";
+    el.pill.className = !open && t && !stopped && !pipOn() ? "on" : "";
     chips();
   }
   au.addEventListener("play", function () { wantPlay = true; stopped = false; try { if (G) G.ctx.resume().catch(function () { }); } catch (e) { } try { if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing"; } catch (e) { } ui(); drawList(); });
@@ -16536,6 +16720,9 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
 
   /* ---------- janela flutuante sobre outras apps (Picture-in-Picture do navegador) ---------- */
   var pip = { v: null, c: null, g: null, tm: 0 };
+  function pipOn() { return !!(pip && pip.v && document.pictureInPictureElement === pip.v); }
+  /* o estado do leitor reflete-se logo na janela flutuante (sem esperar pelo temporizador) */
+  ["play", "pause", "seeked", "loadedmetadata", "emptied"].forEach(function (n) { au.addEventListener(n, function () { if (pipOn()) pipDraw(); }); });
   var pipOk = !!(document.pictureInPictureEnabled && window.HTMLVideoElement && HTMLVideoElement.prototype.requestPictureInPicture && HTMLCanvasElement.prototype.captureStream);
   function clip(g, s, w) { s = String(s); if (g.measureText(s).width <= w) return s; while (s.length > 1 && g.measureText(s + "…").width > w) s = s.slice(0, -1); return s + "…"; }
   function pipDraw() {
@@ -16558,7 +16745,8 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
     document.body.appendChild(v);
     pip.c = c; pip.g = c.getContext("2d"); pip.v = v; pipDraw();
     v.srcObject = c.captureStream(4);
-    v.addEventListener("leavepictureinpicture", function () { clearInterval(pip.tm); pip.tm = 0; try { v.pause(); } catch (e) { } });
+    v.addEventListener("enterpictureinpicture", function () { ui(); });
+    v.addEventListener("leavepictureinpicture", function () { clearInterval(pip.tm); pip.tm = 0; try { v.pause(); } catch (e) { } ui(); });
     return v;
   }
   async function pipEnter() {
@@ -16568,7 +16756,10 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
       var v = pipEnsure(); pipDraw(); await v.play();
       if (document.pictureInPictureElement !== v) await v.requestPictureInPicture();
       clearInterval(pip.tm); pip.tm = setInterval(pipDraw, 500);
+      if (tracks[cur]) meta(tracks[cur]);
+      try { navigator.mediaSession.playbackState = au.paused ? "paused" : "playing"; } catch (e) { }
       if (open) close();
+      ui();
     } catch (e) { toast(L("Não foi possível abrir a janela flutuante.", "Could not open the floating window.")); }
   }
 
@@ -16618,6 +16809,7 @@ document.addEventListener("input",function(e){up(e.target)},true);setInterval(al
 
   window.bgLocalMusic = function () {
     if (!built) build();
+    try { if (pipOn()) document.exitPictureInPicture(); } catch (e) { }
     open = true; el.root.classList.add("on"); ui();
     try { history.pushState({ bgm: 1 }, ""); } catch (e) { }
     drawList();
@@ -16693,6 +16885,20 @@ window.bengu_pay_switches=function(uid,name){
       rpc("bengu_admin_set_flag",{p_key:k[0],p_value:nv,p_user:uid||null}).then(function(){f[k[0]]=nv;if(!uid){window.BG_FLAGS[k[0]]=nv}draw(f)}).catch(function(e){b.disabled=false;note(m.body,e.message,false)})});
     b.style.minWidth="108px";r.append(t,b);list.append(r)})}
   rpc("bengu_admin_get_flags",{p_user:uid||null}).then(function(f){draw(f||{})}).catch(function(e){list.append(el("p","color:#ff9b9b","Erro: "+e.message+" (confirme que o SQL 4.50 foi executado no Supabase)"))})
+};
+
+/* ----- interruptor geral: desliga o aplicativo para todos (o administrador continua a entrar) ----- */
+window.bengu_app_switch=function(){
+  var m=sheet("🔌 Aplicativo Bengu");
+  m.body.append(el("p","font-size:12px;opacity:.8;margin:0 0 10px","Desligado: todos os utilizadores veem um aviso e não conseguem usar o Bengu. Só o administrador continua a entrar. Pode voltar a ligar a qualquer momento, sem publicar um index novo."));
+  var box=el("div");m.body.append(box);
+  function draw(f){box.replaceChildren();var on=f.app_enabled!==false;
+    box.append(el("div","font-weight:800;font-size:16px;margin-bottom:10px",on?"✅ O aplicativo está LIGADO":"⛔ O aplicativo está DESLIGADO"));
+    var b=btn(on?"Desligar o aplicativo":"Ligar o aplicativo",on?"#B71C1C":"#2fbf71","#fff",function(){
+      var nv=!on;if(!nv&&!confirm("Desligar o Bengu para TODOS os utilizadores (exceto o administrador)?"))return;b.disabled=true;
+      rpc("bengu_admin_set_flag",{p_key:"app_enabled",p_value:nv,p_user:null}).then(function(){f.app_enabled=nv;window.BG_FLAGS=window.BG_FLAGS||{};window.BG_FLAGS.app_enabled=nv;try{localStorage.setItem("bg_app_off",nv?"0":"1")}catch(e){}draw(f)}).catch(function(e){b.disabled=false;note(m.body,e.message,false)})});
+    b.style.width="100%";box.append(b)}
+  rpc("bengu_admin_get_flags",{p_user:null}).then(function(f){draw(f||{})}).catch(function(e){box.append(el("p","color:#ff9b9b","Erro: "+e.message+" (confirme que o SQL 4.50 foi executado no Supabase)"))})
 };
 
 /* ----- suspensão: nunca apaga de imediato ----- */
@@ -18629,6 +18835,83 @@ window.bgRank=function(cmp,following,posts,me){
   cache[p.id]=c;return c}
  return function(a,b){if(a.pinnedAt||b.pinnedAt)return cmp(a,b);return(sc(b)-sc(a))||cmp(a,b)}
 };
+})();
+</script>
+<script>/* BENGU: aplicativo desligado pelo administrador → ecrã de aviso para todos (menos o administrador) */
+(function(){
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",LS="sb-cnpkgauzhoyzlhtcexiv-auth-token",ov=null;
+function tok(){try{return JSON.parse(localStorage.getItem(LS)).access_token}catch(e){return null}}
+function off(){try{return localStorage.getItem("bg_app_off")==="1"}catch(e){return false}}
+function adm(){try{return window.__bgAdm===true||localStorage.getItem("bg_adm")==="1"}catch(e){return window.__bgAdm===true}}
+function apply(){
+ var block=off()&&!adm()&&!(window.__bgAdmTry&&!tok());
+ if(block&&!ov){
+  ov=document.createElement("div");ov.id="bg-app-off";
+  ov.style.cssText="position:fixed;inset:0;z-index:2147483647;background:#12183A;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px;text-align:center;font:600 17px/1.5 system-ui,sans-serif";
+  var h=document.createElement("div");h.style.cssText="font-size:54px";h.textContent="🔌";
+  var t=document.createElement("div");t.style.cssText="font-size:22px;font-weight:800;color:#F5B520";t.textContent="O Bengu está temporariamente desligado";
+  var p=document.createElement("div");p.style.cssText="opacity:.85;max-width:420px";p.textContent="Estamos a fazer uma pausa no serviço. Volte mais tarde — a app volta a abrir sozinha quando estiver ligada.";
+  var a=document.createElement("button");a.type="button";a.textContent="Sou o administrador";a.style.cssText="margin-top:18px;border:0;background:none;color:#8b93c9;font-size:13px;text-decoration:underline";
+  a.onclick=function(){window.__bgAdmTry=true;apply()};
+  ov.append(h,t,p,a);document.body.append(ov);
+  try{document.querySelectorAll("video,audio").forEach(function(m){try{m.pause()}catch(e){}})}catch(e){}
+ }else if(!block&&ov){ov.remove();ov=null}
+}
+function check(){
+ fetch(U+"/rest/v1/rpc/bengu_flags_get",{method:"POST",headers:{apikey:K,Authorization:"Bearer "+(tok()||K),"Content-Type":"application/json"},body:"{}"})
+ .then(function(r){return r.ok?r.json():null}).then(function(f){
+  if(f&&typeof f==="object"){try{localStorage.setItem("bg_app_off",f.app_enabled===false?"1":"0")}catch(e){}}
+  apply()}).catch(function(){apply()})}
+function start(){apply();check();setInterval(check,60000);setInterval(apply,2000);
+ document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")check()})}
+if(document.body)start();else document.addEventListener("DOMContentLoaded",start);
+})();
+</script>
+<script>/* BENGU: carteira de valor real (administrador e utilizadores). Entradas de dinheiro aparecem a VERDE. Requer wallet.sql para o histórico de entradas. */
+(function(){
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",LS="sb-cnpkgauzhoyzlhtcexiv-auth-token",GREEN="#2fbf71";
+var SRC={followers:"👥 Seguidores",views:"👀 Visualizações",paypal:"🅿️ PayPal",selo:"✅ Compra de selo",other:"➕ Outros serviços"};
+function tok(){try{return JSON.parse(localStorage.getItem(LS)).access_token}catch(e){return null}}
+function hd(){return{apikey:K,Authorization:"Bearer "+(tok()||K),"Content-Type":"application/json"}}
+function el(t,css,txt){var e=document.createElement(t);if(css)e.style.cssText=css;if(txt!=null)e.textContent=txt;return e}
+function usd(n){return Number(n||0).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})+" US$"}
+function get(p){return fetch(U+"/rest/v1/"+p,{headers:hd()}).then(function(r){if(!r.ok)throw new Error("x");return r.json()})}
+function rpc(n,a){return fetch(U+"/rest/v1/rpc/"+n,{method:"POST",headers:hd(),body:JSON.stringify(a||{})}).then(function(r){return r.text().then(function(t){var j=null;try{j=t?JSON.parse(t):null}catch(e){}if(!r.ok)throw new Error((j&&j.message)||("Erro "+r.status));return j})})}
+if(!document.getElementById("bgw-css")){var st=el("style");st.id="bgw-css";st.textContent="@keyframes bgwpulse{0%,100%{box-shadow:0 0 0 0 rgba(47,191,113,.7)}50%{box-shadow:0 0 0 10px rgba(47,191,113,0)}}";document.head.append(st)}
+window.bgWalletCard=function(o){
+ var admin=!!o.admin,key=admin?"admin":(o.uid||"me"),card=el("div","background:#1b1f48;border-radius:14px;padding:14px;margin:0 0 12px;border:1px solid #2a2f66");
+ card.append(el("div","font-weight:800;font-size:14px;opacity:.9",admin?"👛 Carteira do Bengu":"👛 A minha carteira"));
+ var big=el("div","font-size:30px;font-weight:900;margin:6px 0 2px;color:#fff","…"),sub=el("div","font-size:12px;opacity:.75",admin?"Valor real: comissão, PayPal, compra de selos e outros serviços de pagamento.":"Valor real pago pelos seus seguidores e visualizações."),flash=el("div","display:none;margin-top:8px;padding:6px 10px;border-radius:10px;background:"+GREEN+";color:#fff;font-weight:800;font-size:13px;animation:bgwpulse 1.4s 3");
+ var tiles=el("div","display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px"),list=el("div","margin-top:10px");
+ card.append(big,sub,flash,tiles,list);
+ var lastSeen=Number(localStorage.getItem("bg_wal_b_"+key))||0,lastT=Number(localStorage.getItem("bg_wal_t_"+key))||0;
+ var q=admin?"bengu_wallet_entries?select=id,source,amount_usd,note,created_at&user_id=is.null&order=created_at.desc&limit=40":"bengu_wallet_entries?select=id,source,amount_usd,note,created_at&user_id=eq."+encodeURIComponent(o.uid||"")+"&order=created_at.desc&limit=40";
+ Promise.all([get(q).catch(function(){return null}),admin?rpc("bengu_admin_commission_wd_summary").catch(function(){return null}):Promise.resolve(null)]).then(function(z){
+  var rows=z[0],sm=z[1],sum=0,by={};
+  (rows||[]).forEach(function(r){var a=Number(r.amount_usd)||0;sum+=a;by[r.source]=(by[r.source]||0)+a});
+  var base=admin?(sm?Number(sm.available)||0:0):(Number(o.balance)||0),bal=base+sum;
+  big.textContent=usd(bal);big.style.color=bal>0?GREEN:"#fff";
+  var up=bal>lastSeen+0.004&&lastSeen>0;
+  if(up){flash.style.display="block";flash.textContent="⬆ Entrou "+usd(bal-lastSeen)+" na carteira"}
+  try{localStorage.setItem("bg_wal_b_"+key,String(bal));localStorage.setItem("bg_wal_t_"+key,String(Date.now()))}catch(e){}
+  function tile(l,v){var d=el("div","background:#0f1233;border-radius:10px;padding:8px;text-align:center");d.append(el("div","font-size:14px;font-weight:800;color:"+(v>0?GREEN:"#fff"),usd(v)),el("div","font-size:10.5px;opacity:.7",l));tiles.append(d)}
+  if(admin){tile("Comissão (visualizações)",base);tile("PayPal",by.paypal||0);tile("Compra de selos",by.selo||0);tile("Outros serviços",by.other||0)}
+  else{tile("Ganhos disponíveis",base);tile("Outros créditos",sum)}
+  if(rows===null){list.append(el("div","font-size:12px;opacity:.65","Histórico de entradas indisponível. Execute o wallet.sql no Supabase."))}
+  else if(!rows.length){list.append(el("div","font-size:12px;opacity:.65","Ainda sem entradas registadas."))}
+  else{list.append(el("div","font-weight:700;font-size:13px;margin-bottom:4px","Entradas e saídas"));
+   rows.forEach(function(r){var a=Number(r.amount_usd)||0,isNew=lastT>0&&Date.parse(r.created_at)>lastT,row=el("div","display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid #2a2f66;font-size:13px"),l=el("div","flex:1;min-width:0");
+    l.append(el("div","font-weight:700",(SRC[r.source]||r.source)+(isNew?"  🟢 novo":"")),el("div","font-size:11px;opacity:.7",new Date(r.created_at).toLocaleDateString("pt-PT")+(r.note?" · "+r.note:"")));
+    row.append(l,el("div","font-weight:800;white-space:nowrap;color:"+(a>0?GREEN:"#ff7b7b"),(a>0?"+":"")+usd(a)));list.append(row)})}
+ });
+ if(admin){
+  var f=el("div","margin-top:12px;padding-top:10px;border-top:1px solid #2a2f66"),s1=el("select","width:100%;padding:9px;border-radius:8px;border:1px solid #2a2f6a;background:#0f1233;color:#fff;margin:4px 0"),am=el("input","width:100%;box-sizing:border-box;padding:9px;border-radius:8px;border:1px solid #2a2f6a;background:#0f1233;color:#fff;margin:4px 0"),nt=el("input","width:100%;box-sizing:border-box;padding:9px;border-radius:8px;border:1px solid #2a2f6a;background:#0f1233;color:#fff;margin:4px 0"),go=el("button","width:100%;border:0;border-radius:10px;padding:10px;font-weight:800;background:"+GREEN+";color:#fff;margin-top:4px","➕ Registar entrada na carteira"),ms=el("div","font-size:12px;margin-top:6px");
+  ["paypal","selo","other"].forEach(function(k){var op=el("option","",SRC[k]);op.value=k;s1.append(op)});
+  am.type="number";am.step="0.01";am.placeholder="Valor em US$ (negativo para saída)";nt.placeholder="Nota (ex.: PayPal #123, selo de Maria)";
+  go.onclick=function(){var v=Number(am.value);if(!v){ms.textContent="Indique um valor.";ms.style.color="#ff9b9b";return}go.disabled=true;
+   rpc("bengu_wallet_credit",{p_user:null,p_source:s1.value,p_amount:v,p_note:nt.value.trim()||null}).then(function(){ms.textContent="Registado.";ms.style.color=GREEN;setTimeout(function(){var p=card.parentNode;if(p){var n=window.bgWalletCard(o);p.replaceChild(n,card)}},600)}).catch(function(e){go.disabled=false;ms.textContent=e.message+" (wallet.sql?)";ms.style.color="#ff9b9b"})};
+  f.append(el("div","font-weight:700;font-size:13px","Registar PayPal, selos e outros serviços"),s1,am,nt,go,ms);card.append(f)}
+ return card};
 })();
 </script>
 </body>

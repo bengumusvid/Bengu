@@ -18847,9 +18847,20 @@ window.bgRank=function(cmp,following,posts,me){
 var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",LS="sb-cnpkgauzhoyzlhtcexiv-auth-token",ov=null;
 function tok(){try{return JSON.parse(localStorage.getItem(LS)).access_token}catch(e){return null}}
 function off(){try{return localStorage.getItem("bg_app_off")==="1"}catch(e){return false}}
-function adm(){try{return window.__bgAdm===true||localStorage.getItem("bg_adm")==="1"}catch(e){return window.__bgAdm===true}}
+var T0=Date.now(),chk={uid:null,ok:null,busy:false},lastU=null;
+function sub(){try{var t=tok();if(!t)return null;var q=t.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");return JSON.parse(atob(q)).sub||null}catch(e){return null}}
+/* o administrador é confirmado pela própria conta (is_admin), nunca só por uma marca guardada no telemóvel */
+function adm(){var u=sub();if(!u)return false;if(chk.uid===u&&chk.ok!==null)return chk.ok===true;if(window.__bgAdm===true)return true;try{return localStorage.getItem("bg_adm_u")===u}catch(e){return false}}
+function pend(){var u=sub();return !!u&&!(chk.uid===u&&chk.ok!==null)&&Date.now()-T0<5000}
+function checkAdm(){var u=sub();if(!u){chk.uid=null;chk.ok=null;try{localStorage.removeItem("bg_adm_u")}catch(e){}return}
+ if(chk.busy)return;chk.busy=true;
+ fetch(U+"/rest/v1/rpc/is_admin",{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/json"},body:"{}"})
+ .then(function(r){return r.ok?r.json():null}).then(function(a){
+  if(sub()===u&&(a===true||a===false)){chk.uid=u;chk.ok=a;try{if(a)localStorage.setItem("bg_adm_u",u);else localStorage.removeItem("bg_adm_u")}catch(e){}}
+  chk.busy=false;apply()}).catch(function(){chk.busy=false})}
+function tick(){var u=sub();if(u!==lastU){lastU=u;if(u!==chk.uid){chk.uid=null;chk.ok=null}checkAdm()}apply()}
 function apply(){
- var block=off()&&!adm()&&!(window.__bgAdmTry&&!tok());
+ var block=off()&&!adm()&&!pend()&&!(window.__bgAdmTry&&!tok());
  if(block&&!ov){
   ov=document.createElement("div");ov.id="bg-app-off";
   ov.style.cssText="position:fixed;inset:0;z-index:2147483647;background:#12183A;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px;text-align:center;font:600 17px/1.5 system-ui,sans-serif";
@@ -18867,7 +18878,7 @@ function check(){
  .then(function(r){return r.ok?r.json():null}).then(function(f){
   if(f&&typeof f==="object"){try{localStorage.setItem("bg_app_off",f.app_enabled===false?"1":"0")}catch(e){}}
   apply()}).catch(function(){apply()})}
-function start(){apply();check();setInterval(check,60000);setInterval(apply,2000);
+function start(){lastU=sub();checkAdm();apply();check();setInterval(check,60000);setInterval(tick,1500);
  document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")check()})}
 if(document.body)start();else document.addEventListener("DOMContentLoaded",start);
 })();

@@ -19401,7 +19401,9 @@ window.bgWalletCard=function(o){
   function tile(l,v){var d=el("div","background:#0A0E24;border-radius:10px;padding:8px;text-align:center;border-top:3px solid #E8B424");d.append(el("div","font-size:14px;font-weight:800;color:"+(v>0?GREEN:"#fff"),usd(v)),el("div","font-size:10.5px;color:#E8B424;opacity:.9",l));tiles.append(d)}
   if(admin){tile("Comissão (visualizações)",base);tile("PayPal",by.paypal||0);tile("Compra de selos",by.selo||0);tile("Outros serviços",by.other||0)}
   else{tile("Ganhos disponíveis",base);tile("Outros créditos",sum);
-   var sb=el("button","grid-column:1/3;border:0;border-radius:10px;padding:11px;font-weight:900;background:linear-gradient(135deg,#2fbf71,#1e9a57);color:#fff","💸 Enviar para outro utilizador");sb.onclick=function(){if(sum<=0){alert("Só pode enviar valor que já esteja creditado na sua carteira (Outros créditos).");return}window.bgWalletSend(o.uid,sum,refresh)};tiles.append(sb)}
+   /* ENVIAR PARA OUTRO UTILIZADOR: só contas com selo verificado (e dentro da validade) veem este botão. */
+   get("bengu_user_badges?select=verified,verified_until&user_id=eq."+encodeURIComponent(o.uid||"")).then(function(bz){var bd=bz&&bz[0];if(!(bd&&bd.verified&&(!bd.verified_until||new Date(bd.verified_until).getTime()>Date.now())))return;
+    var sb=el("button","grid-column:1/3;border:0;border-radius:10px;padding:11px;font-weight:900;background:linear-gradient(135deg,#2fbf71,#1e9a57);color:#fff","💸 Enviar para outro utilizador");sb.onclick=function(){if(sum<=0){alert("Só pode enviar valor que já esteja creditado na sua carteira (Outros créditos).");return}window.bgWalletSend(o.uid,sum,refresh)};tiles.append(sb)}).catch(function(){})}
   if(rows===null){list.append(el("div","font-size:12px;opacity:.65",(admin?"Histórico de entradas indisponível. Execute o wallet.sql no Supabase.":"Histórico de entradas indisponível de momento.")))}
   else if(!rows.length){list.append(el("div","font-size:12px;opacity:.65","Ainda sem entradas registadas."))}
   else{list.append(el("div","font-weight:800;font-size:13px;margin-bottom:4px;color:#F5B520","Entradas e saídas"));

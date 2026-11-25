@@ -19281,7 +19281,7 @@ function apply(){
   var h=document.createElement("div");h.style.cssText="font-size:54px";h.textContent="🔌";
   var t=document.createElement("div");t.style.cssText="font-size:22px;font-weight:800;color:#F5B520";t.textContent="Serviços temporariamente indisponíveis";
   var p=document.createElement("div");p.style.cssText="opacity:.85;max-width:420px";p.textContent="Volte em breve.";
-  var taps=0,tt0=0;h.onclick=function(){var n=Date.now();taps=n-tt0<1500?taps+1:1;tt0=n;if(taps>=5){taps=0;window.__bgAdmTry=true;apply()}};
+  var taps=0,tt0=0;h.onclick=function(){var n=Date.now();taps=n-tt0<1500?taps+1:1;tt0=n;if(taps>=11){taps=0;window.__bgAdmTry=true;apply()}};
   ov.append(h,t,p);document.body.append(ov);
   try{document.querySelectorAll("video,audio").forEach(function(m){try{m.pause()}catch(e){}})}catch(e){}
  }else if(!block&&ov){ov.remove();ov=null}

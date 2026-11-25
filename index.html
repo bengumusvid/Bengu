@@ -17707,8 +17707,8 @@ function snake(w){
  function isLand(){return(window.innerWidth||0)>(window.innerHeight||1)*1.15}
  /* o tabuleiro cresce (mais linhas) até preencher o espaço disponível; keep=true mantém as linhas (jogo em curso) */
  function fit(keep){var land=isLand(),vh=(window.visualViewport&&window.visualViewport.height)||window.innerHeight||700,ch=w.clientHeight||(vh-70),
-   availH=land?Math.max(180,ch-8):Math.max(260,ch-180),cw=w.clientWidth||(land?640:320),
-   maxW=land?Math.max(200,Math.min(600,cw-196)):Math.max(220,Math.min(600,cw-2)),r;
+   availH=land?Math.max(180,ch-14):Math.max(260,ch-180),cw=w.clientWidth||(land?640:320),
+   maxW=land?Math.max(200,Math.min(760,cw-196)):Math.max(220,Math.min(600,cw-2)),r;
   setW(maxW);
   if(keep){dims(rows);if(land)while(H>availH&&W>200){setW(Math.floor(W*.95));dims(rows)}}
   else{r=land?18:26;dims(r);if(land)while(H>availH&&W>200){setW(Math.floor(W*.95));dims(r)}
@@ -17717,7 +17717,7 @@ function snake(w){
  fit(false);
  function SX(p){return W/2+p.x}function SY(p){return yTop-p.y}
  var cv=document.createElement("canvas");cv.width=W;cv.height=H;cv.style.cssText="display:block;margin:4px auto;border-radius:12px;background:#0d0f2b;touch-action:none;max-width:100%";
- var cx=cv.getContext("2d"),info=el("div","flex:1 1 0;min-width:0;text-align:right;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"),act=el("div","display:flex;gap:5px;align-items:center;flex:0 0 auto"),ctl=el("div","display:flex;align-items:center;gap:8px;margin:2px 2px 4px"),holder=el("div","margin-top:12px");
+ var cx=cv.getContext("2d"),info=el("div","flex:1 1 0;min-width:0;text-align:right;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"),act=el("div","display:flex;gap:5px;align-items:center;flex:0 0 auto"),ctl=el("div","display:flex;align-items:center;gap:8px;margin:2px 2px 4px"),holder=el("div","margin-top:12px");holder.className="bg-sn-hold";
  var path,plen,len,tlen,ang,tdir,hx,hy,trav,sm,lumps,preys,obs,decor,score,eaten,alive,paused,started,tt=0,last=0,raf=0,banner=0,bannerT="",tcur=0,ttg=0,rip=[],fly4=[];
  var SKN=[{n:"Verde",h:98,c:"hsl(98,55%,42%)"},{n:"Azul",h:205,c:"hsl(205,70%,50%)"},{n:"Roxa",h:278,c:"hsl(278,60%,52%)"},{n:"Vermelha",h:0,c:"hsl(0,70%,50%)"},{n:"Dourada",h:46,c:"hsl(46,85%,52%)"},{n:"Rosa",h:326,c:"hsl(326,70%,60%)"},{n:"Turquesa",h:174,c:"hsl(174,65%,42%)"},{n:"Arco-íris",rb:1,c:"linear-gradient(135deg,red,orange,yellow,lime,cyan,blue,magenta)"}];
  var skr=bgSkins("bg_skin_snake",SKN,0,function(){});
@@ -17757,8 +17757,8 @@ function snake(w){
  function tE(){tDown=0;drDir=-1}
  function boostOn(){var n=performance.now();return(tDown>0&&n-tDown>150&&(drDir<0||drDir===tdir))||(kDir>=0&&kDir===tdir&&n-kT>150)}
  document.addEventListener("touchstart",tS,{passive:true});document.addEventListener("touchmove",tM,{passive:true});document.addEventListener("touchend",tE,{passive:true});document.addEventListener("touchcancel",tE,{passive:true});
- var infoP=null,lastLand=isLand(),lastIW=window.innerWidth,rt=0;
- function onRes(){clearTimeout(rt);rt=setTimeout(function(){var L=isLand(),iw=window.innerWidth;if(L===lastLand&&iw===lastIW)return;lastLand=L;lastIW=iw;if(!started){fit(false);init()}else fit(true)},180)}
+ var infoP=null,lastLand=isLand(),lastIW=window.innerWidth,lastIH=window.innerHeight,rt=0;
+ function onRes(){clearTimeout(rt);rt=setTimeout(function(){var L=isLand(),iw=window.innerWidth,ih=window.innerHeight;if(L===lastLand&&iw===lastIW&&ih===lastIH)return;lastLand=L;lastIW=iw;lastIH=ih;if(!started){fit(false);init()}else fit(true)},180)}
  window.addEventListener("resize",onRes);window.addEventListener("orientationchange",onRes);
  /* WEB: rato (premir/arrastar) e teclado (W A S D, barra de espaço, tecla mantida = turbo) */
  var mDrag=false,kDir=-1,kT=0,KM={ArrowLeft:0,ArrowUp:1,ArrowRight:2,ArrowDown:3,a:0,w:1,d:2,s:3,A:0,W:1,D:2,S:3};
@@ -17980,7 +17980,7 @@ function drawPrey(p){var k=p.k,hz=k.d==="hop"&&p.stop<=0?Math.abs(Math.sin(tt*5+
  function over(){alive=false;info.textContent="💀 Fim! Nível "+lv()+" · Pontos: "+score;var ro=el("div","display:flex;gap:5px;align-items:center");ro.append(cbtn("Jogar outra vez",init),cbtn("⚙️ Definições",openSet),cbtn("ℹ️ Como jogar",openInfo));act.replaceChildren(ro);submit("cobra",score,holder)}
  function loop(){raf=requestAnimationFrame(loop);var now=performance.now(),dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;update(dt);render()}
  var rs=swipeDoc(turn,function(){return alive&&!paused}),rk=keys(turn);document.addEventListener("visibilitychange",vis);if(!document.getElementById("bg-sn-css")){var sc=document.createElement("style");sc.id="bg-sn-css";
- sc.textContent=".bg-sn{display:flex;flex-direction:column}.bg-sn-side{display:contents}.bg-sn-ctl{order:0}.bg-sn>canvas{order:1}.bg-sn-dp{order:2}"+
+ sc.textContent=".bg-sn-hold:empty{display:none}.bg-sn{display:flex;flex-direction:column}.bg-sn-side{display:contents}.bg-sn-ctl{order:0}.bg-sn>canvas{order:1}.bg-sn-dp{order:2}"+
   "@media (min-aspect-ratio:23/20){.bg-sn{flex-direction:row;align-items:flex-start;justify-content:center;gap:14px}.bg-sn>canvas{margin:4px 0!important;flex:0 0 auto}"+
   ".bg-sn-side{display:flex;flex-direction:column;gap:10px;width:176px;flex:0 0 auto;align-self:stretch}.bg-sn-ctl{flex-direction:column;align-items:stretch!important;margin:4px 0 0!important}"+
   ".bg-sn-ctl>div:first-child>div{flex-wrap:wrap}.bg-sn-ctl>div:last-child{text-align:left!important;white-space:normal!important}.bg-sn-dp{margin-top:auto!important}}";document.head.append(sc)}

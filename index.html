@@ -17910,7 +17910,7 @@ function nNorm(){var n=0;for(var i=0;i<preys.length;i++)if(!preys[i].k.spec)n++;
 function spawnSpec(dt){for(var i=0;i<SPEC.length;i++){var q=SPEC[i];if(eaten<q.n)continue;var has=false;for(var j=0;j<preys.length;j++)if(preys[j].k===q){has=true;break}if(has)continue;
   if(spT[i]>0){spT[i]-=dt;continue}
   var sp=freeSpot(6,1.4);if(!sp)continue;var a=Math.random()*6.28;preys.push({k:q,x:sp.x,y:sp.y,a:a,ta:a,tm:0,ph:Math.random()*6.28,w:0,stop:0,life:28});
-  banner=1.8;bannerT=q.em+" "+q.nm+"! vale "+q.mult+"×"}}
+  banner=1.6;bannerT=q.em+" "+q.nm+"! vale "+q.mult+"×"}}
  /* NÍVEL: sobe a cada BG_SNAKE_ALVOS alvos comidos. Altere aqui. */
  function lv(){return lvBase+Math.floor(eaten/BG_SNAKE_ALVOS)}
  function mkFlies(){fly4=[];for(var i=0;i<40;i++)fly4.push({x:Math.random()*cols,y:Math.random()*rows,z:.3+Math.random()*1.4,ph:Math.random()*6.28,sp:.4+Math.random()*.8})}
@@ -18049,7 +18049,7 @@ function drawPrey(p){if(p.k.em)return drawSpec(p);var k=p.k,hz=k.d==="hop"&&p.st
   if(banner>0){var hp=pj(hx,hy,.4),wr=(1.6-banner)*W*.55;cx.strokeStyle="hsl("+((tt*200)%360)+",100%,65%)";cx.globalAlpha=Math.min(1,banner);cx.lineWidth=5;cx.beginPath();cx.ellipse(SX(hp),SY(hp),wr,wr*.45,0,0,7);cx.stroke()}
   cx.restore();
   if(banner>0){cx.save();cx.globalAlpha=Math.min(1,banner);cx.fillStyle="#ffd54f";cx.strokeStyle="#12183a";cx.lineWidth=4;cx.font="800 26px sans-serif";cx.textAlign="center";cx.strokeText(bannerT,W/2,H*.14);cx.fillText(bannerT,W/2,H*.14);cx.restore()}}
- function eat(p,j){preys.splice(j,1);var k=p.k,l0=lv();score+=k.pts*(l0-lvBase+1);eaten++;eatSnd();if(k.spec){spT[k.si]=8;banner=1.8;bannerT=k.em+" +"+(k.pts*(l0-lvBase+1))+" pontos ("+k.mult+"×)"}
+ function eat(p,j){preys.splice(j,1);var k=p.k,l0=lv();score+=k.pts*(l0-lvBase+1);eaten++;eatSnd();if(k.spec){spT[k.si]=8;banner=1.6;bannerT=k.em+" +"+(k.pts*(l0-lvBase+1))+" pontos ("+k.mult+"×)"}
   lumps.push({s:.5,w:k.mouse?.78:.55,a0:k.lump,amp:0,t:0,fade:0,g:k.gr});
   try{if(navigator.vibrate)navigator.vibrate(25)}catch(e){}
   rip.push({x:p.x,y:p.y,t:0});if(lv()!==l0){ttg+=.09;banner=1.6;bannerT="⬆ Nível "+lv();if(lv()>=5&&obs.length<BG_SNAKE_OBSMAX)addOb(lv()%2?"tree":"car")}

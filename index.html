@@ -17697,7 +17697,7 @@ function bgSkins(key,list,def,cb){var i=def;try{var v=parseInt(localStorage.getI
   b.onclick=function(){i=j;try{localStorage.setItem(key,String(j))}catch(e){}paint();cb(j)};bs.push(b);row.append(b)});
  function paint(){bs.forEach(function(b,j){b.style.borderColor=j===i?"#fff":"transparent";b.style.transform=j===i?"scale(1.18)":"none"})}
  paint();return{row:row,get:function(){return i}}}
-var BG_SNAKE_BORB=.1,BG_SNAKE_ALVOS=10,BG_SNAKE_VEL=.6,BG_SNAKE_NIVMAX=100,BG_SNAKE_OBSMAX=16,BG_SNAKE_TURBO=1.8;
+var BG_SNAKE_BORB=.1,BG_SNAKE_ALVOS=10,BG_SNAKE_VEL=.6,BG_SNAKE_NIVMAX=100,BG_SNAKE_OBSMAX=16,BG_SNAKE_TURBO=2.1,BG_SNAKE_CORPO=.8;
 function snake(w){
  var cols=26,rows=40,W=Math.max(220,Math.min(600,(w.clientWidth||320)-2));
  /* Câmara 3D: perspectiva com inclinação (sem bibliotecas, funciona offline) */
@@ -17831,6 +17831,8 @@ function snake(w){
 function pickKind(){var i,has=false,com=[];for(i=0;i<preys.length;i++)if(preys[i].k.fly)has=true;for(i=0;i<KINDS.length;i++)if(!KINDS[i].fly)com.push(KINDS[i]);
  if(!has&&Math.random()<BG_SNAKE_BORB)for(i=0;i<KINDS.length;i++)if(KINDS[i].fly)return KINDS[i];return com[Math.floor(Math.random()*com.length)]}
 function addPrey(){var s=freeSpot(4,.9);if(!s)return false;var a=Math.random()*6.28;preys.push({k:pickKind(),x:s.x,y:s.y,a:a,ta:a,tm:0,ph:Math.random()*6.28,w:0,stop:0});return true}
+/* CORPO: as presas não podem passar por cima/por baixo da cobra; desviam como nos obstáculos (BG_SNAKE_CORPO = folga) */
+function bodyHit(x,y,r){if(!sm)return null;var b=null,bd=r;for(var i=0;i<sm.length;i++){if(sm[i].s<1)continue;var d=dist(x,y,sm[i].x,sm[i].y);if(d<bd){bd=d;b=sm[i]}}return b?{s:b,d:bd}:null}
 function movePrey(p,dt){var k=p.k,d=dist(p.x,p.y,hx,hy),sp=k.sp,flee=d<3.6&&started&&alive;p.tm-=dt;
   if(p.tm<=0){p.ta=p.a+(Math.random()-.5)*2.2;p.tm=.6+Math.random()*1.6;if(k.d==="mouse"&&Math.random()<.35)p.stop=.3+Math.random()*.7}
   if(flee){p.ta=Math.atan2(p.y-hy,p.x-hx);sp=k.fl;p.stop=0}
@@ -17838,6 +17840,7 @@ function movePrey(p,dt){var k=p.k,d=dist(p.x,p.y,hx,hy),sp=k.sp,flee=d<3.6&&star
   var df=wrap(p.ta-p.a),mx=(flee?6:3)*dt;p.a=wrap(p.a+(Math.abs(df)<mx?df:(df>0?mx:-mx)));
   var nx=p.x+Math.cos(p.a)*sp*dt,ny=p.y+Math.sin(p.a)*sp*dt;
   if(nx<.9||nx>cols-.9||ny<.9||ny>rows-.9||hitOb(nx,ny,.4)){p.ta=p.a+Math.PI*(.6+Math.random()*.8);p.a=p.ta;return}
+  var bh=bodyHit(nx,ny,BG_SNAKE_CORPO);if(bh){var cu=bodyHit(p.x,p.y,BG_SNAKE_CORPO);if(!cu||bh.d<=cu.d){p.ta=Math.atan2(p.y-bh.s.y,p.x-bh.s.x)+(Math.random()-.5)*.6;p.a=p.ta;return}}
   p.x=nx;p.y=ny;p.w+=sp*dt*7}
  /* corpo contínuo: amostras ao longo do rasto da cabeça, a distância constante */
  function samples(){var ds=.17,n=Math.ceil(len/ds),out=[{x:path[0].x,y:path[0].y,s:0}],seg=0;

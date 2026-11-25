@@ -17702,9 +17702,19 @@ function snake(w){
  function pj(gx,gy,z){var u=gx-cols/2,rz=z-CH,rv=rows-gy+CD,f=rv*cP-rz*sP,up=rz*cP+rv*sP;return{x:F*u/f,y:F*up/f,f:f}}
  var yTop=0,H=0;
  function dims(r){rows=r;yTop=pj(cols/2,0,2.8).y+6;H=Math.ceil(yTop-pj(cols/2,rows,0).y+18);return H}
- /* o tabuleiro cresce (mais linhas) até preencher o ecrã inteiro */
- (function(){var vh=(window.visualViewport&&window.visualViewport.height)||window.innerHeight||700,ch=w.clientHeight||(vh-70);
-  var avail=Math.max(260,ch-180),r=26;dims(r);while(r<110){if(dims(r+1)>avail)break;r++}dims(r)})();
+ function setW(x){W=x;F=W*.99*((CD*cP+CH*sP))/cols}
+ /* FORMATO: no telemóvel na vertical o campo é alto e os controlos ficam em baixo; na horizontal (ou no computador) o campo fica à esquerda e as setas/botões à direita */
+ function isLand(){return(window.innerWidth||0)>(window.innerHeight||1)*1.15}
+ /* o tabuleiro cresce (mais linhas) até preencher o espaço disponível; keep=true mantém as linhas (jogo em curso) */
+ function fit(keep){var land=isLand(),vh=(window.visualViewport&&window.visualViewport.height)||window.innerHeight||700,ch=w.clientHeight||(vh-70),
+   availH=land?Math.max(180,ch-8):Math.max(260,ch-180),cw=w.clientWidth||(land?640:320),
+   maxW=land?Math.max(200,Math.min(600,cw-196)):Math.max(220,Math.min(600,cw-2)),r;
+  setW(maxW);
+  if(keep){dims(rows);if(land)while(H>availH&&W>200){setW(Math.floor(W*.95));dims(rows)}}
+  else{r=land?18:26;dims(r);if(land)while(H>availH&&W>200){setW(Math.floor(W*.95));dims(r)}
+   while(r<(land?40:110)){if(dims(r+1)>availH)break;r++}dims(r)}
+  if(typeof cv!=="undefined"&&cv){cv.width=W;cv.height=H}}
+ fit(false);
  function SX(p){return W/2+p.x}function SY(p){return yTop-p.y}
  var cv=document.createElement("canvas");cv.width=W;cv.height=H;cv.style.cssText="display:block;margin:4px auto;border-radius:12px;background:#0d0f2b;touch-action:none;max-width:100%";
  var cx=cv.getContext("2d"),info=el("div","flex:1 1 0;min-width:0;text-align:right;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"),act=el("div","display:flex;gap:5px;align-items:center;flex:0 0 auto"),ctl=el("div","display:flex;align-items:center;gap:8px;margin:2px 2px 4px"),holder=el("div","margin-top:12px");
@@ -17745,16 +17755,28 @@ function snake(w){
  function tS(e){if(e.target&&e.target.closest&&e.target.closest("button,#bg-gpause"))return;if(panel||infoP||!e.touches||e.touches.length!==1)return;var t=e.touches[0];tDown=performance.now();drDir=-1;tAx=t.clientX;tAy=t.clientY}
  function tM(e){if(!tDown||!e.touches||!e.touches[0])return;var t=e.touches[0],dx=t.clientX-tAx,dy=t.clientY-tAy;if(Math.max(Math.abs(dx),Math.abs(dy))<14)return;drDir=Math.abs(dx)>Math.abs(dy)?(dx>0?2:0):(dy>0?3:1);tAx=t.clientX;tAy=t.clientY}
  function tE(){tDown=0;drDir=-1}
- function boostOn(){return tDown>0&&performance.now()-tDown>150&&(drDir<0||drDir===tdir)}
+ function boostOn(){var n=performance.now();return(tDown>0&&n-tDown>150&&(drDir<0||drDir===tdir))||(kDir>=0&&kDir===tdir&&n-kT>150)}
  document.addEventListener("touchstart",tS,{passive:true});document.addEventListener("touchmove",tM,{passive:true});document.addEventListener("touchend",tE,{passive:true});document.addEventListener("touchcancel",tE,{passive:true});
- var infoP=null;
+ var infoP=null,lastLand=isLand(),lastIW=window.innerWidth,rt=0;
+ function onRes(){clearTimeout(rt);rt=setTimeout(function(){var L=isLand(),iw=window.innerWidth;if(L===lastLand&&iw===lastIW)return;lastLand=L;lastIW=iw;if(!started){fit(false);init()}else fit(true)},180)}
+ window.addEventListener("resize",onRes);window.addEventListener("orientationchange",onRes);
+ /* WEB: rato (premir/arrastar) e teclado (W A S D, barra de espaço, tecla mantida = turbo) */
+ var mDrag=false,kDir=-1,kT=0,KM={ArrowLeft:0,ArrowUp:1,ArrowRight:2,ArrowDown:3,a:0,w:1,d:2,s:3,A:0,W:1,D:2,S:3};
+ function mS(e){if(e.button!==0||(e.target&&e.target.closest&&e.target.closest("button,#bg-gpause"))||panel||infoP)return;mDrag=true;tDown=performance.now();drDir=-1;tAx=e.clientX;tAy=e.clientY}
+ function mM(e){if(!mDrag)return;var dx=e.clientX-tAx,dy=e.clientY-tAy;if(Math.max(Math.abs(dx),Math.abs(dy))<14)return;drDir=Math.abs(dx)>Math.abs(dy)?(dx>0?2:0):(dy>0?3:1);tAx=e.clientX;tAy=e.clientY;turn(drDir)}
+ function mE(){mDrag=false;tDown=0;drDir=-1}
+ function kD(e){var tg=e.target&&e.target.tagName;if(tg==="INPUT"||tg==="TEXTAREA"||tg==="SELECT"||panel||infoP||e.ctrlKey||e.metaKey||e.altKey)return;
+  if(e.key===" "){e.preventDefault();if(e.repeat)return;if(!started)start();else if(!alive){init();start()}else if(paused)resume();else pause();return}
+  var m=KM[e.key];if(m==null)return;if(kDir!==m){kDir=m;kT=performance.now()}if(e.key.length===1)turn(m)}
+ function kU(e){if(e.key===" "){var tg=e.target&&e.target.tagName;if(tg!=="INPUT"&&tg!=="TEXTAREA")e.preventDefault();return}if(KM[e.key]===kDir)kDir=-1}
+ document.addEventListener("mousedown",mS);document.addEventListener("mousemove",mM);document.addEventListener("mouseup",mE);document.addEventListener("keydown",kD);document.addEventListener("keyup",kU);
  function closeInfo(){if(infoP){infoP.remove();infoP=null}}
  function openInfo(){if(infoP)return;if(started&&alive&&!paused)pause();
   var ov=el("div","position:fixed;inset:0;z-index:100050;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center"),
    bx=el("div","background:#14163a;color:#fff;width:100%;max-width:480px;max-height:88vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom,0px));box-sizing:border-box;border-top:3px solid #f5b400;font:15px/1.45 var(--bg-font)"),
    hd=el("div","display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"),cl=el("button",BTN+";padding:7px 12px","");
   window.bgLb(cl,"✕","Fechar");cl.onclick=closeInfo;hd.append(el("b","font-size:17px","ℹ️ Como jogar?"),cl);
-  var L=["Use as setas que estão por baixo, que indicam esquerda, direita, para cima e para baixo.","Use gestos no ecrã de jogo, arrastando o dedo para a esquerda, para a direita, para cima ou para baixo.","Pressione ou arraste o dedo continuamente no ecrã, para o lado em que a cobra vai, para aumentar a velocidade."],
+  var L=["Use as setas que estão por baixo, que indicam esquerda, direita, para cima e para baixo.","Use gestos no ecrã de jogo, arrastando o dedo para a esquerda, para a direita, para cima ou para baixo.","Pressione ou arraste o dedo continuamente no ecrã, para o lado em que a cobra vai, para aumentar a velocidade.","No computador, use as setas do teclado (ou W, A, S, D) e a barra de espaço para pausar. Manter uma tecla premida, na direção da cobra, aumenta a velocidade."],
    ol=el("div","display:flex;flex-direction:column;gap:12px;margin-top:10px");
   L.forEach(function(t,i){var r=el("div","display:flex;gap:10px;align-items:flex-start");
    r.append(el("span","flex:0 0 auto;width:24px;height:24px;border-radius:50%;background:#f5b400;color:#14163a;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:13px",String(i+1)),el("span","",t));ol.append(r)});
@@ -17957,8 +17979,15 @@ function drawPrey(p){var k=p.k,hz=k.d==="hop"&&p.stop<=0?Math.abs(Math.sin(tt*5+
  function turn(c){if(!alive||paused||!started)return;if(((c+2)&3)===tdir)return;tdir=c}
  function over(){alive=false;info.textContent="💀 Fim! Nível "+lv()+" · Pontos: "+score;var ro=el("div","display:flex;gap:5px;align-items:center");ro.append(cbtn("Jogar outra vez",init),cbtn("⚙️ Definições",openSet),cbtn("ℹ️ Como jogar",openInfo));act.replaceChildren(ro);submit("cobra",score,holder)}
  function loop(){raf=requestAnimationFrame(loop);var now=performance.now(),dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;update(dt);render()}
- var rs=swipeDoc(turn,function(){return alive&&!paused}),rk=keys(turn);document.addEventListener("visibilitychange",vis);ctl.dataset.bgTop="1";ctl.append(act,info);w.append(ctl,cv,dpad(turn),holder);init();last=performance.now();loop();
- return function(){alive=false;cancelAnimationFrame(raf);document.removeEventListener("visibilitychange",vis);closeSet();closeInfo();document.removeEventListener("touchstart",tS);document.removeEventListener("touchmove",tM);document.removeEventListener("touchend",tE);document.removeEventListener("touchcancel",tE);rs();rk()}}
+ var rs=swipeDoc(turn,function(){return alive&&!paused}),rk=keys(turn);document.addEventListener("visibilitychange",vis);if(!document.getElementById("bg-sn-css")){var sc=document.createElement("style");sc.id="bg-sn-css";
+ sc.textContent=".bg-sn{display:flex;flex-direction:column}.bg-sn-side{display:contents}.bg-sn-ctl{order:0}.bg-sn>canvas{order:1}.bg-sn-dp{order:2}"+
+  "@media (min-aspect-ratio:23/20){.bg-sn{flex-direction:row;align-items:flex-start;justify-content:center;gap:14px}.bg-sn>canvas{margin:4px 0!important;flex:0 0 auto}"+
+  ".bg-sn-side{display:flex;flex-direction:column;gap:10px;width:176px;flex:0 0 auto;align-self:stretch}.bg-sn-ctl{flex-direction:column;align-items:stretch!important;margin:4px 0 0!important}"+
+  ".bg-sn-ctl>div:first-child>div{flex-wrap:wrap}.bg-sn-ctl>div:last-child{text-align:left!important;white-space:normal!important}.bg-sn-dp{margin-top:auto!important}}";document.head.append(sc)}
+ ctl.dataset.bgTop="1";ctl.className="bg-sn-ctl";ctl.append(act,info);
+ var dpEl=dpad(turn);dpEl.className="bg-sn-dp";var side=el("div","");side.className="bg-sn-side";side.append(ctl,dpEl);
+ var mainEl=el("div","");mainEl.className="bg-sn";mainEl.dataset.bgTop="1";mainEl.append(cv,side);w.append(mainEl,holder);init();last=performance.now();loop();
+ return function(){alive=false;cancelAnimationFrame(raf);document.removeEventListener("visibilitychange",vis);closeSet();closeInfo();document.removeEventListener("touchstart",tS);document.removeEventListener("touchmove",tM);document.removeEventListener("touchend",tE);document.removeEventListener("touchcancel",tE);window.removeEventListener("resize",onRes);window.removeEventListener("orientationchange",onRes);clearTimeout(rt);document.removeEventListener("mousedown",mS);document.removeEventListener("mousemove",mM);document.removeEventListener("mouseup",mE);document.removeEventListener("keydown",kD);document.removeEventListener("keyup",kU);rs();rk()}}
 /* ---- Tetris ---- */
 function tetris(w){
  var C=10,R=20,cs=Math.min(24,Math.floor(((w.clientWidth||320)-8)/C)),W=C*cs,H=R*cs,

@@ -17694,7 +17694,7 @@ function bgSkins(key,list,def,cb){var i=def;try{var v=parseInt(localStorage.getI
   b.onclick=function(){i=j;try{localStorage.setItem(key,String(j))}catch(e){}paint();cb(j)};bs.push(b);row.append(b)});
  function paint(){bs.forEach(function(b,j){b.style.borderColor=j===i?"#fff":"transparent";b.style.transform=j===i?"scale(1.18)":"none"})}
  paint();return{row:row,get:function(){return i}}}
-var BG_SNAKE_ALVOS=10,BG_SNAKE_VEL=.6,BG_SNAKE_NIVMAX=100,BG_SNAKE_OBSMAX=16,BG_SNAKE_TURBO=1.8;
+var BG_SNAKE_BORB=.1,BG_SNAKE_ALVOS=10,BG_SNAKE_VEL=.6,BG_SNAKE_NIVMAX=100,BG_SNAKE_OBSMAX=16,BG_SNAKE_TURBO=1.8;
 function snake(w){
  var cols=26,rows=40,W=Math.max(220,Math.min(600,(w.clientWidth||320)-2));
  /* Câmara 3D: perspectiva com inclinação (sem bibliotecas, funciona offline) */
@@ -17804,8 +17804,8 @@ function snake(w){
   {d:"mouse",c1:"#e0b070",c2:"#8d6e3f",pts:35,sp:.75,fl:1.6,lump:.38,gr:1.5,sz:2.1,mouse:1},
   {d:"bug",c1:"#ff1744",c2:"#b71c1c",dots:1,pts:8,sp:1.0,fl:1.8,lump:.16,gr:.6,sz:1.5},
   {d:"bug",c1:"#29b6f6",c2:"#01579b",pts:10,sp:1.1,fl:1.9,lump:.18,gr:.7,sz:1.5},
-  {d:"hop",c1:"#ffeb3b",c2:"#f57f17",pts:12,sp:1.2,fl:2.0,lump:.2,gr:.8,sz:1.9},
-  {d:"fly",c1:"#ff9800",c2:"#ffeb3b",pts:15,sp:1.3,fl:2.1,lump:.18,gr:.8,sz:2.0,fly:1}];
+  {d:"hop",c1:"#ffeb3b",c2:"#f57f17",pts:30,sp:1.2,fl:2.0,lump:.2,gr:.8,sz:1.9},
+  {d:"fly",c1:"#ff9800",c2:"#ffeb3b",pts:50,sp:1.3,fl:2.1,lump:.18,gr:.8,sz:2.0,fly:1}];
  /* NÍVEL: sobe a cada BG_SNAKE_ALVOS alvos comidos. Altere aqui. */
  function lv(){return lvBase+Math.floor(eaten/BG_SNAKE_ALVOS)}
  function mkFlies(){fly4=[];for(var i=0;i<40;i++)fly4.push({x:Math.random()*cols,y:Math.random()*rows,z:.3+Math.random()*1.4,ph:Math.random()*6.28,sp:.4+Math.random()*.8})}
@@ -17824,7 +17824,10 @@ function snake(w){
  function addOb(kind){var s=freeSpot(7,1.6);if(!s)return false;
   if(kind==="car")obs.push({t:"car",x:s.x,y:s.y,hw:1,hh:.55,e:["🚗","🚙","🚕","🛻"][Math.floor(Math.random()*4)]});
   else obs.push({t:"tree",x:s.x,y:s.y,r:.6,e:["🌳","🌴","🌲"][Math.floor(Math.random()*3)]});return true}
-function addPrey(){var s=freeSpot(4,.9);if(!s)return false;var a=Math.random()*6.28;preys.push({k:KINDS[Math.floor(Math.random()*KINDS.length)],x:s.x,y:s.y,a:a,ta:a,tm:0,ph:Math.random()*6.28,w:0,stop:0});return true}
+/* BORBOLETA: rara (BG_SNAKE_BORB = probabilidade em cada nova presa) e só uma de cada vez */
+function pickKind(){var i,has=false,com=[];for(i=0;i<preys.length;i++)if(preys[i].k.fly)has=true;for(i=0;i<KINDS.length;i++)if(!KINDS[i].fly)com.push(KINDS[i]);
+ if(!has&&Math.random()<BG_SNAKE_BORB)for(i=0;i<KINDS.length;i++)if(KINDS[i].fly)return KINDS[i];return com[Math.floor(Math.random()*com.length)]}
+function addPrey(){var s=freeSpot(4,.9);if(!s)return false;var a=Math.random()*6.28;preys.push({k:pickKind(),x:s.x,y:s.y,a:a,ta:a,tm:0,ph:Math.random()*6.28,w:0,stop:0});return true}
 function movePrey(p,dt){var k=p.k,d=dist(p.x,p.y,hx,hy),sp=k.sp,flee=d<3.6&&started&&alive;p.tm-=dt;
   if(p.tm<=0){p.ta=p.a+(Math.random()-.5)*2.2;p.tm=.6+Math.random()*1.6;if(k.d==="mouse"&&Math.random()<.35)p.stop=.3+Math.random()*.7}
   if(flee){p.ta=Math.atan2(p.y-hy,p.x-hx);sp=k.fl;p.stop=0}

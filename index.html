@@ -17180,13 +17180,21 @@ function swipeDoc(cb,on){var sx=0,sy=0;function ts(e){var t=e.touches[0];sx=t.cl
  document.addEventListener("touchstart",ts,{passive:true});document.addEventListener("touchmove",tm,{passive:false});
  return function(){document.removeEventListener("touchstart",ts);document.removeEventListener("touchmove",tm)}}
 /* BOTÕES DOS JOGOS: na vertical mostram só o ícone (o texto aparece na horizontal). Rótulos sem ícone ganham um aqui. */
+var BG_ACT={"▶ Começar":1,"⏸ Pausar":1,"▶ Continuar":1,"🔄 Recomeçar":1,"Jogar outra vez":1,"Continuar já":1,"Novo jogo":1,"Baralhar de novo":1,"Tentar este nível outra vez":1,"Tentar outra palavra":1,"Voltar ao jogo ▶":1,"Próxima ▶":1};
+/* REGRA DOS JOGOS: os botões de ação (começar, pausar, recomeçar…) ficam em cima do campo; em baixo só as setas. Só move linhas que tenham apenas esses botões. */
+function bgActTop(w){try{var bs=w.querySelectorAll("button.bg-act");for(var i=0;i<bs.length;i++){var c=bs[i];while(c&&c.parentNode!==w)c=c.parentNode;if(!c||c.tagName==="BUTTON"||(c.dataset&&c.dataset.bgTop))continue;
+  var all=c.querySelectorAll("button"),pure=!c.querySelector("canvas,input,select,textarea,img,svg"),txt="";
+  for(var j=0;j<all.length;j++){if(!all[j].classList.contains("bg-act"))pure=false;txt+=all[j].textContent}
+  if(!pure||c.textContent.replace(/\s+/g,"")!==txt.replace(/\s+/g,""))continue;
+  c.dataset.bgTop="1";w.insertBefore(c,w.firstChild);var st=c.style;st.margin="2px 0 6px";st.display="flex";st.flexWrap="wrap";st.gap="5px";st.justifyContent="center";st.alignItems="center"}}catch(e){}}
 var BG_BTN_ICON={"Jogar outra vez":"🔁","Novo jogo":"🆕","Baralhar de novo":"🔀","Tentar este nível outra vez":"🔁","Tentar outra palavra":"🔁","Continuar já":"▶"};
 function btn(t,fn,css){var x=el("button",BTN+(css||""),t);x.onclick=fn;
  try{var ic=null,tx=null,m;if(typeof t==="string"&&t.length<=34){
    if(BG_BTN_ICON[t]){ic=BG_BTN_ICON[t];tx=t}
-   else if((m=/^(\S+)\s+(\p{L}[\p{L}\s]*)$/u.exec(t))&&!/[\p{L}\p{N}]/u.test(m[1])){ic=m[1];tx=m[2]}
-   else if((m=/^(\p{L}[\p{L}\s]*?)\s+(\S+)$/u.exec(t))&&!/[\p{L}\p{N}]/u.test(m[2])){ic=m[2];tx=m[1]}}
+   else if((m=/^(\S+)\s+(\p{L}[\p{L}\s]*)$/u.exec(t))&&!/[A-Za-z0-9\u00C0-\u017F]/.test(m[1])){ic=m[1];tx=m[2]}
+   else if((m=/^(\p{L}[\p{L}\s]*?)\s+(\S+)$/u.exec(t))&&!/[A-Za-z0-9\u00C0-\u017F]/.test(m[2])){ic=m[2];tx=m[1]}}
   if(ic&&window.bgLb){window.bgLb(x,ic,tx);x.classList.add("bg-ico")}}catch(e){}
+ if(BG_ACT[t])x.classList.add("bg-act");
  return x}
 function bestLocal(g){try{return+localStorage.getItem("bg_best_"+g)||0}catch(e){return 0}}
 function setBest(g,p){try{if(p>bestLocal(g))localStorage.setItem("bg_best_"+g,String(p))}catch(e){}}
@@ -17664,7 +17672,8 @@ function play(G){stopGame();
   var wt=setInterval(function(){if(!document.body.contains(box))stopGame()},800),r=null;
   window.__bgGameOn=true;setGamePause(false);
   window.__bgTopBtn=pz;try{r=G[3](w)}catch(e){w.append(el("p","color:#ff8a8a;font-size:13px;word-break:break-word","Erro no jogo: "+(e&&e.message?e.message:e)))}
-  window.__bgGameStop=function(){clearInterval(wt);if(typeof r==="function")r()}}}
+  var mo=null;try{mo=new MutationObserver(function(){bgActTop(w)});mo.observe(w,{childList:true,subtree:true});bgActTop(w)}catch(e){}
+  window.__bgGameStop=function(){clearInterval(wt);if(mo)mo.disconnect();if(typeof r==="function")r()}}}
 /* ---- 1. Cobra (BENGU 4.61: cobra realista de corpo contínuo, presas vivas, obstáculos e onda de digestão) ---- */
 /* BENGU 4D: ambiente vivo — o tempo é a 4.ª dimensão (ciclo dia/noite, hipercubo rotativo, pirilampos, ondas) */
 function bgMix(a,b,t){return[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t]}
@@ -17695,10 +17704,10 @@ function snake(w){
  function dims(r){rows=r;yTop=pj(cols/2,0,2.8).y+6;H=Math.ceil(yTop-pj(cols/2,rows,0).y+18);return H}
  /* o tabuleiro cresce (mais linhas) até preencher o ecrã inteiro */
  (function(){var vh=(window.visualViewport&&window.visualViewport.height)||window.innerHeight||700,ch=w.clientHeight||(vh-70);
-  var avail=Math.max(260,ch-225),r=26;dims(r);while(r<110){if(dims(r+1)>avail)break;r++}dims(r)})();
+  var avail=Math.max(260,ch-180),r=26;dims(r);while(r<110){if(dims(r+1)>avail)break;r++}dims(r)})();
  function SX(p){return W/2+p.x}function SY(p){return yTop-p.y}
  var cv=document.createElement("canvas");cv.width=W;cv.height=H;cv.style.cssText="display:block;margin:4px auto;border-radius:12px;background:#0d0f2b;touch-action:none;max-width:100%";
- var cx=cv.getContext("2d"),info=el("div","text-align:center;font-size:14px;font-weight:700"),act=el("div","text-align:center;margin-top:8px"),holder=el("div","margin-top:12px");
+ var cx=cv.getContext("2d"),info=el("div","flex:1 1 0;min-width:0;text-align:right;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"),act=el("div","display:flex;gap:5px;align-items:center;flex:0 0 auto"),ctl=el("div","display:flex;align-items:center;gap:8px;margin:2px 2px 4px"),holder=el("div","margin-top:12px");
  var path,plen,len,tlen,ang,tdir,hx,hy,trav,sm,lumps,preys,obs,decor,score,eaten,alive,paused,started,tt=0,last=0,raf=0,banner=0,bannerT="",tcur=0,ttg=0,rip=[],fly4=[];
  var SKN=[{n:"Verde",h:98,c:"hsl(98,55%,42%)"},{n:"Azul",h:205,c:"hsl(205,70%,50%)"},{n:"Roxa",h:278,c:"hsl(278,60%,52%)"},{n:"Vermelha",h:0,c:"hsl(0,70%,50%)"},{n:"Dourada",h:46,c:"hsl(46,85%,52%)"},{n:"Rosa",h:326,c:"hsl(326,70%,60%)"},{n:"Turquesa",h:174,c:"hsl(174,65%,42%)"},{n:"Arco-íris",rb:1,c:"linear-gradient(135deg,red,orange,yellow,lime,cyan,blue,magenta)"}];
  var skr=bgSkins("bg_skin_snake",SKN,0,function(){});
@@ -17783,7 +17792,7 @@ function snake(w){
  function preyN(){return Math.min(7,3+Math.floor((lv()-1)/3))}
  function dist(ax,ay,bx,by){return Math.sqrt((ax-bx)*(ax-bx)+(ay-by)*(ay-by))}
  function wrap(a){while(a>Math.PI)a-=2*Math.PI;while(a<-Math.PI)a+=2*Math.PI;return a}
- function head(){info.textContent="Nível "+lv()+" · Pontos: "+score+(paused?" · ⏸ Em pausa":(bst?" · ⚡":""))}
+ function head(){info.textContent="Nível "+lv()+" · Pontos: "+score+(paused?" · ⏸ Pausa":(bst?" · ⚡":""))}
  function hitOb(x,y,r){for(var i=0;i<obs.length;i++){var o=obs[i];if(o.t==="car"){if(Math.abs(x-o.x)<o.hw+r&&Math.abs(y-o.y)<o.hh+r)return true}else if(dist(x,y,o.x,o.y)<o.r+r)return true}return false}
  function sampleHit(x,y,r){if(!sm)return false;for(var i=0;i<sm.length;i++)if(dist(x,y,sm[i].x,sm[i].y)<r)return true;return false}
  function freeSpot(minHead,pad){for(var t=0;t<90;t++){var x=1+Math.random()*(cols-2),y=1+Math.random()*(rows-2),bad=false;
@@ -17935,19 +17944,20 @@ function drawPrey(p){var k=p.k,hz=k.d==="hop"&&p.stop<=0?Math.abs(Math.sin(tt*5+
   for(i=0;i<240;i++)decor.t.push({x:Math.random()*cols,y:Math.random()*rows,c:["#5d8a34","#6f9c3e","#4b7229"][i%3]});
   addPrey();addPrey();addPrey();rip=[];mkFlies();for(var Lq=5;Lq<=lvBase&&obs.length<BG_SNAKE_OBSMAX;Lq++)addOb(Lq%2?"tree":"car");
   head();holder.replaceChildren();setAct("idle");render()}
- function setAct(m){var r=el("div","display:flex;gap:10px;justify-content:center;align-items:center"),gs=btn("⚙️ Definições",openSet),gi=btn("ℹ️ Como jogar",openInfo);
-  if(m==="idle"){var p0=btn("⏸ Pausar",function(){},";opacity:.45");p0.disabled=true;r.append(btn("▶ Começar",start),p0,gs,gi)}
-  else if(m==="play")r.append(btn("⏸ Pausar",pause),gs,gi);
-  else r.append(btn("▶ Continuar",resume),btn("🔄 Recomeçar",function(){init();start()},";background:#2a2f66;color:#fff"),gs,gi);
+ function cbtn(t,fn,css){var x=btn(t,fn,";padding:0 8px;min-width:36px;height:36px;font-size:16px;display:inline-flex;align-items:center;justify-content:center"+(css||""));x.classList.remove("bg-ico");return x}
+ function setAct(m){var r=el("div","display:flex;gap:5px;align-items:center"),gs=cbtn("⚙️ Definições",openSet),gi=cbtn("ℹ️ Como jogar",openInfo);
+  if(m==="idle")r.append(cbtn("▶ Começar",start),gs,gi);
+  else if(m==="play")r.append(cbtn("⏸ Pausar",pause),gs,gi);
+  else r.append(cbtn("▶ Continuar",resume),cbtn("🔄 Recomeçar",function(){init();start()},";background:#2a2f66;color:#fff"),gs,gi);
   act.replaceChildren(r)}
  function pause(){if(!alive||paused)return;paused=true;head();setAct("pause")}
  function resume(){if(!alive||!paused)return;sndInit();paused=false;last=performance.now();head();setAct("play")}
  function vis(){if(document.hidden)pause()}
  function start(){sndInit();started=true;alive=true;paused=false;last=performance.now();setAct("play");head()}
  function turn(c){if(!alive||paused||!started)return;if(((c+2)&3)===tdir)return;tdir=c}
- function over(){alive=false;info.textContent="💀 Fim! Nível "+lv()+" · Pontos: "+score;var ro=el("div","display:flex;gap:10px;justify-content:center;align-items:center");ro.append(btn("Jogar outra vez",init),btn("⚙️ Definições",openSet),btn("ℹ️ Como jogar",openInfo));act.replaceChildren(ro);submit("cobra",score,holder)}
+ function over(){alive=false;info.textContent="💀 Fim! Nível "+lv()+" · Pontos: "+score;var ro=el("div","display:flex;gap:5px;align-items:center");ro.append(cbtn("Jogar outra vez",init),cbtn("⚙️ Definições",openSet),cbtn("ℹ️ Como jogar",openInfo));act.replaceChildren(ro);submit("cobra",score,holder)}
  function loop(){raf=requestAnimationFrame(loop);var now=performance.now(),dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;update(dt);render()}
- var rs=swipeDoc(turn,function(){return alive&&!paused}),rk=keys(turn);document.addEventListener("visibilitychange",vis);w.append(info,cv,dpad(turn),act,holder);init();last=performance.now();loop();
+ var rs=swipeDoc(turn,function(){return alive&&!paused}),rk=keys(turn);document.addEventListener("visibilitychange",vis);ctl.dataset.bgTop="1";ctl.append(act,info);w.append(ctl,cv,dpad(turn),holder);init();last=performance.now();loop();
  return function(){alive=false;cancelAnimationFrame(raf);document.removeEventListener("visibilitychange",vis);closeSet();closeInfo();document.removeEventListener("touchstart",tS);document.removeEventListener("touchmove",tM);document.removeEventListener("touchend",tE);document.removeEventListener("touchcancel",tE);rs();rk()}}
 /* ---- Tetris ---- */
 function tetris(w){

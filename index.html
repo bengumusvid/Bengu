@@ -17905,12 +17905,14 @@ var SPEC_BASE=10,spT=[0,0,0,0],SPEC=[
   {n:7,mult:150,nm:"Leão",em:"🦁",sp:.8,fl:1.5,lump:.5,gr:2.2,sz:3.0},
   {n:5,mult:100,nm:"Búfalo",em:"🐃",sp:.7,fl:1.3,lump:.5,gr:1.9,sz:3.0},
   {n:3,mult:75,nm:"Zebra",em:"🦓",sp:.9,fl:1.7,lump:.45,gr:1.6,sz:2.8}];
-SPEC.forEach(function(q,i){q.d="emoji";q.spec=1;q.si=i;q.pts=q.mult*SPEC_BASE});
+SPEC.forEach(function(q,i){q.d="emoji";q.spec=1;q.si=i;q.wt=[1,2,3,4][i];q.pts=q.mult*SPEC_BASE});
 function nNorm(){var n=0;for(var i=0;i<preys.length;i++)if(!preys[i].k.spec)n++;return n}
-function spawnSpec(dt){for(var i=0;i<SPEC.length;i++){var q=SPEC[i];if(eaten<q.n)continue;var has=false;for(var j=0;j<preys.length;j++)if(preys[j].k===q){has=true;break}if(has)continue;
-  if(spT[i]>0){spT[i]-=dt;continue}
-  var sp=freeSpot(6,1.4);if(!sp)continue;var a=Math.random()*6.28;preys.push({k:q,x:sp.x,y:sp.y,a:a,ta:a,tm:0,ph:Math.random()*6.28,w:0,stop:0,life:28});
-  banner=1.6;bannerT=q.em+" "+q.nm+"! vale "+q.mult+"×"}}
+function spawnSpec(dt){var i,un=[],tot=0,r;for(i=0;i<preys.length;i++)if(preys[i].k.spec)return;/* só um animal especial de cada vez */
+ if(spT[0]>0){spT[0]-=dt;return}
+ for(i=0;i<SPEC.length;i++)if(eaten>=SPEC[i].n){un.push(SPEC[i]);tot+=SPEC[i].wt}
+ if(!un.length)return;r=Math.random()*tot;var q=un[un.length-1];for(i=0;i<un.length;i++){r-=un[i].wt;if(r<=0){q=un[i];break}}
+ var sp=freeSpot(6,1.4);if(!sp)return;var a=Math.random()*6.28;preys.push({k:q,x:sp.x,y:sp.y,a:a,ta:a,tm:0,ph:Math.random()*6.28,w:0,stop:0,life:12});
+ banner=1.6;bannerT=q.em+" "+q.nm+"! vale "+q.mult+"×"}
  /* NÍVEL: sobe a cada BG_SNAKE_ALVOS alvos comidos. Altere aqui. */
  function lv(){return lvBase+Math.floor(eaten/BG_SNAKE_ALVOS)}
  function mkFlies(){fly4=[];for(var i=0;i<40;i++)fly4.push({x:Math.random()*cols,y:Math.random()*rows,z:.3+Math.random()*1.4,ph:Math.random()*6.28,sp:.4+Math.random()*.8})}
@@ -18049,7 +18051,7 @@ function drawPrey(p){if(p.k.em)return drawSpec(p);var k=p.k,hz=k.d==="hop"&&p.st
   if(banner>0){var hp=pj(hx,hy,.4),wr=(1.6-banner)*W*.55;cx.strokeStyle="hsl("+((tt*200)%360)+",100%,65%)";cx.globalAlpha=Math.min(1,banner);cx.lineWidth=5;cx.beginPath();cx.ellipse(SX(hp),SY(hp),wr,wr*.45,0,0,7);cx.stroke()}
   cx.restore();
   if(banner>0){cx.save();cx.globalAlpha=Math.min(1,banner);cx.fillStyle="#ffd54f";cx.strokeStyle="#12183a";cx.lineWidth=4;cx.font="800 26px sans-serif";cx.textAlign="center";cx.strokeText(bannerT,W/2,H*.14);cx.fillText(bannerT,W/2,H*.14);cx.restore()}}
- function eat(p,j){preys.splice(j,1);var k=p.k,l0=lv();score+=k.pts*(l0-lvBase+1);eaten++;eatSnd();if(k.spec){spT[k.si]=8;banner=1.6;bannerT=k.em+" +"+(k.pts*(l0-lvBase+1))+" pontos ("+k.mult+"×)"}
+ function eat(p,j){preys.splice(j,1);var k=p.k,l0=lv();score+=k.pts*(l0-lvBase+1);eaten++;eatSnd();if(k.spec){spT[0]=60+Math.random()*30;banner=1.6;bannerT=k.em+" +"+(k.pts*(l0-lvBase+1))+" pontos ("+k.mult+"×)"}
   lumps.push({s:.5,w:k.mouse?.78:.55,a0:k.lump,amp:0,t:0,fade:0,g:k.gr});
   try{if(navigator.vibrate)navigator.vibrate(25)}catch(e){}
   rip.push({x:p.x,y:p.y,t:0});if(lv()!==l0){ttg+=.09;banner=1.6;bannerT="⬆ Nível "+lv();if(lv()>=5&&obs.length<BG_SNAKE_OBSMAX)addOb(lv()%2?"tree":"car")}
@@ -18072,7 +18074,7 @@ function drawPrey(p){if(p.k.em)return drawSpec(p);var k=p.k,hz=k.d==="hop"&&p.st
    if(l.fade>=1){tlen+=l.g;lumps.splice(i,1)}}
   preys.forEach(function(p){movePrey(p,dt)});
   for(var j=preys.length-1;j>=0;j--)if(dist(hx,hy,preys[j].x,preys[j].y)<.85)eat(preys[j],j);
-  for(j=preys.length-1;j>=0;j--){var pq=preys[j];if(pq.k.spec&&(pq.life-=dt)<=0){spT[pq.k.si]=6;preys.splice(j,1)}}
+  for(j=preys.length-1;j>=0;j--){var pq=preys[j];if(pq.k.spec&&(pq.life-=dt)<=0){spT[0]=40+Math.random()*30;preys.splice(j,1)}}
    while(nNorm()<preyN()&&addPrey()){}spawnSpec(dt)}
  function init(){hx=cols/2+1.2;hy=rows/2;ang=0;tdir=2;len=tlen=3.4;trav=0;path=[];plen=0;
   for(var i=0;i<40;i++){path.push({x:hx-i*.12,y:hy,d:i?.12:0});if(i)plen+=.12}

@@ -18132,7 +18132,7 @@ function tetris(w){
  try{if(localStorage.getItem("bg_snd_tetris")==="0")sound=false;if(localStorage.getItem("bg_ghost_tetris")==="0")ghost=false;
   var e0=parseInt(localStorage.getItem("bg_env_tetris"),10);if(e0>=0&&e0<4)envMode=e0;
   var s0=parseInt(localStorage.getItem("bg_skin_tetris"),10);if(s0>=0&&s0<3)skin=s0;
-  var l0=parseInt(localStorage.getItem("bg_lv_tetris"),10);if(l0>=1&&l0<=100)lvBase=l0}catch(e){}
+  var l0=parseInt(localStorage.getItem("bg_lv_tetris"),10);if(l0>=1&&l0<=100)lvBase=l0}catch(e){}if(window.__bgLvTetris>=1)lvBase=window.__bgLvTetris;
  for(var i0=0;i0<60;i0++)stars.push({x:Math.random(),y:Math.random()*.75,ph:Math.random()*6.28});
  for(i0=0;i0<18;i0++)motes.push({x:Math.random(),y:Math.random(),sp:.2+Math.random()*.6,ph:Math.random()*6.28});
  function hsh(n){var v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v)}
@@ -18170,7 +18170,7 @@ function tetris(w){
  function empty(){bd=[];for(var r=0;r<R;r++)bd.push(Array(C).fill(-1))}
  function rot(m){return m[0].map(function(_,i){return m.map(function(r){return r[i]}).reverse()})}
  function fits(m,x,y){for(var r=0;r<m.length;r++)for(var c=0;c<m[r].length;c++)if(m[r][c]){var X=x+c,Y=y+r;if(X<0||X>=C||Y>=R||(Y>=0&&bd[Y][X]>=0))return false}return true}
- function lv(){return Math.min(100,lvS+Math.floor(lines/10))}
+ function lv(){return Math.max(1,Math.min(100,lvS+Math.floor(lines/10)))}
  function gravity(){return Math.max(45,Math.round(800*Math.pow(.97,lv()-1)))}
  function head(){info.textContent=state===2?"💥 Fim! Nível "+lv()+" · Pontos: "+score:"Nível "+lv()+" · Linhas: "+lines+" · Pontos: "+score+(paused?" · ⏸":"")}
  function playing(){return state===1&&!paused&&!!cur&&!flash}
@@ -18310,26 +18310,27 @@ function tetris(w){
     ["⬇️","Desliza devagar para baixo (ou ▼) para descer mais depressa. Desliza rápido para baixo (ou ⏬) para largar a peça de uma vez."],
     ["👻","A sombra transparente mostra onde a peça vai cair. A caixa “Próxima” mostra a peça seguinte."],
     ["⭐","Pontos: 1 linha = 100 · 2 linhas = 300 · 3 linhas = 500 · 4 linhas (TETRIS!) = 800, vezes o nível. Descer dá +1 por casa e largar dá +2."],
-    ["📈","Há 100 níveis. A cada 10 linhas sobes de nível e as peças caem mais depressa. Em ⚙️ podes começar em qualquer nível de 1 a 100."],
+    ["📈","Há 100 níveis. A cada 10 linhas sobes de nível e as peças caem mais depressa. Em ⚙️ escolhes o teu nível preferido (1 a 100): fica guardado e podes jogar logo nele."],
     ["💀","O jogo acaba quando as peças chegam ao topo do campo."],
     ["🌗","Ambiente 3D e 4D: os blocos têm volume e sombra, e o tempo é a 4.ª dimensão — o céu passa de dia a noite e o hipercubo roda. Muda em ⚙️ Definições."],
     ["⌨️","No computador: ← → mover · ↑ rodar · ↓ descer · Espaço largar · P pausar."]],
    ol=el("div","display:flex;flex-direction:column;gap:12px;margin-top:10px");
   L.forEach(function(t){var r=el("div","display:flex;gap:10px;align-items:flex-start");r.append(el("span","flex:0 0 auto;width:28px;height:28px;border-radius:50%;background:#f5b400;display:flex;align-items:center;justify-content:center;font-size:15px",t[0]),el("span","",t[1]));ol.append(r)});
   S.bx.append(ol);document.body.append(S.ov);infoP=S.ov}
- function closeSet(){if(panel){panel.remove();panel=null}sndB=null}
+ function closeSet(){if(panel){panel.remove();panel=null}sndB=null;head()}
  function chips(list,cur0,key,cb){var row=el("div","display:flex;gap:7px;justify-content:center;align-items:center;flex-wrap:wrap;margin:2px 0 4px");
   list.forEach(function(E,j){var b=el("button","border:2px solid "+(j===cur0?"#f5b400":"transparent")+";border-radius:14px;padding:4px 10px;background:#262c66;color:#fff;font:600 12px var(--bg-font);cursor:pointer","");window.bgLb(b,E[0],E[1]);
    b.onclick=function(){try{localStorage.setItem(key,String(j))}catch(e){}cb(j);Array.prototype.forEach.call(row.children,function(c,q){c.style.borderColor=q===j?"#f5b400":"transparent"})};row.append(b)});return row}
  function openSet(){if(panel)return;pause();var S=sheet("⚙️ Definições · Tetris 3D",closeSet);
   function T(t){return el("div","font-weight:800;font-size:13px;color:#F5B520;margin:14px 0 4px",t)}
   var st=el("div","display:flex;align-items:center;justify-content:center;gap:14px"),mi=el("button",BTN+";padding:8px 18px;font-size:18px","−"),pl=el("button",BTN+";padding:8px 18px;font-size:18px","+"),nv=el("b","font-size:22px;min-width:48px;text-align:center",String(lvBase)),note=el("div","font-size:12px;opacity:.75;text-align:center;margin-top:4px","");
-  function setL(n){n=Math.max(1,Math.min(100,n));if(n===lvBase)return;lvBase=n;try{localStorage.setItem("bg_lv_tetris",String(n))}catch(e){}nv.textContent=String(n);if(state===1)note.textContent="Vale a partir da próxima partida.";else{lvS=n;head();note.textContent="Nível "+n+" pronto."}}
+  function setL(n){n=Math.max(1,Math.min(100,n));lvBase=n;window.__bgLvTetris=n;try{localStorage.setItem("bg_lv_tetris",String(n))}catch(e){}lvS=n-Math.floor(lines/10);acc=0;nv.textContent=String(n);pb.textContent="▶ Jogar no nível "+n;head();note.textContent="✔ Nível "+n+" guardado"+(state===1?" e já está a valer neste jogo.":". Fica escolhido mesmo depois de saíres.")}
+  var pb=el("button",BTN+";padding:10px 14px;width:100%;font-size:14px;margin-top:8px","▶ Jogar no nível "+lvBase);pb.onclick=function(){closeSet();reset();start()};
   mi.onclick=function(){setL(lvBase-1)};pl.onclick=function(){setL(lvBase+1)};var m10=el("button",BTN+";padding:8px 12px;font-size:14px","−10"),p10=el("button",BTN+";padding:8px 12px;font-size:14px","+10");m10.onclick=function(){setL(lvBase-10)};p10.onclick=function(){setL(lvBase+10)};st.style.gap="8px";st.append(m10,mi,nv,pl,p10);
   var gb=el("button",BTN+";padding:10px 14px;width:100%;font-size:14px","");function gp(){gb.textContent=ghost?"👻 Sombra da peça: ligada":"👻 Sombra da peça: desligada"}gp();
   gb.onclick=function(){ghost=!ghost;try{localStorage.setItem("bg_ghost_tetris",ghost?"1":"0")}catch(e){}gp()};
   sndB=el("button",BTN+";padding:10px 14px;width:100%;font-size:14px","");sndB.onclick=sndToggle;sndPaint();
-  S.bx.append(T("Nível inicial (1 a 100)"),st,note,T("Estilo dos blocos"),chips(SKN,skin,"bg_skin_tetris",function(j){skin=j;buildSpr()}),
+  S.bx.append(T("Nível preferido (1 a 100)"),st,note,pb,T("Estilo dos blocos"),chips(SKN,skin,"bg_skin_tetris",function(j){skin=j;buildSpr()}),
    T("Ambiente"),chips([["☀️","Dia"],["🌅","Entardecer"],["🌙","Noite"],["🌗","Ciclo 4D"]],envMode,"bg_env_tetris",function(j){envMode=j}),T("Ajudas"),gb,T("Som"),sndB);
   document.body.append(S.ov);panel=S.ov}
  /* ---- comandos: botões em baixo (mantém premido para repetir), gestos no campo e teclado ---- */
@@ -18713,7 +18714,7 @@ function flappy(w){
  cv.style.cssText="display:block;margin:4px auto;border-radius:12px;background:#4fc3f7;touch-action:none;max-width:100%";
  var cx=cv.getContext("2d"),info=el("div","flex:1 1 0;min-width:0;text-align:right;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"),act=el("div","display:flex;gap:5px;align-items:center;flex:0 0 auto"),ctl=el("div","display:flex;align-items:center;gap:8px;margin:2px 2px 4px"),holder=el("div","margin-top:12px");holder.className="bg-fl-hold";
  var bird,vy,pipes,score,state,raf=0,last=0,ph=0,flapT=9,off=0,feathers=[],tcur=0,ttg=0,warp=0,TT=0,flies=[],stars=[],passed=0,lvBase=1,sound=true,AC2=null,panel=null,infoP=null,sndB=null,paused=false,deadT=0,envMode=3,tb=window.__bgTopBtn||null,rt=0,lastLand=false;
- try{if(localStorage.getItem("bg_snd_flappy")==="0")sound=false;var e0=parseInt(localStorage.getItem("bg_env_flappy"),10);if(e0>=0&&e0<4)envMode=e0;var l0=parseInt(localStorage.getItem("bg_lv_flappy"),10);if(l0>=1&&l0<=20)lvBase=l0}catch(e){}
+ try{if(localStorage.getItem("bg_snd_flappy")==="0")sound=false;var e0=parseInt(localStorage.getItem("bg_env_flappy"),10);if(e0>=0&&e0<4)envMode=e0;var l0=parseInt(localStorage.getItem("bg_lv_flappy"),10);if(l0>=1&&l0<=100)lvBase=l0}catch(e){}if(window.__bgLvFlappy>=1)lvBase=window.__bgLvFlappy;var lvS=lvBase;
  function isLand(){return(window.innerWidth||0)>(window.innerHeight||1)*1.15}
  function fit(){var land=isLand(),vh=(window.visualViewport&&window.visualViewport.height)||window.innerHeight||700,ch=w.clientHeight||(vh-70),cw=w.clientWidth||(land?640:320),oW=W,oH=H,nw,nh;
   if(land){nw=Math.max(260,Math.min(1600,cw-196));nh=Math.max(240,ch-14)}else{nw=Math.max(220,Math.min(600,cw-2));nh=Math.round(Math.max(300,Math.min(ch-120,nw*2.4)))}
@@ -18725,12 +18726,12 @@ function flappy(w){
  var SKB=[{n:"Amarelo",c:"#ffb300",P:{b:["#ffe082","#ffb300","#e65100"],bel:"#fff3c4",t:["#bf360c","#e65100","#f57c00"],w:["#ff9800","#bf360c","#8d3a0a","#d84315"],h:["#fff176","#ffb300"],cr:"#ef6c00",k:["#ff6f00","#e65100"],leg:"#e65100"}},
   {n:"Azul",c:"hsl(205,80%,55%)",P:PAL(205,80,0)},{n:"Vermelho",c:"hsl(2,78%,52%)",P:PAL(2,78,0)},{n:"Verde",c:"hsl(125,60%,42%)",P:PAL(125,60,-4)},{n:"Roxo",c:"hsl(278,60%,55%)",P:PAL(278,60,0)},{n:"Rosa",c:"hsl(326,75%,62%)",P:PAL(326,75,2)},{n:"Branco",c:"#f2f2f2",P:PAL(210,8,10)},{n:"Preto",c:"#2b2b33",P:PAL(240,10,-14)}];
  var skr=bgSkins("bg_skin_bird",SKB,0,function(){});
- function lv(){return Math.min(100,lvBase+Math.floor(passed/10))}
+ function lv(){return Math.max(1,Math.min(100,lvS+Math.floor(passed/10)))}
  function pts(){return 10+(lv()-1)*50}
  function head(){info.textContent=state===2?"💥 Fim! Nível "+lv()+" · Pontos: "+score:"Nível "+lv()+" · Pontos: "+score+(paused?" · ⏸":"")}
  function speed(){return Math.min(300,105+lv()*2)*k}
  function gap(){return Math.max(112,190-lv()*.9)*k}
- function reset(){bird=H*.42;vy=0;pipes=[];score=0;passed=0;state=0;paused=false;feathers=[];flapT=9;last=performance.now();holder.replaceChildren();setAct("idle");head();board("flappy",holder)}
+ function reset(){lvS=lvBase;bird=H*.42;vy=0;pipes=[];score=0;passed=0;state=0;paused=false;feathers=[];flapT=9;last=performance.now();holder.replaceChildren();setAct("idle");head();board("flappy",holder)}
  function addPipe(){var g=gap(),lo=Math.round(50*k),hi=Math.round(H-gnd-50*k-g);pipes.push({x:W+10,top:rndI(lo,Math.max(lo,hi)),g:g,ok:false})}
  function burst(n,sp){for(var i=0;i<n;i++)feathers.push({x:bx-U,y:bird,vx:-(30+Math.random()*60)*k,vy:(Math.random()-.3)*sp*k,r:Math.random()*6,vr:(Math.random()-.5)*8,life:1,c:Math.random()<.5?SKB[skr.get()].P.b[0]:SKB[skr.get()].P.b[1]})}
  function flap(){if(state===2||paused)return;if(state===0){state=1;last=performance.now();addPipe();setAct("play");head()}vy=-370*k;flapT=0;burst(2,60);chirp()}
@@ -18848,21 +18849,23 @@ function flappy(w){
   window.bgLb(cl,"✕","Fechar");cl.onclick=onClose;hd.append(el("b","font-size:17px",title),cl);bx.append(hd);ov.append(bx);ov.onclick=function(e){if(e.target===ov)onClose()};return{ov:ov,bx:bx}}
  function closeInfo(){if(infoP){infoP.remove();infoP=null}}
  function openInfo(){if(infoP)return;pause();var S=sheet("ℹ️ Como jogar?",closeInfo),
-   L=["Toca no ecrã para o passarinho voar e passar por entre os cones.","No computador, usa o teclado de espaço."],
+   L=["Toca no ecrã para o passarinho voar e passar por entre os cones.","Há 100 níveis: a cada 10 cones sobes de nível, ganhas mais pontos por cone e o jogo fica mais rápido.","Em ⚙️ escolhes o teu nível preferido (1 a 100). Fica guardado no telemóvel e podes jogar logo nele com “▶ Jogar no nível”.","No computador, usa o teclado de espaço."],
    ol=el("div","display:flex;flex-direction:column;gap:12px;margin-top:10px");
   L.forEach(function(t,i){var r=el("div","display:flex;gap:10px;align-items:flex-start");r.append(el("span","flex:0 0 auto;width:24px;height:24px;border-radius:50%;background:#f5b400;color:#14163a;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:13px",String(i+1)),el("span","",t));ol.append(r)});
   S.bx.append(ol);document.body.append(S.ov);infoP=S.ov}
- function closeSet(){if(panel){panel.remove();panel=null}sndB=null}
+ function closeSet(){if(panel){panel.remove();panel=null}sndB=null;head()}
  function openSet(){if(panel)return;pause();var S=sheet("⚙️ Definições · Flappy Bengu",closeSet);
   function T(t){return el("div","font-weight:800;font-size:13px;color:#F5B520;margin:14px 0 4px",t)}
   var st=el("div","display:flex;align-items:center;justify-content:center;gap:14px"),mi=el("button",BTN+";padding:8px 18px;font-size:18px","−"),pl=el("button",BTN+";padding:8px 18px;font-size:18px","+"),nv=el("b","font-size:22px;min-width:48px;text-align:center",String(lvBase)),note=el("div","font-size:12px;opacity:.75;text-align:center;margin-top:4px","");
-  function setL(n){n=Math.max(1,Math.min(20,n));if(n===lvBase)return;lvBase=n;try{localStorage.setItem("bg_lv_flappy",String(n))}catch(e){}nv.textContent=String(n);note.textContent=state===1?"Vale a partir da próxima partida.":"Nível "+n+" pronto."}
-  mi.onclick=function(){setL(lvBase-1)};pl.onclick=function(){setL(lvBase+1)};st.append(mi,nv,pl);
+  function setL(n){n=Math.max(1,Math.min(100,n));lvBase=n;window.__bgLvFlappy=n;try{localStorage.setItem("bg_lv_flappy",String(n))}catch(e){}lvS=n-Math.floor(passed/10);nv.textContent=String(n);pb.textContent="▶ Jogar no nível "+n;head();note.textContent="✔ Nível "+n+" guardado"+(state===1?" e já está a valer neste jogo.":". Fica escolhido mesmo depois de saíres.")}
+  var pb=el("button",BTN+";padding:10px 14px;width:100%;font-size:14px;margin-top:8px","▶ Jogar no nível "+lvBase);pb.onclick=function(){closeSet();reset();flap()};
+  var m10=el("button",BTN+";padding:8px 12px;font-size:14px","−10"),p10=el("button",BTN+";padding:8px 12px;font-size:14px","+10");m10.onclick=function(){setL(lvBase-10)};p10.onclick=function(){setL(lvBase+10)};st.style.gap="8px";
+  mi.onclick=function(){setL(lvBase-1)};pl.onclick=function(){setL(lvBase+1)};st.append(m10,mi,nv,pl,p10);
   var ER=el("div","display:flex;gap:7px;justify-content:center;align-items:center;flex-wrap:wrap;margin:2px 0 4px"),EN=[["☀️","Dia"],["🌅","Entardecer"],["🌙","Noite"],["🌗","Ciclo 4D"]];
   EN.forEach(function(E,j){var b=el("button","border:2px solid "+(j===envMode?"#f5b400":"transparent")+";border-radius:14px;padding:4px 10px;background:#262c66;color:#fff;font:600 12px var(--bg-font);cursor:pointer","");window.bgLb(b,E[0],E[1]);
    b.onclick=function(){envMode=j;try{localStorage.setItem("bg_env_flappy",String(j))}catch(e){}Array.prototype.forEach.call(ER.children,function(c,q){c.style.borderColor=q===j?"#f5b400":"transparent"})};ER.append(b)});
   sndB=el("button",BTN+";padding:10px 14px;width:100%;font-size:14px","");sndB.onclick=sndToggle;sndPaint();
-  S.bx.append(T("Nível inicial (1 a 20)"),st,note,T("Cor do passarinho"),skr.row,T("Ambiente"),ER,T("Som"),sndB);document.body.append(S.ov);panel=S.ov}
+  S.bx.append(T("Nível preferido (1 a 100)"),st,note,pb,T("Cor do passarinho"),skr.row,T("Ambiente"),ER,T("Som"),sndB);document.body.append(S.ov);panel=S.ov}
  function kd(e){var tg=e.target&&e.target.tagName;if(tg==="INPUT"||tg==="TEXTAREA"||tg==="SELECT"||panel||infoP||e.ctrlKey||e.metaKey||e.altKey)return;
   if(e.key===" "||e.key==="ArrowUp"||e.key==="w"||e.key==="W"){e.preventDefault();if(e.repeat)return;try{if(document.activeElement&&document.activeElement.blur)document.activeElement.blur()}catch(x){}tap()}}
  function ku(e){if(e.key===" "){var tg=e.target&&e.target.tagName;if(tg!=="INPUT"&&tg!=="TEXTAREA")e.preventDefault()}}

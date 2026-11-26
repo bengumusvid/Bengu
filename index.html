@@ -7446,7 +7446,7 @@ function es({
               u.jsx("div", {
                 className: "font-semibold text-sm",
                 style: { color: k.ink },
-                children: [t.name, BgB(t)],
+                children: [t.name, BgB(t), e.type !== "live" && bgLiveTag(e.text).tag && u.jsx("span", { className: "ml-1.5 font-normal", style: { fontSize: 11, color: k.mute, opacity: 0.75 }, children: bgLiveTag(e.text).tag })],
               }),
               u.jsxs("div", {
                 className: "text-xs flex items-center gap-1",
@@ -7504,7 +7504,7 @@ function es({
         ],
       }),
       e.text && e.type === "text" && Iu(e) && !Iu(e).plain && u.jsx(BgTrWrap, { text: e.text, render: (tx) => u.jsx("div", { onClick: () => bgCountPost(e), children: u.jsx(Ng, { post: { ...e, text: tx } }) }) }),
-      e.text && e.type !== "live" && !(e.type === "text" && Iu(e) && !Iu(e).plain) && u.jsx(BgTrWrap, { text: e.text, render: (tx) => u.jsx("p", { lang: "pt", onClick: () => { e.type === "text" && bgCountPost(e); }, className: `px-4 pb-3 text-left whitespace-pre-wrap ${e.type === "text" ? "text-lg leading-snug" : "text-[15px] leading-snug"}`, style: { color: k.ink, fontFamily: e.type === "text" && Iu(e) && Iu(e).font ? bgFontCss(Iu(e).font) : void 0 }, children: Tg_(tx) }) }),
+      bgLiveTag(e.text).rest && e.type !== "live" && !(e.type === "text" && Iu(e) && !Iu(e).plain) && u.jsx(BgTrWrap, { text: bgLiveTag(e.text).rest, render: (tx) => u.jsx("p", { lang: "pt", onClick: () => { e.type === "text" && bgCountPost(e); }, className: `px-4 pb-3 text-left whitespace-pre-wrap ${e.type === "text" ? "text-lg leading-snug" : "text-[15px] leading-snug"}`, style: { color: k.ink, fontFamily: e.type === "text" && Iu(e) && Iu(e).font ? bgFontCss(Iu(e).font) : void 0 }, children: Tg_(tx) }) }),
       e.text && e.type === "live" && u.jsx(BgPostTr, { text: e.text }),
       u.jsx(K_, { post: e, users: r, mine: n, onDeleteItem: delIt, onDownloadItem: dlIt_ }),
       u.jsx(BgPostMusic, { post: e }),
@@ -9964,7 +9964,7 @@ async function bgVideoToMp3(url, kbps, onProgress, cancelRef) {
   return new Blob(out, { type: "audio/mpeg" });
 }
 function Y_({ post: e, onClose: t, onSave: r }) {
-  const [n, s] = B.useState(e.text);
+  const [n, s] = B.useState(bgLiveTag(e.text).rest);
   const bgIt = Iu(e),
     [bgFt, setBgFt] = B.useState((bgIt && bgIt.font) || ""),
     bgCan = e.type === "text" && bgWords(n) > 0 && bgWords(n) <= 50,
@@ -10008,7 +10008,7 @@ function Y_({ post: e, onClose: t, onSave: r }) {
           className: "flex gap-2 mt-3",
           children: [
             u.jsx("button", {
-              onClick: () => r(n.trim(), bgCur),
+              onClick: () => { const lt = bgLiveTag(e.text).tag; r(lt ? lt + (n.trim() ? "\n\n" + n.trim() : "") : n.trim(), bgCur); },
               className: "flex-1 py-2.5 rounded-full text-sm font-bold",
               style: { background: k.saffron, color: k.onAccent },
               children: x("save"),
@@ -13377,6 +13377,10 @@ function BgPostMenu({ k, x, vis, onVis, views, dl, pinned, onPin, onPinP, pinned
 }
 function bgAutoTr() {
   try { return !!JSON.parse(localStorage.getItem("bengu_prefs") || "{}").autoTr; } catch (e) { return false; }
+}
+function bgLiveTag(t) {
+  const m = /^(🔴[^\n]*? esteve em direto)\s*(?:\n+|$)/.exec(t || "");
+  return m ? { tag: m[1], rest: (t || "").slice(m[0].length).trim() } : { tag: "", rest: t || "" };
 }
 function BgTrWrap({ text, render }) {
   const h = B.createElement, L = bgTrL(), lg = (Tu.lang || "pt").slice(0, 2);

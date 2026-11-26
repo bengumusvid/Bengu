@@ -17465,8 +17465,8 @@ function bgRankModal(g){if(offNow()){toast(BG_L("No internet. Try later.","Sem i
  var o=el("div","position:fixed;inset:0;z-index:100050;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box"),c=el("div","background:#14163a;color:#fff;border-radius:16px;width:100%;max-width:420px;max-height:80vh;overflow:auto;padding:14px;box-sizing:border-box"),h=el("div","");
  function cl(){o.remove()}o.onclick=function(e){if(e.target===o)cl()};c.append(h);o.append(c);document.body.append(o);online(g,h,cl)}
 /* ❤️ gostar · 👥 jogadores · 🌐 ranking (só ícone) */
-function bgChips(g,title){var wrap=el("div","display:flex;align-items:center;gap:4px;flex:0 0 auto;margin:0 4px"),
- CS="border:0;border-radius:10px;background:#2a2f66;color:#fff;height:36px;min-width:36px;padding:0 7px;display:inline-flex;align-items:center;justify-content:center;gap:3px;font-size:13px;font-weight:700;white-space:nowrap",
+function bgChips(g,title){var wrap=el("div","display:flex;align-items:center;gap:3px;flex:0 0 auto;margin:0 2px"),
+ CS="border:0;border-radius:10px;background:#2a2f66;color:#fff;height:28px;min-width:28px;padding:0 5px;display:inline-flex;align-items:center;justify-content:center;gap:2px;font-size:11px;font-weight:700;white-space:nowrap",
  lk=el("button",CS),pl=el("div",CS),lv=el("div",CS+";color:#7dffa0"),rk=el("button",CS,"🌐"),st={likes:0,players:0,plays:0,live:0,liked:false};lv.setAttribute("aria-label",BG_L("Playing now","A jogar agora"));
  lk.setAttribute("aria-label",BG_L("Like","Gostar"));pl.setAttribute("aria-label",BG_L("Players","Jogadores"));rk.setAttribute("aria-label",BG_L("View online ranking","Ver ranking online"));rk.title=BG_L("View online ranking","Ver ranking online");
  function paint(){lk.textContent=(st.liked?"❤️":"🤍")+" "+bgFmt(st.likes);lk.style.background=st.liked?"#7a1f3d":"#2a2f66";pl.textContent="👥 "+bgFmt(st.players);lv.textContent="🟢 "+bgFmt(Math.max(1,st.live))}paint();
@@ -17475,7 +17475,7 @@ function bgChips(g,title){var wrap=el("div","display:flex;align-items:center;gap
   var nv=!st.liked;st.liked=nv;st.likes=Math.max(0,st.likes+(nv?1:-1));paint();bgStatsSave(g,st);lk.disabled=true;
   rest("rpc/bengu_game_like","POST",{p_game:g,p_like:nv}).then(function(){lk.disabled=false}).catch(function(){lk.disabled=false;st.liked=!nv;st.likes=Math.max(0,st.likes+(nv?-1:1));paint();bgStatsSave(g,st);toast(BG_L("Could not save. Try again.","Não foi possível guardar. Tenta de novo."))})};
  rk.onclick=function(){bgRankModal(g)};
- wrap.setLive=function(n){st.live=n;paint()};wrap.append(lk,pl,lv,rk);if(bgHow(g)){var ib=el("button",CS,"ℹ️");ib.setAttribute("aria-label",BG_L("How to play","Como jogar"));ib.onclick=function(){bgHowModal(g,title||"")};wrap.append(ib)}return wrap}
+ wrap.setLive=function(n){st.live=n;paint()};wrap.append(lk,pl,rk);if(bgHow(g)){var ib=el("button",CS,"ℹ️");ib.setAttribute("aria-label",BG_L("How to play","Como jogar"));ib.onclick=function(){bgHowModal(g,title||"")};wrap.append(ib)}return wrap}
 /* tabelas do administrador: aprendizagem e diversão, do mais jogado ao menos jogado; 5 primeiros a verde; 1.º com ⭐ */
 function bgRankTables(b){var box=el("div","margin:6px 0 10px");
  b.append(el("h3","margin:4px 0",BG_L("📊 Games ranking","📊 Classificação dos jogos")),el("p","font-size:12px;opacity:.7;margin:0 0 6px",BG_L("From most played to least played (matches). Top 5 in green; 1st with a star.","Do mais jogado ao menos jogado (partidas). Os 5 primeiros a verde; o 1.º com estrela.")),box);
@@ -17960,7 +17960,11 @@ function play(G){stopGame();
   window.bgLb(pz,"⏸","Pausar");pz.onclick=function(){setGamePause(!window.__bgPause);if(window.__bgPause)window.bgLb(pz,"▶","Continuar");else window.bgLb(pz,"⏸","Pausar")};
   bar.append(pz);bar.style.flex="1 1 auto";bar.style.margin="0";
   var bk=el("button",BTN+";padding:7px 12px;font-size:13px","");window.bgLb(bk,"←","Jogos");bk.onclick=menu;
-  var hd=el("div","display:flex;align-items:center;gap:6px;flex:0 0 auto;margin-bottom:4px");hd.append(bk,bar);
+  /* REGRA DOS JOGOS: o botão ⚙️ Definições de qualquer jogo sobe para o cabeçalho, ao lado de "Jogos" (esquerda). O original fica escondido e o novo botão aciona-o. */
+  var gsb=el("button",BTN+";padding:7px 12px;font-size:13px","");window.bgLb(gsb,"⚙️","Definições");var gsd=gsb.style.display,gsc=null;gsb.style.display="none";
+  function gsSync(){var bs=w.querySelectorAll("button"),i,t,c=null;for(i=0;i<bs.length;i++){t=bs[i];if(t.textContent.length<40&&/^\s*⚙/.test(t.textContent)){t.style.display="none";c=t}}gsc=c;gsb.style.display=c?gsd:"none"}
+  gsb.onclick=function(){try{gsSync()}catch(e){}if(gsc)gsc.click()};
+  var hd=el("div","display:flex;align-items:center;gap:6px;flex:0 0 auto;margin-bottom:4px");hd.append(bk,gsb,bar);
   var fs=el("div","position:fixed;left:0;top:0;right:0;bottom:0;z-index:100035;background:#12183a;color:#fff;display:flex;flex-direction:column;box-sizing:border-box;padding:calc(8px + env(safe-area-inset-top,0px)) 10px calc(8px + env(safe-area-inset-bottom,0px))");
   fs.append(hd,w);document.body.append(fs);window.__bgFS=fs;box.replaceChildren();
   var wt=setInterval(function(){if(!document.body.contains(box))stopGame()},800),r=null;
@@ -17972,7 +17976,7 @@ function play(G){stopGame();
   function placeChips(){if(!chips||chips.isConnected)return;var inf=null,ds=w.querySelectorAll("div"),i,d;for(i=0;i<ds.length;i++){d=ds[i];if(d.style&&d.style.textAlign==="right"&&d.style.flexGrow==="1"&&d.parentNode&&d.parentNode.style.display==="flex"){inf=d;break}}
    if(inf)inf.parentNode.insertBefore(chips,inf);else{chips.style.justifyContent="center";chips.style.margin="0 0 6px";fs.insertBefore(chips,w)}}
   try{placeChips()}catch(e){}
-  var mo=null;try{mo=new MutationObserver(function(){bgActTop(w);try{placeChips()}catch(e){}});mo.observe(w,{childList:true,subtree:true});bgActTop(w)}catch(e){}
+  var mo=null;try{mo=new MutationObserver(function(){bgActTop(w);try{placeChips()}catch(e){}try{gsSync()}catch(e){}});mo.observe(w,{childList:true,subtree:true});bgActTop(w);try{gsSync()}catch(e){}}catch(e){}
   window.__bgGameStop=function(){clearInterval(wt);try{if(hb)clearInterval(hb);if(tk)clearInterval(tk);bgLeave(gid);bgFlushPlays()}catch(e){}if(mo)mo.disconnect();if(typeof r==="function")r()}}}
 /* ---- 1. Cobra (BENGU 4.61: cobra realista de corpo contínuo, presas vivas, obstáculos e onda de digestão) ---- */
 /* BENGU 4D: ambiente vivo — o tempo é a 4.ª dimensão (ciclo dia/noite, hipercubo rotativo, pirilampos, ondas) */

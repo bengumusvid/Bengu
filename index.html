@@ -8469,6 +8469,12 @@ function J_() {
                     } catch {}
                     Dt((V) => V && { ...V, label: Kt });
                   }
+                  if (Mi === "video" && window.bgMakeCover) {
+                    try {
+                      const cb = await window.bgMakeCover(ot.file);
+                      if (cb) itm.cover = await Ir(new File([cb], "capa.jpg", { type: "image/jpeg" }), `capa-${ot.file.name}.jpg`);
+                    } catch {}
+                  }
                   Lr.push(itm);
                 }
               }
@@ -17404,6 +17410,13 @@ if(orig)window.bengu_pay_switches=function(uid,name){
 function t(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
 function load(){fetch(U+"/rest/v1/rpc/bengu_get_eligibility",{method:"POST",headers:{apikey:K,Authorization:"Bearer "+(t()||K),"Content-Type":"application/json"},body:"{}"}).then(function(r){return r.ok?r.json():null}).then(function(e){if(e&&e.min_followers>=0){window.__bgMinF=e.min_followers;window.__bgMinV=e.min_views30}}).catch(function(){})}
 load();setInterval(load,60000)})();
+</script><script>/* BENGU: capa automática de qualquer vídeo (feita no telemóvel, sem custos) */
+window.bgMakeCover=function(file){return new Promise(function(res){var u=URL.createObjectURL(file),v=document.createElement("video"),done=false,tm;
+ function end(b){if(done)return;done=true;clearTimeout(tm);try{v.removeAttribute("src");v.load()}catch(e){}try{URL.revokeObjectURL(u)}catch(e){}res(b)}
+ v.muted=true;v.playsInline=true;v.preload="auto";
+ v.onloadedmetadata=function(){try{var d=v.duration;v.currentTime=isFinite(d)&&d>0?Math.min(1,d*.3):.3}catch(e){end(null)}};
+ v.onseeked=function(){try{var w=v.videoWidth,h=v.videoHeight;if(!w||!h)return end(null);var k=Math.min(1,640/Math.max(w,h)),c=document.createElement("canvas");c.width=Math.round(w*k);c.height=Math.round(h*k);c.getContext("2d").drawImage(v,0,0,c.width,c.height);c.toBlob(function(b){end(b)},"image/jpeg",.82)}catch(e){end(null)}};
+ v.onerror=function(){end(null)};tm=setTimeout(function(){end(null)},8000);v.src=u})};
 </script><script>/* BENGU 4.52: IA (Claude), Jogos e painel do administrador. */
 (function(){
 window.BG_IA_ON=false; /* IA em pausa: mudar para true para voltar a ligar a IA (conversa e correção) */

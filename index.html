@@ -9382,7 +9382,7 @@ function J_() {
                 onShareApp: nd,
                 onDashboard: () => at("dashboard"),
                 children: u.jsx(
-                  Pt_,
+                  BgProfileTabs,
                   { posts: Fo, rr: Rr, isMe: At === h.id, adsOff: !!Bo },
                   At,
                 ),
@@ -15032,6 +15032,39 @@ function hx({ minor: e, allowDefault: t, onPublish: r, onError: n }) {
 }
 function BgPinIco({ size }) {
   return u.jsx("span", { "aria-hidden": "true", style: { fontSize: (size || 18) - 3, lineHeight: 1 }, children: "📌" });
+}
+function BgProfileTabs(p) {
+  /* Separadores do perfil: Todos | Reels (reels = publicações com vídeo) */
+  const [tab, setTab] = B.useState("all"),
+    all = Array.isArray(p.posts) ? p.posts : [],
+    reels = all.filter((q) => Array.isArray(q.items) && q.items.some((v) => v.kind === "video")),
+    list = tab === "reels" ? reels : all;
+  return u.jsxs("div", {
+    children: [
+      u.jsx("div", {
+        role: "tablist",
+        className: "flex gap-2 px-4 py-2 mb-2",
+        style: { background: k.card },
+        children: [["all", "Todos"], ["reels", x("reels")]].map(([id, label]) =>
+          u.jsx("button", {
+            role: "tab",
+            "aria-selected": tab === id,
+            onClick: () => setTab(id),
+            className: "flex-1 py-2.5 rounded-full text-sm font-bold",
+            style: tab === id ? { background: k.saffron, color: k.onAccent } : { background: k.paper, color: k.ink },
+            children: label,
+          }, id),
+        ),
+      }),
+      tab === "reels" && reels.length === 0
+        ? u.jsx("p", {
+            className: "text-center px-8 py-12 text-sm",
+            style: { color: k.mute },
+            children: x("noReels"),
+          })
+        : u.jsx(Pt_, { posts: list, rr: p.rr, isMe: p.isMe, adsOff: p.adsOff }),
+    ],
+  });
 }
 function Pt_(p){var show=!p.isMe&&!p.adsOff&&bgAdsOn()&&Array.isArray(p.posts)&&p.posts.length>0;
   return u.jsxs("div",{className:"flex flex-col gap-2",children:[u.jsx(PtBase,{posts:p.posts,rr:p.rr,isMe:p.isMe}),show&&u.jsx(BgAd,{})]})}

@@ -9383,7 +9383,7 @@ function J_() {
                 onDashboard: () => at("dashboard"),
                 children: u.jsx(
                   BgProfileTabs,
-                  { posts: Fo, rr: Rr, isMe: At === h.id, adsOff: !!Bo },
+                  { posts: Fo, rr: Rr, isMe: At === h.id, adsOff: !!Bo, showViews: !!Zg.showViews },
                   At,
                 ),
               }),
@@ -15033,6 +15033,31 @@ function hx({ minor: e, allowDefault: t, onPublish: r, onError: n }) {
 function BgPinIco({ size }) {
   return u.jsx("span", { "aria-hidden": "true", style: { fontSize: (size || 18) - 3, lineHeight: 1 }, children: "📌" });
 }
+function BgReelThumb({ src }) {
+  /* mostra o 1.º fotograma do vídeo (o telemóvel só o pinta depois de um "seek") */
+  const [poster, setPoster] = B.useState(null);
+  const snap = (v) => {
+    try {
+      if (!v.videoWidth) return;
+      const w = Math.min(360, v.videoWidth), h = Math.round((w * v.videoHeight) / v.videoWidth), c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      c.getContext("2d").drawImage(v, 0, 0, w, h);
+      const d = c.toDataURL("image/jpeg", 0.7);
+      if (d && d.length > 800) setPoster(d);
+    } catch (_) {}
+  };
+  return u.jsx("video", {
+    src,
+    poster: poster || undefined,
+    muted: true,
+    playsInline: true,
+    preload: "auto",
+    onLoadedMetadata: (e) => { try { const v = e.currentTarget; if (v.currentTime < 0.05) v.currentTime = 0.1; } catch (_) {} },
+    onLoadedData: (e) => { try { const v = e.currentTarget; if (v.currentTime < 0.05) v.currentTime = 0.1; else snap(v); } catch (_) {} },
+    onSeeked: (e) => snap(e.currentTarget),
+    style: { width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none", background: "#000" },
+  });
+}
 function BgProfileTabs(p) {
   /* Perfil: Todos | Reels. Reels em grelha de 3 colunas: fixados primeiro, depois o mais recente (1) para o mais antigo */
   const [tab, setTab] = B.useState("all"),
@@ -15079,18 +15104,12 @@ function BgProfileTabs(p) {
                     u.jsxs("button", {
                       onClick: () => setOpenId(q.id),
                       "aria-label": "Abrir reel",
-                      style: { position: "relative", aspectRatio: "3 / 4", overflow: "hidden", background: "#000", border: 0, padding: 0 },
+                      style: { position: "relative", aspectRatio: "2 / 3", overflow: "hidden", background: "#000", border: 0, padding: 0 },
                       children: [
-                        u.jsx("video", {
-                          src: vid(q).url + "#t=0.1",
-                          muted: true,
-                          playsInline: true,
-                          preload: "metadata",
-                          style: { width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" },
-                        }),
+                        u.jsx(BgReelThumb, { src: vid(q).url }),
                         u.jsx("span", {
-                          style: { position: "absolute", left: 6, bottom: 5, color: "#fff", fontSize: 14, textShadow: "0 1px 4px rgba(0,0,0,.8)" },
-                          children: "\u25B6",
+                          style: { position: "absolute", left: 0, right: 0, bottom: 0, padding: "14px 6px 5px", color: "#fff", fontSize: 12, fontWeight: 700, textShadow: "0 1px 4px rgba(0,0,0,.9)", background: p.isMe || p.showViews ? "linear-gradient(transparent, rgba(0,0,0,.65))" : "none", textAlign: "left" },
+                          children: p.isMe || p.showViews ? "\u25B6 " + Mt(q.views || 0) : "\u25B6",
                         }),
                         q.profilePinnedAt
                           ? u.jsx("span", { style: { position: "absolute", right: 6, top: 5, fontSize: 14 }, children: "\uD83D\uDCCC" })

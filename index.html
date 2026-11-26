@@ -3495,13 +3495,42 @@ ageRow.append(el("span","width:92px;flex:none","Idade"));ageB.forEach(function(b
    function shut(){try{ed&&ed.destroy()}catch(e){}host.remove()}
    ed=window.bgVideoEditor(host,{file:new File([blob],"reel."+ext,{type:blob.type}),get:function(){return{maxSeconds:MAXS}},cancel:shut,
     done:function(f,dur){shut();try{URL.revokeObjectURL(url)}catch(e){}blob=f;recDur=dur>0?dur:recDur;fxReset();review();say("Edição aplicada ao reel.",true)}})};
-  bar2.append(edit,save,again,pub);window.__bgSerRec=window.__bgSerRec||window.bgSeries.panel();var ser=window.__bgSerRec;ser.el.style.color="#fff";panel.append(edBox,size,ser.el,cap,bar2);
+  /* CAPA DO REEL: escolher um fotograma (ou uma imagem da galeria). Sem escolha, a app cria uma capa automática (~1 s) ao publicar. */
+  var coverBlob=null,cvUrl=null,cvb=el("button",IB,"🖼");cvb.setAttribute("aria-label","Capa");cvb.title="Capa do reel";
+  function drawCover(cx,src,sw,sh){if(!sw||!sh)return;var r=Math.max(360/sw,640/sh),dw=sw*r,dh=sh*r;cx.fillStyle="#000";cx.fillRect(0,0,360,640);cx.drawImage(src,(360-dw)/2,(640-dh)/2,dw,dh)}
+  function grabFrame(cb){var v=document.createElement("video"),fin=false,tm;function end(b){if(fin)return;fin=true;clearTimeout(tm);try{v.removeAttribute("src");v.load()}catch(e){}cb(b)}
+   v.muted=true;v.playsInline=true;v.preload="auto";
+   v.onloadedmetadata=function(){try{var d=v.duration;v.currentTime=isFinite(d)&&d>0?Math.min(1,d*.3):.3}catch(e){end(null)}};
+   v.onseeked=function(){try{var c=document.createElement("canvas");c.width=360;c.height=640;drawCover(c.getContext("2d"),v,v.videoWidth,v.videoHeight);c.toBlob(function(b){end(b)},"image/jpeg",.82)}catch(e){end(null)}};
+   v.onerror=function(){end(null)};tm=setTimeout(function(){end(null)},8000);v.src=url}
+  function coverUpload(uid){function up(b){if(!b)return Promise.resolve(null);var cp=uid+"/"+Date.now()+"-reel-capa.jpg";return fetch(U+"/storage/v1/object/media/"+cp,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"image/jpeg","x-upsert":"false","cache-control":"max-age=31536000"},body:b}).then(function(r){return r.ok?BG_R2+"/media/"+cp:null}).catch(function(){return null})}
+   if(coverBlob)return up(coverBlob);return new Promise(function(res){grabFrame(res)}).then(up)}
+  cvb.onclick=function(){try{pv.pause()}catch(e){}
+   var ov=el("div","position:fixed;inset:0;z-index:100012;background:rgba(8,11,36,.96);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;box-sizing:border-box"),
+    cn=document.createElement("canvas"),cx=cn.getContext("2d"),sv=document.createElement("video"),rg=document.createElement("input"),fi=document.createElement("input"),
+    BB=IB+"width:auto;border-radius:22px;padding:0 18px;height:44px;font-size:14px;",
+    ok=el("button",BB+"background:#f5b400;color:#14163a","✓ Usar capa"),ca=el("button",BB,"✕"),pk=el("button",BB,"📁 Imagem"),row=el("div","display:flex;gap:8px;flex-wrap:wrap;justify-content:center");
+   cn.width=360;cn.height=640;cn.style.cssText="height:50vh;aspect-ratio:9/16;border-radius:14px;background:#000";
+   rg.type="range";rg.min="0";rg.max="1";rg.step="0.05";rg.value="0";rg.style.cssText="width:80%;max-width:360px";
+   fi.type="file";fi.accept="image/*";fi.style.display="none";
+   sv.muted=true;sv.playsInline=true;sv.preload="auto";
+   sv.onloadedmetadata=function(){var d=isFinite(sv.duration)?sv.duration:1;rg.max=String(d);var t=Math.min(1,d*.3);rg.value=String(t);try{sv.currentTime=t}catch(e){}};
+   sv.onseeked=function(){drawCover(cx,sv,sv.videoWidth,sv.videoHeight)};
+   rg.oninput=function(){try{sv.currentTime=Math.max(.01,+rg.value)}catch(e){}};
+   pk.onclick=function(){fi.click()};
+   fi.onchange=function(){var f=fi.files&&fi.files[0];if(!f)return;var iu=URL.createObjectURL(f),im=new Image();im.onload=function(){drawCover(cx,im,im.naturalWidth,im.naturalHeight);URL.revokeObjectURL(iu)};im.onerror=function(){URL.revokeObjectURL(iu);say("Não foi possível abrir a imagem.")};im.src=iu};
+   function close(){try{sv.removeAttribute("src");sv.load()}catch(e){}ov.remove()}
+   ca.onclick=close;
+   ok.onclick=function(){try{cn.toBlob(function(b){if(b){coverBlob=b;cvb.style.background="#1f7a3d";say("Capa escolhida.",true)}close()},"image/jpeg",.85)}catch(e){close()}};
+   row.append(pk,ca,ok);ov.append(el("b","font-size:16px","🖼 Capa do reel"),cn,rg,row,fi);document.body.append(ov);sv.src=url};
+  bar2.append(edit,cvb,save,again,pub);window.__bgSerRec=window.__bgSerRec||window.bgSeries.panel();var ser=window.__bgSerRec;ser.el.style.color="#fff";panel.append(edBox,size,ser.el,cap,bar2);
   save.onclick=function(){var a=document.createElement("a");a.href=url;a.download="bengu-reel-"+Date.now()+"."+ext;document.body.appendChild(a);a.click();a.remove();say("Guardado no telemóvel.",true)};
   again.onclick=function(){try{URL.revokeObjectURL(url)}catch(e){}pv.pause();pv.removeAttribute("src");pv.style.display="none";cv.style.display="block";blob=null;origBlob=null;capVal="";fxReset();panel.style.maxHeight="";panel.style.overflowY="";recording=false;warmMic();recB.style.borderRadius="50%";recB.style.transform="";mic.disabled=false;flip.disabled=false;bMusic.disabled=false;flip.style.opacity=bMusic.style.opacity="";hq.style.display="";panel.style.background="linear-gradient(to top,rgba(0,0,0,.65),rgba(0,0,0,0))";panel.style.borderRadius="";panel.replaceChildren(sheet,bar)};
   pub.onclick=function(){try{pv.pause()}catch(e){}var serE=ser.validate();if(serE){say(serE);return}var si=ser.get(),bt=si?window.bgSeries.compose(si,cap.value):cap.value;pub.disabled=true;pub.textContent="⏳";var uid=me(),path=uid+"/"+Date.now()+"-reel."+ext;
    fetch(U+"/storage/v1/object/media/"+path,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":blob.type,"x-upsert":"false","cache-control":"max-age=31536000"},body:blob}).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(/exceeded|too large|payload/i.test(t)?"O vídeo é demasiado grande.":"Não foi possível enviar o vídeo.")})})
+   .then(function(){return coverUpload(uid)}).then(function(c){cvUrl=c})
    .then(function(){return window.bengu_prep_audio?window.bengu_prep_audio(blob):null}).then(function(wb){if(!wb)return null;var p2=uid+"/"+Date.now()+"-reel-som.wav";return fetch(U+"/storage/v1/object/media/"+p2,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"audio/wav","x-upsert":"false","cache-control":"max-age=31536000"},body:wb}).then(function(r){return r.ok?BG_R2+"/media/"+p2:null}).catch(function(){return null})})
-    .then(function(aurl){var item={url:BG_R2+"/media/"+path,name:"reel."+ext,size:(blob.size/1048576).toFixed(1).replace(".",",")+" MB",kind:"video"};if(aurl)item.audio=aurl;if(musicLabel)item.music=musicLabel;
+    .then(function(aurl){var item={url:BG_R2+"/media/"+path,name:"reel."+ext,size:(blob.size/1048576).toFixed(1).replace(".",",")+" MB",kind:"video"};if(aurl)item.audio=aurl;if(musicLabel)item.music=musicLabel;if(cvUrl)item.cover=cvUrl;
     return fetch(U+"/rest/v1/"+(PGT?"bengu_page_posts":"posts"),{method:"POST",headers:hd({Prefer:"return=minimal"}),body:JSON.stringify(PGT?{page_id:PGT.page,author_id:uid,body:bt||null,media:[item],is_reel:true}:{user_id:uid,type:"media",body:bt,media:[item],allow_download:true,visibility:"public"})}).then(function(r){if(!r.ok)return r.text().then(function(t){if(/TAXA_PUBLICACAO/.test(t)){setTimeout(function(){window.bengu_fee_open&&window.bengu_fee_open()},50);throw new Error(BG_GATE.feeMsg())}throw new Error("Não foi possível publicar.")})})})
    .then(function(){if(si){window.bgSeries.save(si.name,si.ep);window.__bgSerRec=null}say("Reel publicado!",true);setTimeout(function(){stopAll();o.remove();if(PGT){PGT.done&&PGT.done()}else location.reload()},1200)})
    .catch(function(e){pub.disabled=false;pub.textContent="📤";say(e.message)})}}
@@ -10536,7 +10565,7 @@ function ex({ r: e, cardProps: t }) {
     children: [
       u.jsx("video", {
         ref: r,
-        src: e.item.url,
+        src: e.item.url, poster: e.item.cover || undefined,
         loop: !i,
         playsInline: !0,
         muted: a,
@@ -15034,28 +15063,58 @@ function BgPinIco({ size }) {
   return u.jsx("span", { "aria-hidden": "true", style: { fontSize: (size || 18) - 3, lineHeight: 1 }, children: "📌" });
 }
 function BgReelThumb({ src }) {
-  /* mostra o 1.º fotograma do vídeo (o telemóvel só o pinta depois de um "seek") */
-  const [poster, setPoster] = B.useState(null);
+  /* Pré-visualização: salta para ~1 s (evita o preto do início), desenha o fotograma num canvas e mostra-o como imagem. */
+  const [poster, setPoster] = B.useState(null),
+    [cors, setCors] = B.useState(true),
+    ref = B.useRef(null),
+    done = B.useRef(false);
   const snap = (v) => {
     try {
-      if (!v.videoWidth) return;
+      if (done.current || !v.videoWidth) return;
       const w = Math.min(360, v.videoWidth), h = Math.round((w * v.videoHeight) / v.videoWidth), c = document.createElement("canvas");
       c.width = w; c.height = h;
       c.getContext("2d").drawImage(v, 0, 0, w, h);
       const d = c.toDataURL("image/jpeg", 0.7);
-      if (d && d.length > 800) setPoster(d);
+      if (d && d.length > 1500) { done.current = true; setPoster(d); }
     } catch (_) {}
   };
-  return u.jsx("video", {
-    src,
-    poster: poster || undefined,
-    muted: true,
-    playsInline: true,
-    preload: "auto",
-    onLoadedMetadata: (e) => { try { const v = e.currentTarget; if (v.currentTime < 0.05) v.currentTime = 0.1; } catch (_) {} },
-    onLoadedData: (e) => { try { const v = e.currentTarget; if (v.currentTime < 0.05) v.currentTime = 0.1; else snap(v); } catch (_) {} },
-    onSeeked: (e) => snap(e.currentTarget),
-    style: { width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none", background: "#000" },
+  const seek = (v) => {
+    try {
+      const d = v.duration, t = isFinite(d) && d > 0 ? Math.min(1, d * 0.3) : 0.5;
+      if (Math.abs(v.currentTime - t) > 0.05) v.currentTime = t; else snap(v);
+    } catch (_) {}
+  };
+  B.useEffect(() => {
+    /* se o telemóvel não pintou nada, um play/pausa curto obriga-o a desenhar o fotograma */
+    const id = setTimeout(() => {
+      const v = ref.current;
+      if (!v || done.current) return;
+      try {
+        const pr = v.play();
+        if (pr && pr.then) pr.then(() => setTimeout(() => { try { v.pause(); snap(v); } catch (_) {} }, 200)).catch(() => {});
+      } catch (_) {}
+    }, 2500);
+    return () => clearTimeout(id);
+  }, [cors, src]);
+  return u.jsxs("div", {
+    style: { position: "absolute", inset: 0, background: "#000" },
+    children: [
+      u.jsx("video", {
+        key: cors ? "c" : "n",
+        ref,
+        src,
+        crossOrigin: cors ? "anonymous" : undefined,
+        muted: true,
+        playsInline: true,
+        preload: "metadata",
+        onError: () => { if (cors) setCors(false); },
+        onLoadedMetadata: (e) => seek(e.currentTarget),
+        onLoadedData: (e) => seek(e.currentTarget),
+        onSeeked: (e) => snap(e.currentTarget),
+        style: { width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none", background: "#000" },
+      }),
+      poster ? u.jsx("img", { src: poster, alt: "", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" } }) : null,
+    ],
   });
 }
 function BgProfileTabs(p) {
@@ -15104,9 +15163,9 @@ function BgProfileTabs(p) {
                     u.jsxs("button", {
                       onClick: () => setOpenId(q.id),
                       "aria-label": "Abrir reel",
-                      style: { position: "relative", aspectRatio: "2 / 3", overflow: "hidden", background: "#000", border: 0, padding: 0 },
+                      style: { position: "relative", aspectRatio: "9 / 16", overflow: "hidden", background: "#000", border: 0, padding: 0 },
                       children: [
-                        u.jsx(BgReelThumb, { src: vid(q).url }),
+                        vid(q).cover ? u.jsx("img", { src: vid(q).cover, alt: "", loading: "lazy", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none", background: "#000" } }) : u.jsx(BgReelThumb, { src: vid(q).url }),
                         u.jsx("span", {
                           style: { position: "absolute", left: 0, right: 0, bottom: 0, padding: "14px 6px 5px", color: "#fff", fontSize: 12, fontWeight: 700, textShadow: "0 1px 4px rgba(0,0,0,.9)", background: p.isMe || p.showViews ? "linear-gradient(transparent, rgba(0,0,0,.65))" : "none", textAlign: "left" },
                           children: p.isMe || p.showViews ? "\u25B6 " + Mt(q.views || 0) : "\u25B6",

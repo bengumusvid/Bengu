@@ -17303,17 +17303,66 @@ function setBest(g,p){try{if(p>bestLocal(g))localStorage.setItem("bg_best_"+g,St
 function offNow(){return navigator.onLine===false||!!(window.bgOffline&&window.bgOffline())}
 function pendGet(){try{return JSON.parse(localStorage.getItem("bg_pend"))||{}}catch(e){return{}}}
 function pendSet(o){try{localStorage.setItem("bg_pend",JSON.stringify(o))}catch(e){}}
+/* ===== BENGU 4.64: gostar, nº de jogadores e 🌐 ranking no cabeçalho de todos os jogos; tabelas classificativas do administrador ===== */
+function bgEDU(){return{leit_vogais:1,leit_alfabeto:1,leit_ditongos:1,leit_silabas:1,leit_palavras:1,leit_frases:1,leit_texto:1,num_ler:1,numero:1,forca:1,contas:1,quiz:1,memoria:1,ingfala:1,ingtrad:1,d3solidos:1,d3tabuada:1,d3cubos:1,d3fracoes:1,d3grafico:1,d3planetas:1,d3relogio:1,d3animais:1,d3frutas:1,d3ingles:1,d3bandeiras:1,d3capitais:1,d3provincias:1,d3quimica:1,d3corpo:1}}
+function bgFmt(n){n=+n||0;return n>=1e6?(n/1e6).toFixed(n>=1e7?0:1).replace(".0","")+"M":n>=1e3?(n/1e3).toFixed(n>=1e4?0:1).replace(".0","")+"k":String(n)}
+var BG_ST=null;
+function bgStatsSave(g,st){try{BG_ST=BG_ST||{};BG_ST[g]=st;var c=JSON.parse(localStorage.getItem("bg_gstats"))||{};localStorage.setItem("bg_gstats",JSON.stringify({u:me(),t:c.t||Date.now(),m:BG_ST}))}catch(e){}}
+/* Só gasta dados ao abrir um jogo (1 pedido pequeno, guardado 10 min). Sem internet usa o último valor guardado. */
+function bgStatsLoad(force){var c=null;try{c=JSON.parse(localStorage.getItem("bg_gstats"));if(c&&c.u!==me())c=null}catch(e){}
+ if(c&&!BG_ST)BG_ST=c.m;
+ if(!force&&c&&Date.now()-c.t<6e5)return Promise.resolve(c.m);
+ if(offNow()||!me())return Promise.resolve(BG_ST||{});
+ return rest("rpc/bengu_game_stats","POST",{}).then(function(rows){var m={};(rows||[]).forEach(function(r){m[r.game]={likes:+r.likes||0,players:+r.players||0,plays:+r.plays||0,live:+r.live||0,liked:!!r.liked}});BG_ST=m;try{localStorage.setItem("bg_gstats",JSON.stringify({u:me(),t:Date.now(),m:m}))}catch(e){}return m}).catch(function(){return BG_ST||{}})}
+var BG_FLUSH=false;
+function bgFlushPlays(){if(BG_FLUSH||offNow()||!me())return;var p;try{p=JSON.parse(localStorage.getItem("bg_gplays"))||{}}catch(e){return}var ks=Object.keys(p);if(!ks.length)return;BG_FLUSH=true;
+ Promise.all(ks.map(function(k){var n=p[k];return rest("rpc/bengu_game_play","POST",{p_game:k,p_n:n}).then(function(){try{var q=JSON.parse(localStorage.getItem("bg_gplays"))||{};q[k]=(q[k]||0)-n;if(q[k]<=0)delete q[k];localStorage.setItem("bg_gplays",JSON.stringify(q))}catch(e){}}).catch(function(){})})).then(function(){BG_FLUSH=false},function(){BG_FLUSH=false})}
+function bgTrackPlay(g){try{var p=JSON.parse(localStorage.getItem("bg_gplays"))||{};p[g]=(p[g]||0)+1;localStorage.setItem("bg_gplays",JSON.stringify(p))}catch(e){}bgFlushPlays()}
+function bgPing(g,cb){if(offNow()||!me())return;rest("rpc/bengu_game_ping","POST",{p_game:g}).then(function(n){if(cb)cb(+n||0)}).catch(function(){})}
+function bgLeave(g){if(offNow()||!me())return;rest("rpc/bengu_game_leave","POST",{}).catch(function(){})}
+function bgRankModal(g){if(offNow()){toast(BG_L("No internet. Try later.","Sem internet. Tenta mais tarde."));return}
+ if(!window.__bgPause&&window.__bgGameOn)setGamePause(true);
+ var o=el("div","position:fixed;inset:0;z-index:100050;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box"),c=el("div","background:#14163a;color:#fff;border-radius:16px;width:100%;max-width:420px;max-height:80vh;overflow:auto;padding:14px;box-sizing:border-box"),h=el("div","");
+ function cl(){o.remove()}o.onclick=function(e){if(e.target===o)cl()};c.append(h);o.append(c);document.body.append(o);online(g,h,cl)}
+/* ❤️ gostar · 👥 jogadores · 🌐 ranking (só ícone) */
+function bgChips(g){var wrap=el("div","display:flex;align-items:center;gap:4px;flex:0 0 auto;margin:0 4px"),
+ CS="border:0;border-radius:10px;background:#2a2f66;color:#fff;height:36px;min-width:36px;padding:0 7px;display:inline-flex;align-items:center;justify-content:center;gap:3px;font-size:13px;font-weight:700;white-space:nowrap",
+ lk=el("button",CS),pl=el("div",CS),lv=el("div",CS+";color:#7dffa0"),rk=el("button",CS,"🌐"),st={likes:0,players:0,plays:0,live:0,liked:false};lv.setAttribute("aria-label",BG_L("Playing now","A jogar agora"));
+ lk.setAttribute("aria-label",BG_L("Like","Gostar"));pl.setAttribute("aria-label",BG_L("Players","Jogadores"));rk.setAttribute("aria-label",BG_L("View online ranking","Ver ranking online"));rk.title=BG_L("View online ranking","Ver ranking online");
+ function paint(){lk.textContent=(st.liked?"❤️":"🤍")+" "+bgFmt(st.likes);lk.style.background=st.liked?"#7a1f3d":"#2a2f66";pl.textContent="👥 "+bgFmt(st.players);lv.textContent="🟢 "+bgFmt(Math.max(1,st.live))}paint();
+ bgStatsLoad().then(function(m){if(m&&m[g]){st=Object.assign({likes:0,players:0,plays:0,live:0,liked:false},m[g]);paint()}});
+ lk.onclick=function(){if(offNow()){toast(BG_L("No internet. Try later.","Sem internet. Tenta mais tarde."));return}
+  var nv=!st.liked;st.liked=nv;st.likes=Math.max(0,st.likes+(nv?1:-1));paint();bgStatsSave(g,st);lk.disabled=true;
+  rest("rpc/bengu_game_like","POST",{p_game:g,p_like:nv}).then(function(){lk.disabled=false}).catch(function(){lk.disabled=false;st.liked=!nv;st.likes=Math.max(0,st.likes+(nv?-1:1));paint();bgStatsSave(g,st);toast(BG_L("Could not save. Try again.","Não foi possível guardar. Tenta de novo."))})};
+ rk.onclick=function(){bgRankModal(g)};
+ wrap.setLive=function(n){st.live=n;paint()};wrap.append(lk,pl,lv,rk);return wrap}
+/* tabelas do administrador: aprendizagem e diversão, do mais jogado ao menos jogado; 5 primeiros a verde; 1.º com ⭐ */
+function bgRankTables(b){var box=el("div","margin:6px 0 10px");
+ b.append(el("h3","margin:4px 0",BG_L("📊 Games ranking","📊 Classificação dos jogos")),el("p","font-size:12px;opacity:.7;margin:0 0 6px",BG_L("From most played to least played (matches). Top 5 in green; 1st with a star.","Do mais jogado ao menos jogado (partidas). Os 5 primeiros a verde; o 1.º com estrela.")),box);
+ box.append(el("p","opacity:.7",BG_L("Loading…","A carregar…")));
+ bgStatsLoad(true).then(function(m){box.replaceChildren();var E=bgEDU(),all=GAMES();
+  [[BG_L("📚 Learning games","📚 Jogos de aprendizagem"),1],[BG_L("🎉 Fun games","🎉 Jogos de diversão"),0]].forEach(function(t){
+   var L=all.filter(function(G){return !!E[G[0]]===!!t[1]}).map(function(G){var s=m[G[0]]||{};return{G:G,plays:s.plays||0,players:s.players||0,likes:s.likes||0,live:s.live||0}});
+   L.sort(function(a,b2){return b2.plays-a.plays||b2.players-a.players||b2.likes-a.likes||(a.G[2]<b2.G[2]?-1:a.G[2]>b2.G[2]?1:0)});
+   var GR="display:grid;grid-template-columns:28px 1fr 42px 42px 42px 38px;gap:4px;align-items:center;padding:7px 8px;border-radius:8px;margin-bottom:3px;font-size:13px",tb=el("div","margin:8px 0 14px");
+   tb.append(el("h4","margin:0 0 6px;font-size:15px",t[0]));
+   var hd=el("div",GR+";background:#2a2f66;font-size:11px;opacity:.85;font-weight:700");["#",BG_L("Game","Jogo"),"🎮","👥","❤️","🟢"].forEach(function(x,i){hd.append(el("span",i>1?"text-align:center":"",x))});tb.append(hd);
+   L.forEach(function(r,i){var top=i<5&&r.plays>0,rw=el("div",GR+";background:"+(top?"#1f7a3d":"#1b1f48")+(top?";font-weight:700":"")),
+    nm=el("span","overflow:hidden;text-overflow:ellipsis;white-space:nowrap",r.G[1]+" "+r.G[2]);
+    rw.append(el("span","text-align:center",(i===0&&r.plays>0)?"⭐":String(i+1)),nm,el("span","text-align:center",bgFmt(r.plays)),el("span","text-align:center",bgFmt(r.players)),el("span","text-align:center",bgFmt(r.likes)),el("span","text-align:center",bgFmt(r.live)));tb.append(rw)});
+   box.append(tb)});
+  box.append(el("p","font-size:11px;opacity:.6;margin:0",BG_L("🎮 matches · 👥 players · ❤️ likes · 🟢 playing now","🎮 partidas · 👥 jogadores · ❤️ gostos · 🟢 a jogar agora")))})}
 function board(g,holder){holder.replaceChildren(el("b","","🏆 O teu melhor"));var mine=bestLocal(g);
  holder.append(el("div","font-size:14px;margin:4px 0",mine?mine+" pontos (guardado no telemóvel, sem internet)":"Ainda sem pontuação."));
- holder.append(btn("🌐 Ver ranking online (usa dados)",function(){online(g,holder)},";background:#2a2f66;color:#fff;font-size:12px;margin-top:4px"))}
-function online(g,holder){if(offNow()){toast("Sem internet. Tenta mais tarde.");return}
+}
+function online(g,holder,cf){if(offNow()){toast("Sem internet. Tenta mais tarde.");return}
  holder.replaceChildren(el("p","opacity:.7","A carregar…"));var pd=pendGet(),ks=Object.keys(pd);
  Promise.all(ks.map(function(k){return rest("bengu_game_scores","POST",{user_id:me(),game:k,score:pd[k]},{Prefer:"return=minimal"}).then(function(){var p=pendGet();if(p[k]===pd[k])delete p[k];pendSet(p)}).catch(function(){})})).then(function(){
   holder.replaceChildren(el("b","","🏆 Ranking online"));
   return rest("bengu_game_scores?select=user_id,score&game=eq."+g+"&order=score.desc&limit=10").then(function(rows){rows=rows||[];if(!rows.length){holder.append(el("p","opacity:.7","Ainda sem pontuações."));return}
    var ids=rows.map(function(r){return r.user_id}).filter(function(v,i,a){return a.indexOf(v)===i});
    return rest("profiles?select=id,name&id=in.("+ids.join(",")+")").catch(function(){return[]}).then(function(ps){var nm={};(ps||[]).forEach(function(p){nm[p.id]=p.name});
-    rows.forEach(function(r,i){var rw=el("div","display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #2a2f66;font-size:14px",(i+1)+". "+(nm[r.user_id]||"Utilizador"));rw.append(el("b","",String(r.score)));holder.append(rw)})})})}).catch(function(){holder.replaceChildren(el("p","opacity:.7","Não foi possível carregar o ranking."))}).then(function(){holder.append(btn("Fechar ranking",function(){board(g,holder)},";background:#2a2f66;color:#fff;font-size:12px;margin-top:6px"))})}
+    rows.forEach(function(r,i){var rw=el("div","display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #2a2f66;font-size:14px",(i+1)+". "+(nm[r.user_id]||"Utilizador"));rw.append(el("b","",String(r.score)));holder.append(rw)})})})}).catch(function(){holder.replaceChildren(el("p","opacity:.7","Não foi possível carregar o ranking."))}).then(function(){holder.append(btn(BG_L("Close ranking","Fechar ranking"),function(){if(cf)cf();else board(g,holder)},";background:#2a2f66;color:#fff;font-size:12px;margin-top:6px"))})}
 function submit(g,pts,holder){pts=Math.round(pts);setBest(g,pts);var p=pendGet();if(!(p[g]>=pts)){p[g]=pts;pendSet(p)}board(g,holder)}
 /* Interruptores do administrador (um por jogo + música offline). Ficam guardados no telemóvel: funcionam sem internet. */
 function accRead(){try{var c=JSON.parse(localStorage.getItem("bg_acc"));return c&&c.u===me()?c:null}catch(e){return null}}
@@ -17730,13 +17779,13 @@ function LEIT(){return[
 ]}
 function GAMES(){return[["cobra","🐍","Cobra 3D",snake],["flappy","🐤","Flappy Bengu",flappy],["tetris","🧱","Tetris 3D",tetris],["galo","❌","Jogo do galo",galo],["2048","🔢","2048",g2048],["minas","💣","Campo minado",minas],["toupeira","🔨","Caça à toupeira",toupeira],["puzzle","🧩","Puzzle 8",puzzle],["simon","🎨","Simon (cores)",simon],["ppt","✂️","Pedra, papel, tesoura",ppt],["numero","🎯","Adivinha o número",numero],["forca","🔤","Forca",forca],["contas","➕","Contas rápidas",contas],["reacao","⚡","Teste de reação",reacao],["quiz","❓","Quiz",quiz],["cores","🌈","Cores",cores],["corrida","🏎️","Corrida",corrida],["domino","🎲","Dominó",domino],["memoria","🧠","Jogo da memória",memory,1],["ingfala","🎤","Fala inglês",ingFala],["ingtrad","🇬🇧","Traduz inglês",ingTrad]].concat(G3D()).concat(LEIT())}
 function viewGames(b){try{viewGamesInner(b)}catch(e){b.append(el("p","color:#ff8a8a;font-size:13px;word-break:break-word","Erro nos jogos: "+(e&&e.message?e.message:e)))}}
-function viewGamesInner(b){if(window.bgIsAdm&&window.bgIsAdm())b.append(el("p","font-size:11px;opacity:.5;margin:0 0 4px","Jogos · versão 4.63"));stopGame();var box=el("div","-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent"),inMenu=false;box.oncontextmenu=function(e){e.preventDefault()};box.onselectstart=function(e){e.preventDefault()};b.append(box);menu();refreshAcc(function(){if(inMenu)menu()});
+function viewGamesInner(b){if(window.bgIsAdm&&window.bgIsAdm())b.append(el("p","font-size:11px;opacity:.5;margin:0 0 4px","Jogos · versão 4.65"));stopGame();var box=el("div","-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent"),inMenu=false;box.oncontextmenu=function(e){e.preventDefault()};box.onselectstart=function(e){e.preventDefault()};b.append(box);menu();refreshAcc(function(){if(inMenu)menu()});
  function menu(){try{menuBody()}catch(e){box.replaceChildren(el("h3","margin:4px 0","🎮 Jogos"),el("p","color:#ff8a8a;font-size:13px;word-break:break-word","Erro ao abrir os jogos: "+(e&&e.message?e.message:e)))}}
 function menuBody(){stopGame();inMenu=true;if(window.__bgBk)window.__bgBk.replaceChildren();box.replaceChildren(el("h3","margin:4px 0","🎮 Jogos"),el("p","font-size:12px;opacity:.7;margin:0 0 10px","Jogas sem internet e sem gastar dados. Todos os jogos têm níveis (1, 2, 3… sem limite) e ficam mais difíceis a cada nível."));
   var mu=el("button",CARD+";flex-direction:row;justify-content:center;width:100%;margin-bottom:10px;background:#3a3f90"),tx=el("span","text-align:left");tx.append(el("div","","Música offline"),el("div","font-size:11px;font-weight:400;opacity:.75","As músicas do teu telemóvel · sem internet"));
   mu.append(el("span","font-size:26px","🎵"),tx);if(!canC("offline_music"))mu.append(el("span","font-size:12px","🔒"));
   mu.onclick=function(){if(!canC("offline_music")){toast("A música offline está reservada a contas premium.");setTimeout(function(){if(window.bengu_ia_open)window.bengu_ia_open("premium")},700);return}if(window.bgLocalMusic)window.bgLocalMusic();else toast("Música offline indisponível.")};box.append(mu);
-  var EDU={leit_vogais:1,leit_alfabeto:1,leit_ditongos:1,leit_silabas:1,leit_palavras:1,leit_frases:1,leit_texto:1,num_ler:1,numero:1,forca:1,contas:1,quiz:1,memoria:1,ingfala:1,ingtrad:1,d3solidos:1,d3tabuada:1,d3cubos:1,d3fracoes:1,d3grafico:1,d3planetas:1,d3relogio:1,d3animais:1,d3frutas:1,d3ingles:1,d3bandeiras:1,d3capitais:1,d3provincias:1,d3quimica:1,d3corpo:1};
+  var EDU=bgEDU();
   var isEdu=function(G){return !!EDU[G[0]]};
   function sec(title,list){box.append(el("h4","margin:14px 0 6px;font-size:15px",title));var g=el("div","display:grid;grid-template-columns:repeat(2,1fr);gap:10px");
    list.forEach(function(G){var c=el("button",CARD);c.append(el("span","font-size:30px",G[1]),el("span","",G[2]));if(!canC("game_"+G[0]))c.append(el("span","font-size:11px;font-weight:400;opacity:.8","🔒 Premium"));c.onclick=function(){play(G)};g.append(c)});box.append(g)}
@@ -17773,8 +17822,14 @@ function play(G){stopGame();
   var wt=setInterval(function(){if(!document.body.contains(box))stopGame()},800),r=null;
   window.__bgGameOn=true;setGamePause(false);
   window.__bgTopBtn=pz;try{r=G[3](w)}catch(e){w.append(el("p","color:#ff8a8a;font-size:13px;word-break:break-word","Erro no jogo: "+(e&&e.message?e.message:e)))}
-  var mo=null;try{mo=new MutationObserver(function(){bgActTop(w)});mo.observe(w,{childList:true,subtree:true});bgActTop(w)}catch(e){}
-  window.__bgGameStop=function(){clearInterval(wt);if(mo)mo.disconnect();if(typeof r==="function")r()}}}
+  /* BENGU 4.64: ❤️ gostar · 👥 jogadores · 🌐 ranking — entre os botões e "Nível · Pontos"; nos jogos sem essa linha ficam numa linha por baixo do título */
+  var chips=null;try{chips=bgChips(G[0]);bgTrackPlay(G[0])}catch(e){}
+  var hb=null,gid=G[0];function beat(){bgPing(gid,function(n){if(chips)chips.setLive(n)})}try{beat();hb=setInterval(beat,45000)}catch(e){}
+  function placeChips(){if(!chips||chips.isConnected)return;var inf=null,ds=w.querySelectorAll("div"),i,d;for(i=0;i<ds.length;i++){d=ds[i];if(d.style&&d.style.textAlign==="right"&&d.style.flexGrow==="1"&&d.parentNode&&d.parentNode.style.display==="flex"){inf=d;break}}
+   if(inf)inf.parentNode.insertBefore(chips,inf);else{chips.style.justifyContent="center";chips.style.margin="0 0 6px";fs.insertBefore(chips,w)}}
+  try{placeChips()}catch(e){}
+  var mo=null;try{mo=new MutationObserver(function(){bgActTop(w);try{placeChips()}catch(e){}});mo.observe(w,{childList:true,subtree:true});bgActTop(w)}catch(e){}
+  window.__bgGameStop=function(){clearInterval(wt);try{if(hb)clearInterval(hb);bgLeave(gid)}catch(e){}if(mo)mo.disconnect();if(typeof r==="function")r()}}}
 /* ---- 1. Cobra (BENGU 4.61: cobra realista de corpo contínuo, presas vivas, obstáculos e onda de digestão) ---- */
 /* BENGU 4D: ambiente vivo — o tempo é a 4.ª dimensão (ciclo dia/noite, hipercubo rotativo, pirilampos, ondas) */
 function bgMix(a,b,t){return[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t]}
@@ -19043,6 +19098,7 @@ function viewAdmin(b){
   function sel(key,label){var w=el("div","margin:8px 0"),s=el("select",INP);w.append(el("div","font-size:13px;opacity:.8;margin-bottom:3px",label),s);OPT.forEach(function(o){var op=el("option","",o[1]);op.value=o[0];if(F[key]===o[0])op.selected=true;s.append(op)});
    s.onchange=function(){var row={access:s.value,updated_at:new Date().toISOString()};rest("bengu_features?key=eq."+key,"PATCH",row,{Prefer:"return=representation"}).then(function(r){if(r&&r.length)return;return rest("bengu_features","POST",Object.assign({key:key},row),{Prefer:"return=minimal"})}).then(function(){try{localStorage.removeItem("bg_acc")}catch(e){}toast("Guardado")}).catch(function(){toast("Erro ao guardar")})};return w}
   b.append(el("h3","margin:4px 0","Acesso"),sel("ai","Quem pode usar a IA"));
+  bgRankTables(b);
   b.append(el("h3","margin:14px 0 4px","🎮 Jogos: um interruptor por jogo"),el("p","font-size:12px;opacity:.7;margin:0 0 4px","Todos = grátis para todos. Pode limitar a premium / contas com selo, ou desligar. Os jogos funcionam sem internet."));
   GAMES().forEach(function(G){b.append(sel("game_"+G[0],G[1]+" "+G[2]))});
   b.append(el("h3","margin:14px 0 4px","🎵 Música offline (pasta de jogos)"),sel("offline_music","Quem pode tocar música offline nos Jogos"));

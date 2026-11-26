@@ -1872,14 +1872,16 @@ function movePhoto(a,j,k){
  if(j==0&&a.pos!="m"){/* a 1.ª foto passa para dentro do texto: modo manual; as outras ficam no topo */
   a.pos="m";for(var q=Math.min(a.im.length,MAXI)-1;q>=1;q--){if(!new RegExp("^[ \\t]*\\[(?:foto|imagem)\\s*"+(q+1)+"\\][ \\t]*$","im").test(String(a.body||"")))putMark(a,q,0)}}
  putMark(a,j,k);save();draw()}
+function delPhoto(a,j){var n=j+1,rx=mkRx(n),L=String(a.body||"").split("\n").filter(function(l){return!rx.test(l)}).map(function(l){var m=/^(\s*)\[(?:foto|imagem)\s*(\d+)\]\s*$/i.exec(l);return m&&+m[2]>n?m[1]+"[imagem "+(+m[2]-1)+"]":l});
+ a.body=L.join("\n");a.im.splice(j,1);save();draw()}
 function pvDrag(P,pi,cv,wr){
  var pg=P[pi]||{},ind=E("div",{style:"position:absolute;display:none;height:8px;margin-top:-4px;border-radius:4px;background:#FF6F00;box-shadow:0 0 0 2px #fff,0 0 8px rgba(0,0,0,.5);pointer-events:none;z-index:2"}),
   src=E("div",{style:"position:absolute;display:none;border:4px solid #FF6F00;box-sizing:border-box;background:rgba(255,111,0,.18);pointer-events:none;z-index:2"}),
-  pend=null,drag=null,tm=0,ghost=null,lastE=null,sp=null;
+  pend=null,drag=null,tm=0,ghost=null,lastE=null,sp=null,bin=null;
  wr.append(src,ind);PVI[pi]={ind:ind,src:src};
  function xy(c,e){var r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*PW/r.width,y:(e.clientY-r.top)*PH/r.height}}
  function box(el,x,y,w,h){el.style.left=(x/PW*100)+"%";el.style.top=(y/PH*100)+"%";el.style.width=(w/PW*100)+"%";if(h!=null)el.style.height=(h/PH*100)+"%"}
- function hitPh(p){var H=pg.hit||[];for(var i=H.length-1;i>=0;i--){var h=H[i];if(h.ik>=0&&p.x>=h.x&&p.x<=h.x+h.w&&p.y>=h.y&&p.y<=h.y+h.h)return h}return null}
+ function hitPh(p){var H=pg.hit||[];for(var i=H.length-1;i>=0;i--){var h=H[i];if(h.ik>0&&p.x>=h.x&&p.x<=h.x+h.w&&p.y>=h.y&&p.y<=h.y+h.h)return h}return null}
  function hideAll(){PVI.forEach(function(v){if(v)v.ind.style.display="none"})}
  /* parágrafo mais próximo do ponteiro → onde fica a foto (antes ou depois dele) */
  function target(P2,p,a){var H=((P2&&P2.hit)||[]).filter(function(h){return h.a===a&&h.ik<0&&h.pk>0});if(!H.length)return null;
@@ -1889,18 +1891,20 @@ function pvDrag(P,pi,cv,wr){
    ref=H.filter(function(h){return h.pk==best.pk&&h.pi==(before?0:best.pn-1)})[0]||best;
   return{k:before?best.pk-1:best.pk,x:ref.x,w:ref.w,y:before?ref.y-4:ref.y+ref.h+2}}
  function upd(e){lastE=e;ghost.style.left=(e.clientX-32)+"px";ghost.style.top=(e.clientY-32)+"px";hideAll();drag.tg=null;
+  if(bin){var br=bin.getBoundingClientRect(),ov=e.clientX>=br.left-14&&e.clientX<=br.right+14&&e.clientY>=br.top-14&&e.clientY<=br.bottom+14;drag.del=ov;bin.style.background=ov?"#B71C1C":"rgba(20,24,50,.92)";bin.style.transform=ov?"translateX(-50%) scale(1.25)":"translateX(-50%)";ghost.style.borderColor=ov?"#E53935":"#FF6F00";ghost.style.opacity=ov?".6":".95";if(ov)return}
   var i=cvs.indexOf(document.elementFromPoint(e.clientX,e.clientY));if(i<0||!PVI[i])return;
   var tg=target(P[i],xy(cvs[i],e),drag.a);if(tg){drag.tg=tg;box(PVI[i].ind,tg.x,tg.y,tg.w);PVI[i].ind.style.display="block"}}
  function start(){if(!pend)return;var h=pend.h,e0=pend.e;pend=null;clearTimeout(tm);var a=h.a,ph=a.im[h.ik];
   if(!ph||arts.indexOf(a)<0||h.bd!==a.body){gen(true);return}/* pré-visualização desatualizada: atualiza */
   drag={a:a,j:h.ik};sp=scP(cv);
   ghost=E("img",{src:ph.th||"",draggable:false,style:"position:fixed;z-index:100000;width:64px;height:64px;border-radius:8px;border:3px solid #FF6F00;box-shadow:0 4px 14px rgba(0,0,0,.45);pointer-events:none;opacity:.95;margin:0;background:#fff"});document.body.append(ghost);
+  bin=E("div",{textContent:"🗑",style:"position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:99999;width:68px;height:68px;border-radius:50%;background:rgba(20,24,50,.92);border:3px solid #E53935;color:#fff;font-size:30px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.5);pointer-events:none;transition:transform .12s,background .12s"});document.body.append(bin);
   box(src,h.x,h.y,h.w,h.h);src.style.display="block";try{if(navigator.vibrate)navigator.vibrate(15)}catch(x){}
   drag.iv=setInterval(function(){if(!lastE)return;var r=(sp===document.scrollingElement||sp===document.documentElement)?{top:0,bottom:innerHeight}:sp.getBoundingClientRect(),y=lastE.clientY,dy=y<r.top+70?-Math.ceil((r.top+70-y)/4):y>r.bottom-70?Math.ceil((y-(r.bottom-70))/4):0;dy=Math.max(-28,Math.min(28,dy));if(dy){sp.scrollTop+=dy;upd(lastE)}},16);
   upd(e0)}
- function end(e,ok){clearTimeout(tm);pend=null;var d=drag;if(!d)return;drag=null;clearInterval(d.iv);if(ghost){ghost.remove();ghost=null}hideAll();src.style.display="none";
+ function end(e,ok){clearTimeout(tm);pend=null;var d=drag;if(!d)return;drag=null;clearInterval(d.iv);if(ghost){ghost.remove();ghost=null}if(bin){bin.remove();bin=null}hideAll();src.style.display="none";
   try{cv.releasePointerCapture(e.pointerId)}catch(x){}
-  if(ok&&d.tg){movePhoto(d.a,d.j,d.tg.k);gen(true)}}
+  if(ok&&d.del){delPhoto(d.a,d.j);gen(true);return}if(ok&&d.tg){movePhoto(d.a,d.j,d.tg.k);gen(true)}}
  cv.addEventListener("pointerdown",function(e){if(drag||(e.pointerType=="mouse"&&e.button!==0))return;var h=hitPh(xy(cv,e));if(!h)return;
   pend={h:h,sx:e.clientX,sy:e.clientY,e:e,touch:e.pointerType!="mouse"};
   if(pend.touch)tm=setTimeout(start,380);else{e.preventDefault();try{cv.setPointerCapture(e.pointerId)}catch(x){}}});
@@ -1919,7 +1923,7 @@ function gen(keep){keep=keep===true;if(!arts.some(function(a){return a.title.tri
   var pth=me+"/"+Date.now()+"-"+Math.random().toString(36).slice(2,8)+".pdf";pb.disabled=true;pb.textContent="A enviar…";
   fetch(U+"/storage/v1/object/journals/"+pth,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/pdf"},body:bl}).then(function(r){if(!r.ok)throw new Error("Não foi possível enviar o PDF.");return BG_R2+"/journals/"+pth})
   .then(function(url){return api("bengu_journals","POST",jBody({author_id:me,title:(tt.value.trim()||nm).slice(0,120),pdf_url:url},sec,fee))}).then(function(r){jDone(b,done,sec,r)}).catch(function(e){alert((e&&e.message)||"Erro ao publicar.");pb.disabled=false;pb.textContent="📰 Publicar no Bengu"})},"#43A047");pb.style.cssText+=";width:100%;padding:12px;font-size:16px;margin-top:8px";pv.append(pb);
- PVI=[];pv.append(E("p",{style:"font-size:12px;opacity:.8;margin:6px 0",textContent:BG_L("💡 Press and hold a photo (or drag it with the mouse) and drop it on the paragraph you prefer; the orange bar shows where it will go.","💡 Mantenha premida uma foto (ou arraste-a com o rato) e largue-a no parágrafo que preferir; a barra laranja mostra onde vai ficar.")}));cvs.forEach(function(c,pi){var d=E("div",{style:"margin:10px 0;box-shadow:0 2px 8px rgba(0,0,0,.3);background:#fff;position:relative"});c.style.cssText="width:100%;display:block;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none";d.append(c);pv.append(d);pvDrag(PP,pi,c,d)});if(keep&&sp0)sp0.scrollTop=st0},keep?0:30)}
+ PVI=[];pv.append(E("p",{style:"font-size:12px;opacity:.8;margin:6px 0",textContent:BG_L("💡 Press and hold a photo (or drag it with the mouse) and drop it on the paragraph you prefer; the orange bar shows where it will go. Drop it on the 🗑 to delete it.","💡 Mantenha premida uma foto (ou arraste-a com o rato) e largue-a no parágrafo que preferir; a barra laranja mostra onde vai ficar. Largue-a no 🗑 para a eliminar.")}));cvs.forEach(function(c,pi){var d=E("div",{style:"margin:10px 0;box-shadow:0 2px 8px rgba(0,0,0,.3);background:#fff;position:relative"});c.style.cssText="width:100%;display:block;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none";d.append(c);pv.append(d);pvDrag(PP,pi,c,d)});if(keep&&sp0)sp0.scrollTop=st0},keep?0:30)}
 /* ---------- desfazer / refazer (instantâneos do rascunho, com pausa de 500 ms) ---------- */
 var HST=[],FUT=[],LAST=null,hT=0,undoB=btn("↩ "+BG_L("Undo","Desfazer"),function(){hUndo()}),redoB=btn("↪ "+BG_L("Redo","Refazer"),function(){hRedo()}),urow=row([undoB,redoB,btn("🧩 "+BG_L("Fill blank spaces","Preencher espaços em branco"),function(){fillSpaces()},"#6B7391"),btn("🧹 "+BG_L("New edition (clear texts and photos)","Nova edição (apagar textos e fotos)"),function(){newEd()},"#B71C1C")]);
 function stCopy(a){var o=Object.assign({},a);o.im=(a.im||[]).map(function(p){return Object.assign({},p)});return o}

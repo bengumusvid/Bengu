@@ -15034,11 +15034,22 @@ function BgPinIco({ size }) {
   return u.jsx("span", { "aria-hidden": "true", style: { fontSize: (size || 18) - 3, lineHeight: 1 }, children: "📌" });
 }
 function BgProfileTabs(p) {
-  /* Separadores do perfil: Todos | Reels (reels = publicações com vídeo) */
+  /* Perfil: Todos | Reels. Reels em grelha de 3 colunas: fixados primeiro, depois o mais recente (1) para o mais antigo */
   const [tab, setTab] = B.useState("all"),
+    [openId, setOpenId] = B.useState(null),
+    [shown, setShown] = B.useState(30),
     all = Array.isArray(p.posts) ? p.posts : [],
-    reels = all.filter((q) => Array.isArray(q.items) && q.items.some((v) => v.kind === "video")),
-    list = tab === "reels" ? reels : all;
+    vid = (q) => (Array.isArray(q.items) ? q.items.find((v) => v && v.kind === "video") : null),
+    reels = all
+      .filter((q) => vid(q))
+      .slice()
+      .sort(
+        (a, b) =>
+          (b.profilePinnedAt ? 1 : 0) - (a.profilePinnedAt ? 1 : 0) ||
+          (a.profilePinnedAt && b.profilePinnedAt ? String(b.profilePinnedAt).localeCompare(String(a.profilePinnedAt)) : 0) ||
+          String(b.createdAt).localeCompare(String(a.createdAt)),
+      ),
+    cur = openId ? all.find((q) => q.id === openId) : null;
   return u.jsxs("div", {
     children: [
       u.jsx("div", {
@@ -15056,13 +15067,66 @@ function BgProfileTabs(p) {
           }, id),
         ),
       }),
-      tab === "reels" && reels.length === 0
-        ? u.jsx("p", {
-            className: "text-center px-8 py-12 text-sm",
-            style: { color: k.mute },
-            children: x("noReels"),
+      tab !== "reels"
+        ? u.jsx(Pt_, { posts: all, rr: p.rr, isMe: p.isMe, adsOff: p.adsOff })
+        : reels.length === 0
+          ? u.jsx("p", { className: "text-center px-8 py-12 text-sm", style: { color: k.mute }, children: x("noReels") })
+          : u.jsxs("div", {
+              children: [
+                u.jsx("div", {
+                  style: { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 2 },
+                  children: reels.slice(0, shown).map((q) =>
+                    u.jsxs("button", {
+                      onClick: () => setOpenId(q.id),
+                      "aria-label": "Abrir reel",
+                      style: { position: "relative", aspectRatio: "3 / 4", overflow: "hidden", background: "#000", border: 0, padding: 0 },
+                      children: [
+                        u.jsx("video", {
+                          src: vid(q).url + "#t=0.1",
+                          muted: true,
+                          playsInline: true,
+                          preload: "metadata",
+                          style: { width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" },
+                        }),
+                        u.jsx("span", {
+                          style: { position: "absolute", left: 6, bottom: 5, color: "#fff", fontSize: 14, textShadow: "0 1px 4px rgba(0,0,0,.8)" },
+                          children: "\u25B6",
+                        }),
+                        q.profilePinnedAt
+                          ? u.jsx("span", { style: { position: "absolute", right: 6, top: 5, fontSize: 14 }, children: "\uD83D\uDCCC" })
+                          : null,
+                      ],
+                    }, q.id),
+                  ),
+                }),
+                reels.length > shown
+                  ? u.jsx("button", {
+                      onClick: () => setShown(shown + 30),
+                      className: "w-full py-3 text-sm font-bold",
+                      style: { color: k.ink },
+                      children: "Ver mais",
+                    })
+                  : null,
+              ],
+            }),
+      cur
+        ? u.jsxs("div", {
+            style: { position: "fixed", inset: 0, zIndex: 60, overflowY: "auto", background: k.paper },
+            children: [
+              u.jsx("div", {
+                className: "flex items-center px-4 py-3",
+                style: { position: "sticky", top: 0, zIndex: 2, background: k.card },
+                children: u.jsx("button", {
+                  onClick: () => setOpenId(null),
+                  className: "py-2 pr-4 text-sm font-bold",
+                  style: { color: k.ink },
+                  children: "\u2715 Fechar",
+                }),
+              }),
+              u.jsx("div", { className: "max-w-md mx-auto", children: u.jsx(es, { ...p.rr(cur) }, cur.id) }),
+            ],
           })
-        : u.jsx(Pt_, { posts: list, rr: p.rr, isMe: p.isMe, adsOff: p.adsOff }),
+        : null,
     ],
   });
 }

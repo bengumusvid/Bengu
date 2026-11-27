@@ -15180,6 +15180,30 @@ function BgReelThumb({ src }) {
     ],
   });
 }
+function BgReelsFrom({ reels, cardProps, startId, onClose }) {
+  /* Abrir um reel do perfil abre TODOS os reels desse perfil (deslizar para cima/baixo), a começar no que foi tocado */
+  const box = B.useRef(null);
+  const list = reels.flatMap((n) => (Array.isArray(n.items) ? n.items : []).filter((s) => s && s.kind === "video").map((s, i) => ({ post: n, item: s, key: `${n.id}-${i}` })));
+  B.useEffect(() => {
+    const c = box.current, el = c && c.querySelector('[data-rid="' + startId + '-0"]');
+    if (el) c.scrollTop = el.offsetTop;
+  }, []);
+  return u.jsxs("div", {
+    style: { position: "fixed", inset: 0, zIndex: 60, background: "#000", display: "flex", flexDirection: "column" },
+    children: [
+      u.jsx("div", {
+        ref: box,
+        className: "overflow-y-scroll snap-y snap-mandatory",
+        style: { height: "calc(100dvh - 56px)", position: "relative" },
+        children: list.map((n) => u.jsx("div", { "data-rid": n.key, style: { scrollSnapAlign: "start" }, children: u.jsx(ex, { r: n, cardProps }) }, n.key)),
+      }),
+      u.jsx("div", {
+        style: { height: 56, display: "flex", alignItems: "center", justifyContent: "center", background: k.card },
+        children: u.jsx("button", { onClick: onClose, style: { color: k.ink, fontWeight: 700, fontSize: 14, padding: "10px 24px" }, children: "\u2715 Fechar" }),
+      }),
+    ],
+  });
+}
 function BgProfileTabs(p) {
   /* Perfil: Todos | Reels. Reels em grelha de 3 colunas: fixados primeiro, depois o mais recente (1) para o mais antigo */
   const [tab, setTab] = B.useState("all"),
@@ -15250,24 +15274,7 @@ function BgProfileTabs(p) {
                   : null,
               ],
             }),
-      cur
-        ? u.jsxs("div", {
-            style: { position: "fixed", inset: 0, zIndex: 60, overflowY: "auto", background: k.paper },
-            children: [
-              u.jsx("div", {
-                className: "flex items-center px-4 py-3",
-                style: { position: "sticky", top: 0, zIndex: 2, background: k.card },
-                children: u.jsx("button", {
-                  onClick: () => setOpenId(null),
-                  className: "py-2 pr-4 text-sm font-bold",
-                  style: { color: k.ink },
-                  children: "\u2715 Fechar",
-                }),
-              }),
-              u.jsx("div", { className: "max-w-md mx-auto", children: u.jsx(es, { ...p.rr(cur) }, cur.id) }),
-            ],
-          })
-        : null,
+      openId ? u.jsx(BgReelsFrom, { reels, cardProps: p.rr, startId: openId, onClose: () => setOpenId(null) }) : null,
     ],
   });
 }

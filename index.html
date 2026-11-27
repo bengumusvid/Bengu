@@ -473,7 +473,12 @@ window.BG_LIM={base:{sec:600,mb:100,img:50,txt:2000,stt:280,cmt:500,clip:60},plu
 window.bgIsPlus=function(){try{var t=JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")),id=t&&t.user&&t.user.id,b=id&&window.__bgBadge[id];return b==="v"||b==="p"}catch(e){return false}};
 /* PRIORIDADE NO FEED: horas de avanço que as publicações de contas verificadas (v) e Premium (p) ganham na ordenação. Altere aqui. */
 window.BG_BOOST={v:12,p:0};
-window.bgBoost=function(list){var m=window.__bgBadge||{},B=window.BG_BOOST,t=function(p){var b=m[p.userId],c=new Date(p.createdAt).getTime()||0;return c+(b&&B[b]?B[b]*36e5:0)};return list.map(function(p){return[p,t(p)]}).sort(function(a,b){return b[1]-a[1]}).map(function(x){return x[0]})};
+/* BENGU FEED POR REGIAO: a ordem deixa de ser só por data. Pontuação = data + horas de bónus. Altere os valores (em horas) aqui. */
+window.BG_FEED={district:96,province:72,country:36,following:48,jitter:8};
+window.bgBoost=function(list){var m=window.__bgBadge||{},B=window.BG_BOOST,F=window.BG_FEED,G=window.__bgGeo||{},me=window.__bgMyGeo||{},fl=window.__bgFollow||new Set(),
+hs=function(id){var h=0,k=String(id)+(window.__bgSeed||(window.__bgSeed=Math.random()));for(var i=0;i<k.length;i++)h=(h*31+k.charCodeAt(i))|0;return (Math.abs(h)%1000)/1000},
+geo=function(uid){var g=G[uid];if(!g)return 0;if(me.geo_district&&g.geo_district&&me.geo_district===g.geo_district&&me.geo_province===g.geo_province)return F.district;if(me.geo_province&&g.geo_province&&me.geo_province===g.geo_province&&me.geo_country_code===g.geo_country_code)return F.province;if(me.geo_country_code&&g.geo_country_code&&me.geo_country_code===g.geo_country_code)return F.country;return 0},
+t=function(p){var b=m[p.userId],c=new Date(p.createdAt).getTime()||0,h=(b&&B[b]?B[b]:0)+geo(p.userId)+(fl.has(p.userId)?F.following:0)+hs(p.id)*F.jitter;return c+h*36e5};return list.map(function(p){return[p,t(p)]}).sort(function(a,b){return b[1]-a[1]}).map(function(x){return x[0]})};return list.map(function(p){return[p,t(p)]}).sort(function(a,b){return b[1]-a[1]}).map(function(x){return x[0]})};
 /* PESQUISA E LISTAS DE PESSOAS: verificadas (v) primeiro, depois as outras (Premium não ganha prioridade); dentro de cada grupo mantém a ordem original. */
 window.bgPlusFirst=function(list){var m=window.__bgBadge||{},R={v:0};return list.map(function(x,i){return[x,i]}).sort(function(a,b){var ra=R[m[a[0].id]],rb=R[m[b[0].id]];ra=ra===undefined?2:ra;rb=rb===undefined?2:rb;return ra-rb||a[1]-b[1]}).map(function(x){return x[0]})};
 window.bgLim=function(k){var L=window.bgIsPlus()?window.BG_LIM.plus:window.BG_LIM.base;return L[k]};
@@ -7925,6 +7930,17 @@ function J_() {
         try {
           const ppq = await me.from("posts").select(bl + ",profile_pinned_at").not("profile_pinned_at", "is", null);
           if (!ppq.error && Array.isArray(ppq.data)) bgPP = ppq.data;
+        } catch {}
+        try {
+          window.__bgMyGeo = he.data || {};
+          window.__bgFollow = new Set((De.data || []).map((o) => o.following_id));
+          const gids = [...new Set((Ce.data || []).map((o) => o.user_id).filter(Boolean))];
+          const bgG = {};
+          for (let i = 0; i < gids.length; i += 100) {
+            const gq = await me.from("profiles").select("id,geo_country_code,geo_province,geo_district").in("id", gids.slice(i, i + 100));
+            if (!gq.error && Array.isArray(gq.data)) gq.data.forEach((r) => { bgG[r.id] = r; });
+          }
+          window.__bgGeo = bgG;
         } catch {}
         if (!he.data) throw new Error(x("profileMissing"));
         const Ir = { [Z]: Xr(he.data) },
@@ -17534,13 +17550,31 @@ window.bengu_admin_ads=function(){
  nw.onclick=function(){form()};load()};
 })();
 </script>
-<script>/* BENGU: botão "📲 Instalar" nos jogos (só aparece se a app ainda não estiver instalada) */
-window.bgInstallBtn=function(){var st=(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true;if(st)return null;
+<script>/* BENGU: botão "📲 Instalar" nos jogos. O administrador liga/desliga a opção e vê quantos utilizadores já instalaram (tabela bengu_installs, ver bengu-install.sql). */
+(function(){var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",CK="bg_inst_on";
+function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
+function uid(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).user.id}catch(e){return null}}
+function rpc(n,body,auth){var h={apikey:K,"Content-Type":"application/json"},t=tok();if(auth&&!t)return Promise.reject(new Error("sem sessão"));h.Authorization="Bearer "+(t||K);return fetch(U+"/rest/v1/rpc/"+n,{method:"POST",headers:h,body:JSON.stringify(body||{})}).then(function(r){if(!r.ok)throw new Error("http "+r.status);return r.json()})}
+function on(){try{return localStorage.getItem(CK)!=="0"}catch(e){return true}}
+function refresh(){rpc("bengu_install_enabled",{}).then(function(v){try{localStorage.setItem(CK,v===false?"0":"1")}catch(e){}}).catch(function(){})}
+function standalone(){return (window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true}
+function register(){var id=uid();if(!id||!tok())return;var k="bg_inst_reg_"+id;try{if(localStorage.getItem(k)==="1")return}catch(e){}rpc("bengu_install_register",{},true).then(function(){try{localStorage.setItem(k,"1")}catch(e){}}).catch(function(){})}
+refresh();document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"){refresh();if(standalone())register()}});
+window.addEventListener("appinstalled",function(){setTimeout(register,500)});
+if(standalone())setTimeout(register,4000);
+window.bgInstallBtn=function(){if(standalone()||!on())return null;
  var b=document.createElement("button");b.style.cssText="border:0;border-radius:10px;padding:8px 12px;font-weight:700;font-size:13px;cursor:pointer;background:#f5b400;color:#14163a";
  if(window.bgLb)window.bgLb(b,"📲","Instalar");else b.textContent="📲";
  b.onclick=function(){var r=window.__bgInstall?window.__bgInstall():"manual";
-  if(r==="ios")alert("Toque em Partilhar e depois em «Adicionar ao ecrã principal».");
+  if(r==="prompt")setTimeout(register,4000);
+  else if(r==="ios")alert("Toque em Partilhar e depois em «Adicionar ao ecrã principal».");
   else if(r==="manual")alert("No menu do navegador (⋮), toque em «Instalar app» ou «Adicionar ao ecrã inicial».")};return b};
+window.bgInstallAdminBtn=function(){var b=document.createElement("button"),en=on(),n="…";b.style.cssText="border:0;border-radius:10px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;margin-left:6px;background:#2a2f5e;color:#fff";
+ function lab(){b.textContent="📲 Instalação: "+(en?"ATIVA":"DESATIVADA")+" · "+n+" instalaram"}lab();
+ rpc("bengu_install_enabled",{}).then(function(v){en=v!==false;try{localStorage.setItem(CK,en?"1":"0")}catch(e){}lab()}).catch(function(){});
+ rpc("bengu_install_count",{},true).then(function(c){n=c;lab()}).catch(function(){n="?";lab()});
+ b.onclick=function(){var nx=!en;b.disabled=true;rpc("bengu_install_set",{p_enabled:nx},true).then(function(){en=nx;try{localStorage.setItem(CK,en?"1":"0")}catch(e){}b.disabled=false;lab()}).catch(function(){b.disabled=false;alert("Não foi possível alterar. Execute primeiro o ficheiro bengu-install.sql no Supabase.")})};return b};
+})();
 </script>
 <script>/* BENGU: capa automática de qualquer vídeo (feita no telemóvel, sem custos) */
 window.bgMakeCover=function(file){return new Promise(function(res){var u=URL.createObjectURL(file),v=document.createElement("video"),done=false,tm;
@@ -18144,7 +18178,7 @@ function GAMES(){return[["cobra","🐍","Cobra 3D",snake],["flappy","🐤","Flap
 function viewGames(b){try{viewGamesInner(b)}catch(e){b.append(el("p","color:#ff8a8a;font-size:13px;word-break:break-word","Erro nos jogos: "+(e&&e.message?e.message:e)))}}
 function viewGamesInner(b){if(window.bgIsAdm&&window.bgIsAdm())b.append(el("p","font-size:11px;opacity:.5;margin:0 0 4px","Jogos · versão 4.74"));stopGame();var box=el("div","-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent"),inMenu=false;box.oncontextmenu=function(e){e.preventDefault()};box.onselectstart=function(e){e.preventDefault()};b.append(box);menu();refreshAcc(function(){if(inMenu)menu()});
  function menu(){try{menuBody()}catch(e){box.replaceChildren(el("h3","margin:4px 0","🎮 Jogos"),el("p","color:#ff8a8a;font-size:13px;word-break:break-word","Erro ao abrir os jogos: "+(e&&e.message?e.message:e)))}}
-function menuBody(){stopGame();inMenu=true;if(window.__bgBk){window.__bgBk.replaceChildren();var ibn=window.bgInstallBtn&&window.bgInstallBtn();if(ibn)window.__bgBk.append(ibn);if(isAdm()){var rb=el("button",BTN+";padding:7px 12px;font-size:13px","");window.bgLb(rb,"🏆",BG_L("Ranking","Classificação"));rb.onclick=bgAdminRankModal;window.__bgBk.append(rb);var rp=el("button",BTN+";padding:7px 12px;font-size:13px;margin-left:6px","");window.bgLb(rp,"🏅",BG_L("Players","Jogadores"));rp.onclick=bgAdminPlayersModal;window.__bgBk.append(rp)}}box.replaceChildren(el("h3","margin:4px 0","🎮 Jogos"),el("p","font-size:12px;opacity:.7;margin:0 0 10px","Jogas sem internet e sem gastar dados. Todos os jogos têm níveis (1, 2, 3… sem limite) e ficam mais difíceis a cada nível."));
+function menuBody(){stopGame();inMenu=true;if(window.__bgBk){window.__bgBk.replaceChildren();var ibn=window.bgInstallBtn&&window.bgInstallBtn();if(ibn)window.__bgBk.append(ibn);if(isAdm()){var rb=el("button",BTN+";padding:7px 12px;font-size:13px","");window.bgLb(rb,"🏆",BG_L("Ranking","Classificação"));rb.onclick=bgAdminRankModal;window.__bgBk.append(rb);var rp=el("button",BTN+";padding:7px 12px;font-size:13px;margin-left:6px","");window.bgLb(rp,"🏅",BG_L("Players","Jogadores"));rp.onclick=bgAdminPlayersModal;window.__bgBk.append(rp);var ia=window.bgInstallAdminBtn&&window.bgInstallAdminBtn();if(ia)window.__bgBk.append(ia)}}box.replaceChildren(el("h3","margin:4px 0","🎮 Jogos"),el("p","font-size:12px;opacity:.7;margin:0 0 10px","Jogas sem internet e sem gastar dados. Todos os jogos têm níveis (1, 2, 3… sem limite) e ficam mais difíceis a cada nível."));
   var mu=el("button",CARD+";flex-direction:row;justify-content:center;width:100%;margin-bottom:10px;background:#3a3f90"),tx=el("span","text-align:left");tx.append(el("div","","Música offline"),el("div","font-size:11px;font-weight:400;opacity:.75","As músicas do teu telemóvel · sem internet"));
   mu.append(el("span","font-size:26px","🎵"),tx);if(!canC("offline_music"))mu.append(el("span","font-size:12px","🔒"));
   mu.onclick=function(){if(!canC("offline_music")){toast("A música offline está reservada a contas premium.");setTimeout(function(){if(window.bengu_ia_open)window.bengu_ia_open("premium")},700);return}if(window.bgLocalMusic)window.bgLocalMusic();else toast("Música offline indisponível.")};box.append(mu);

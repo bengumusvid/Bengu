@@ -7301,7 +7301,62 @@ function BgStrip({ idx, users, statuses, following, meUser, posts, onOpen, onTog
     ] }),
   ] });
 }
+/* ANÚNCIOS DIRETOS: cartão "Patrocinado" (conta 1 visualização por sessão e cada toque) */
+var __bgDA = null, __bgDAT = 0;
+const __bgDAseen = {};
+function bgDirectAds() {
+  if (__bgDA && Date.now() - __bgDAT < 300000) return __bgDA;
+  __bgDAT = Date.now();
+  __bgDA = Promise.resolve(me.rpc("bengu_ads_active")).then((r) => (r && Array.isArray(r.data) ? r.data : []), () => []);
+  return __bgDA;
+}
+function bgAdEvent(id, kind) {
+  try { Promise.resolve(me.rpc("bengu_ad_event", { p_ad: id, p_kind: kind })).then(() => {}, () => {}); } catch (_) {}
+}
+function BgSponsored({ ad }) {
+  const ref = B.useRef(null);
+  B.useEffect(() => {
+    const el = ref.current;
+    if (!el || __bgDAseen[ad.id]) return;
+    if (!("IntersectionObserver" in window)) { __bgDAseen[ad.id] = 1; bgAdEvent(ad.id, "view"); return; }
+    const io = new IntersectionObserver((es) => {
+      es.forEach((e) => {
+        if (e.isIntersecting && e.intersectionRatio >= 0.5 && !__bgDAseen[ad.id]) { __bgDAseen[ad.id] = 1; bgAdEvent(ad.id, "view"); io.disconnect(); }
+      });
+    }, { threshold: [0.5] });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [ad.id]);
+  if (!ad || !/^https:\/\//i.test(ad.link_url || "")) return null;
+  return u.jsxs("div", {
+    ref,
+    style: { background: k.card, marginBottom: 8, padding: "10px 0", overflow: "hidden" },
+    children: [
+      u.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, padding: "0 16px 8px" }, children: [
+        u.jsx("span", { style: { fontSize: 10, fontWeight: 800, letterSpacing: 0.6, padding: "2px 7px", borderRadius: 6, background: k.paper, color: k.mute }, children: "PATROCINADO" }),
+        u.jsx("span", { style: { fontSize: 13, fontWeight: 700, color: k.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: ad.advertiser }),
+      ] }),
+      ad.image_url ? u.jsx("img", { src: ad.image_url, alt: "", loading: "lazy", style: { width: "100%", maxHeight: 420, objectFit: "cover", display: "block" } }) : null,
+      u.jsxs("div", { style: { padding: "10px 16px 0" }, children: [
+        u.jsx("div", { style: { fontSize: 15, fontWeight: 800, color: k.ink }, children: ad.title }),
+        ad.body ? u.jsx("div", { style: { fontSize: 13, color: k.mute, marginTop: 3, lineHeight: 1.4 }, children: ad.body }) : null,
+        u.jsx("a", {
+          href: ad.link_url, target: "_blank", rel: "noopener noreferrer sponsored",
+          onClick: () => bgAdEvent(ad.id, "click"),
+          style: { display: "inline-block", marginTop: 10, padding: "9px 16px", borderRadius: 12, background: k.saffron, color: k.onAccent, fontWeight: 800, fontSize: 13, textDecoration: "none" },
+          children: ad.cta || "Saber mais",
+        }),
+      ] }),
+    ],
+  });
+}
 function BgMergedFeed({ sd, Rr, all, adsOff, strip }) {
+  const [da, setDa] = B.useState([]);
+  B.useEffect(() => {
+    let on = true;
+    bgDirectAds().then((r) => { if (on) setDa(r); }, () => {});
+    return () => { on = false; };
+  }, []);
   const [pg, setPg] = B.useState([]);
   const [tick, setTick] = B.useState(0);
   const again = B.useCallback(() => setTick((n) => n + 1), []);
@@ -7321,6 +7376,7 @@ function BgMergedFeed({ sd, Rr, all, adsOff, strip }) {
       const out = [it.post ? u.jsx(es, { ...Rr(it.post) }, it.k) : u.jsx(BgPgSlot, { row: it.row, again }, it.k)];
       const nn = i + 1;
       all && strip && nn >= 29 && nn % 29 === 0 && out.push(u.jsx(BgStrip, { idx: nn / 29 - 1, ...strip }, "strip" + nn));
+      !adsOff && da.length > 0 && nn % 9 === 0 && out.push(u.jsx(BgSponsored, { ad: da[(nn / 9 - 1) % da.length] }, "sp" + nn));
       bgAdsOn() &&
         !adsOff &&
         (i + 1) % Math.max(2, (window.BENGU_ADS && window.BENGU_ADS.every) || 5) === 0 &&
@@ -11952,6 +12008,7 @@ function Ad_({ onBack: e, say: t }) {
         ],
       }),
       u.jsx("div", { className: "px-4 pb-2", children: u.jsx("button", { onClick: () => window.bengu_admin_earnings && window.bengu_admin_earnings(), className: "w-full rounded-xl py-3 text-sm font-bold", style: { background: k.saffron, color: k.onAccent }, children: "💰 Comissão e levantamentos" }) }),
+      u.jsx("div", { className: "px-4 pb-2", children: u.jsx("button", { onClick: () => window.bengu_admin_ads && window.bengu_admin_ads(), className: "w-full rounded-xl py-3 text-sm font-bold", style: { background: k.card, color: k.ink, border: "1px solid " + k.line }, children: "📢 Anúncios diretos (Patrocinado)" }) }),
       u.jsx("div", { className: "px-4 pb-2", children: u.jsx("button", { onClick: () => window.bengu_admin_members && window.bengu_admin_members(), className: "w-full rounded-xl py-3 text-sm font-bold", style: { background: k.card, color: k.ink, border: "1px solid " + k.line }, children: "👥 Inscritos e crescimento" }) }),
       u.jsx("div", { className: "px-4 pb-2", children: u.jsx("button", { onClick: () => window.bengu_pay_switches && window.bengu_pay_switches(), className: "w-full rounded-xl py-3 text-sm font-bold", style: { background: k.card, color: k.ink, border: "1px solid " + k.line }, children: "💳 Interruptores de pagamentos" }) }),
       u.jsx("div", { className: "px-4 pb-2", children: u.jsx("button", { onClick: () => window.bengu_app_switch && window.bengu_app_switch(), className: "w-full rounded-xl py-3 text-sm font-bold", style: { background: k.card, color: k.ink, border: "1px solid " + k.line }, children: "🔌 Ligar / desligar o aplicativo" }) }),
@@ -17410,7 +17467,65 @@ if(orig)window.bengu_pay_switches=function(uid,name){
 function t(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return null}}
 function load(){fetch(U+"/rest/v1/rpc/bengu_get_eligibility",{method:"POST",headers:{apikey:K,Authorization:"Bearer "+(t()||K),"Content-Type":"application/json"},body:"{}"}).then(function(r){return r.ok?r.json():null}).then(function(e){if(e&&e.min_followers>=0){window.__bgMinF=e.min_followers;window.__bgMinV=e.min_views30}}).catch(function(){})}
 load();setInterval(load,60000)})();
-</script><script>/* BENGU: capa automática de qualquer vídeo (feita no telemóvel, sem custos) */
+</script><script>
+/* BENGU — Administração: anúncios diretos (Patrocinado) — criar, pausar, apagar e ver visualizações/toques */
+(function(){
+var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ";
+function tok(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).access_token}catch(e){return""}}
+function rpc(n,a){return fetch(U+"/rest/v1/rpc/"+n,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":"application/json"},body:JSON.stringify(a||{})}).then(function(r){return r.text().then(function(t){var j=null;try{j=t?JSON.parse(t):null}catch(e){}if(!r.ok)throw new Error(j&&j.message||"Erro");return j})})}
+function el(t,c,x){var e=document.createElement(t);if(c)e.style.cssText=c;if(x!=null)e.textContent=x;return e}
+var CARD="background:#1b2050;border-radius:14px;padding:12px;margin:10px 0;color:#fff;",
+    BTN="background:#262c66;color:#fff;border:0;border-radius:10px;padding:8px 11px;font:600 13px var(--bg-font);cursor:pointer;",
+    ON="background:#f5b400;color:#14163a;border:0;border-radius:10px;padding:8px 11px;font:700 13px var(--bg-font);cursor:pointer;",
+    INP="width:100%;box-sizing:border-box;background:#0f1238;color:#fff;border:1px solid #2a2f66;border-radius:10px;padding:10px;font:14px var(--bg-font);margin:4px 0;";
+function nf(n){return Number(n||0).toLocaleString("pt-PT")}
+window.bengu_admin_ads=function(){
+ var old=document.getElementById("bg-ads-adm");if(old)old.remove();
+ var ov=el("div","position:fixed;inset:0;z-index:100060;background:#14163a;overflow:auto;padding:16px 14px 40px;box-sizing:border-box;color:#fff;font-family:var(--bg-font)");ov.id="bg-ads-adm";
+ var top=el("div","display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px"),
+     h=el("b","font-size:18px","📢 Anúncios diretos"),x=el("button",BTN,"✕");x.onclick=function(){ov.remove()};top.append(h,x);
+ var nw=el("button",ON+"width:100%;margin:8px 0","➕ Novo anúncio"),list=el("div",""),msg=el("p","color:#9aa0d0;font-size:13px;margin:6px 0","");
+ ov.append(top,el("p","color:#9aa0d0;font-size:13px;margin:0 0 4px","Aparecem no feed como “Patrocinado”, um a cada 9 publicações. Cada visualização conta uma vez por pessoa e sessão."),nw,msg,list);document.body.append(ov);
+ function load(){msg.textContent="A carregar…";rpc("bengu_admin_ads").then(function(rows){msg.textContent=rows&&rows.length?"":"Ainda não há anúncios.";list.replaceChildren();(rows||[]).forEach(draw)}).catch(function(e){msg.textContent="Erro: "+e.message+" (já correste o SQL dos anúncios?)"})}
+ function draw(a){
+  var c=el("div",CARD),ctr=a.views>0?(a.clicks/a.views*100).toFixed(1).replace(".",",")+"%":"—";
+  c.append(el("b","font-size:15px",a.advertiser+" · "+a.title));
+  c.append(el("div","font-size:13px;color:#9aa0d0;margin:4px 0","👀 "+nf(a.views)+" visualizações · 👆 "+nf(a.clicks)+" toques · "+ctr+" de toques"));
+  c.append(el("div","font-size:12px;color:#9aa0d0;word-break:break-all",a.link_url));
+  if(a.ends_at)c.append(el("div","font-size:12px;color:#9aa0d0","Termina: "+new Date(a.ends_at).toLocaleDateString("pt-PT")));
+  var row=el("div","display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"),
+      tg=el("button",a.active?BTN:ON,a.active?"⏸ Pausar":"▶ Ativar"),ed=el("button",BTN,"✏️ Editar"),dl=el("button",BTN+"color:#ff9b9b","🗑 Apagar");
+  tg.onclick=function(){save(a,{active:!a.active})};ed.onclick=function(){form(a)};
+  dl.onclick=function(){if(!confirm("Apagar este anúncio?"))return;rpc("bengu_admin_ad_delete",{p_id:a.id}).then(load).catch(function(e){alert(e.message)})};
+  row.append(tg,ed,dl);c.append(row);list.append(c)}
+ function save(a,ch){var v=Object.assign({},a,ch);return rpc("bengu_admin_ad_save",{p_id:v.id||null,p_advertiser:v.advertiser,p_title:v.title,p_body:v.body||"",p_image:v.image_url||"",p_link:v.link_url,p_cta:v.cta||"",p_active:v.active,p_ends:v.ends_at||null}).then(load).catch(function(e){alert(e.message)})}
+ function upload(file){var ext=(file.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg",path="anuncios/"+Date.now()+"."+ext;
+  return fetch(U+"/storage/v1/object/media/"+path,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":file.type||"image/jpeg","x-upsert":"false"},body:file}).then(function(r){if(!r.ok)throw new Error("Não foi possível enviar a imagem");return(window.BG_R2||U+"/storage/v1/object/public")+"/media/"+path})}
+ function form(a){
+  a=a||{};var f=el("div","position:fixed;inset:0;z-index:100070;background:rgba(8,11,36,.97);overflow:auto;padding:16px 14px 40px;box-sizing:border-box;color:#fff;font-family:var(--bg-font)"),
+   adv=el("input",INP),ti=el("input",INP),bo=el("textarea",INP+"min-height:70px"),li=el("input",INP),cta=el("input",INP),en=el("input",INP),im=el("input",INP),pk=el("input"),pb=el("button",BTN,"📁 Escolher imagem"),
+   ok=el("button",ON,"✓ Guardar"),ca=el("button",BTN,"✕ Cancelar"),st=el("p","color:#9aa0d0;font-size:13px;margin:6px 0","");
+  adv.placeholder="Nome do anunciante (ex.: Loja do Zé)";adv.value=a.advertiser||"";
+  ti.placeholder="Título";ti.value=a.title||"";
+  bo.placeholder="Texto curto (opcional)";bo.value=a.body||"";
+  li.placeholder="Link (tem de começar por https://)";li.value=a.link_url||"";
+  cta.placeholder="Texto do botão (ex.: Saber mais)";cta.value=a.cta||"";
+  en.type="date";en.value=a.ends_at?String(a.ends_at).slice(0,10):"";
+  im.placeholder="Endereço da imagem (ou escolhe do telemóvel)";im.value=a.image_url||"";
+  pk.type="file";pk.accept="image/*";pk.style.display="none";pb.onclick=function(){pk.click()};
+  pk.onchange=function(){var fl=pk.files&&pk.files[0];if(!fl)return;st.textContent="A enviar imagem…";upload(fl).then(function(u){im.value=u;st.textContent="Imagem enviada."}).catch(function(e){st.textContent=e.message})};
+  ca.onclick=function(){f.remove()};
+  ok.onclick=function(){if(!adv.value.trim()||!ti.value.trim()||!/^https:\/\//i.test(li.value.trim())){st.textContent="Preenche o anunciante, o título e um link https://";return}
+   ok.disabled=true;var ends=en.value?new Date(en.value+"T23:59:59").toISOString():null;
+   save({id:a.id,active:a.id?a.active:true},{advertiser:adv.value,title:ti.value,body:bo.value,link_url:li.value,cta:cta.value,image_url:im.value,ends_at:ends}).then(function(){f.remove()})};
+  var lb=function(t){return el("div","font-size:12px;color:#9aa0d0;margin-top:8px",t)};
+  var br=el("div","display:flex;gap:8px;margin-top:10px");br.append(ok,ca);
+  f.append(el("b","font-size:18px",a.id?"✏️ Editar anúncio":"➕ Novo anúncio"),lb("Anunciante"),adv,lb("Título"),ti,lb("Texto"),bo,lb("Link"),li,lb("Botão"),cta,lb("Termina em (opcional)"),en,lb("Imagem"),im,pb,pk,st,br);
+  document.body.append(f)}
+ nw.onclick=function(){form()};load()};
+})();
+</script>
+<script>/* BENGU: capa automática de qualquer vídeo (feita no telemóvel, sem custos) */
 window.bgMakeCover=function(file){return new Promise(function(res){var u=URL.createObjectURL(file),v=document.createElement("video"),done=false,tm;
  function end(b){if(done)return;done=true;clearTimeout(tm);try{v.removeAttribute("src");v.load()}catch(e){}try{URL.revokeObjectURL(u)}catch(e){}res(b)}
  v.muted=true;v.playsInline=true;v.preload="auto";

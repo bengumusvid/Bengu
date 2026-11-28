@@ -14623,26 +14623,48 @@ function hx({ minor: e, allowDefault: t, onPublish: r, onError: n }) {
             setCpI(null);
           },
         }),
-      u.jsx("div", {
-        className: "flex gap-2 overflow-x-auto pb-1 mb-4",
-        children: gf.map(([Y, ve, xe]) =>
-          u.jsxs(
-            "button",
-            {
-              onClick: () => ae(Y),
-              "aria-pressed": s === Y,
-              className:
-                "flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold shrink-0",
-              style: {
-                background: Y === "live" ? "#d62828" : s === Y ? k.strong : k.paper,
-                color: Y === "live" ? "#fff" : s === Y ? k.onStrong : k.ink,
-                boxShadow: Y === "live" && s === Y ? "0 0 0 2px #fff" : undefined,
-              },
-              children: [u.jsx(xe, { size: 16 }), " ", x(ve)],
-            },
-            Y,
-          ),
-        ),
+      u.jsxs("details", {
+        className: "mb-4",
+        children: [
+          u.jsxs("summary", {
+            className: "flex items-center justify-between gap-2 px-4 py-3 rounded-xl text-sm font-semibold cursor-pointer",
+            style: { background: k.paper, color: k.ink, listStyle: "none" },
+            children: [
+              u.jsxs("span", {
+                className: "flex items-center gap-2",
+                children: (() => {
+                  const cg = gf.find((g) => g[0] === s) || gf[0];
+                  return [u.jsx(cg[2], { size: 16 }), " ", x(cg[1])];
+                })(),
+              }),
+              u.jsx("span", { "aria-hidden": "true", children: "▾" }),
+            ],
+          }),
+          u.jsx("div", {
+            className: "mt-2 rounded-xl overflow-hidden",
+            style: { background: k.paper },
+            children: gf.map(([Y, ve, xe]) =>
+              u.jsxs(
+                "button",
+                {
+                  onClick: (ev) => {
+                    ae(Y);
+                    const dt = ev.currentTarget.closest("details");
+                    if (dt) dt.removeAttribute("open");
+                  },
+                  "aria-pressed": s === Y,
+                  className: "flex items-center gap-2 w-full px-4 py-3 text-sm font-semibold text-left",
+                  style: {
+                    background: Y === "live" ? "#d62828" : s === Y ? k.strong : "transparent",
+                    color: Y === "live" ? "#fff" : s === Y ? k.onStrong : k.ink,
+                  },
+                  children: [u.jsx(xe, { size: 16 }), " ", x(ve)],
+                },
+                Y,
+              ),
+            ),
+          }),
+        ],
       }),
       s === "live"
         ? u.jsxs(u.Fragment, {
@@ -14666,13 +14688,19 @@ function hx({ minor: e, allowDefault: t, onPublish: r, onError: n }) {
         : u.jsx("textarea", {
             value: a,
             onChange: (Y) => o(Y.target.value),
-            rows: s === "text" ? 6 : 3,
+            rows: 2,
+            ref: (el) => {
+              if (el) {
+                el.style.height = "auto";
+                el.style.height = el.scrollHeight + "px";
+              }
+            },
             maxLength: bgLim("txt"),
             placeholder: x(s === "text" ? "phText" : "phCaption"),
             "aria-label": x("newPost"),
             className:
               "w-full p-3 rounded-lg text-base outline-none resize-none",
-            style: { background: k.paper, color: k.ink },
+            style: { background: k.paper, color: k.ink, overflowY: "auto", maxHeight: "60vh" },
           }),
       s === "media" &&
         d.some((Q) => Pu(Q.file) === "video") &&

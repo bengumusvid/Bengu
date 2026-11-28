@@ -19698,7 +19698,7 @@ function corrida(w){
  var root=document.createElement('div');root.id='ev';
  var sty=document.createElement('style');sty.textContent="#ev{--bg:#0f1235;--card:#262b63;--acc:#ffb703;--tx:#fff;color-scheme:dark}#ev *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:none}#ev canvas#ev_c{position:fixed;inset:0;width:100%;height:100%}#ev button{font:inherit;color:inherit;border:0;cursor:pointer}#ev .ib{background:var(--acc);color:#12183a;border-radius:12px;width:44px;height:44px;font-size:20px;font-weight:700}#ev #ev_hud{position:fixed;top:max(8px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));display:flex;gap:8px;align-items:center;justify-content:space-between;pointer-events:none}#ev #ev_hud>*{pointer-events:auto}#ev #ev_pill{background:#262b63cc;border-radius:22px;padding:8px 16px;font-weight:700;font-size:15px;white-space:nowrap}#ev #ev_hud .r{display:flex;gap:8px}#ev .hold{background:#262b63b3;border:2px solid #ffffff40;border-radius:18px;font-weight:800;color:#fff}#ev .hold.on,#ev .tg.on{background:var(--acc);color:#12183a}#ev #ev_pad{position:fixed;left:max(14px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom));display:flex;gap:12px}#ev #ev_pad .hold{width:84px;height:84px;font-size:34px}#ev #ev_wheel{position:fixed;left:max(20px,env(safe-area-inset-left));bottom:max(10px,env(safe-area-inset-bottom));width:150px;height:150px;border-radius:50%;border:16px solid #9aa0b8;background:#0003;display:none}#ev #ev_wheel:before{content:\"\";position:absolute;left:0;right:0;top:50%;height:12px;margin-top:-6px;background:#9aa0b8}#ev #ev_wheel:after{content:\"\";position:absolute;top:50%;left:50%;width:12px;height:60%;margin-left:-6px;background:#9aa0b8}#ev #ev_wheel i{position:absolute;top:-16px;left:50%;width:14px;height:14px;margin-left:-7px;background:var(--acc);border-radius:50%;z-index:2}#ev #ev_tl{position:fixed;left:max(20px,env(safe-area-inset-left));bottom:30px;font-size:14px;background:#262b63cc;padding:10px 14px;border-radius:14px;display:none}#ev #ev_ped{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));display:flex;gap:12px;align-items:flex-end}#ev #ev_ped .hold{width:84px;font-size:13px}#ev #ev_aux{position:fixed;left:50%;transform:translateX(-50%);bottom:max(10px,env(safe-area-inset-bottom));display:flex;gap:8px}#ev .tg{background:#262b63cc;border:2px solid #ffffff40;border-radius:14px;width:50px;height:50px;font-size:20px}#ev .ov{position:fixed;inset:0;background:#0b0e2ae6;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px;text-align:center;overflow:auto;z-index:5}#ev .ov.on{display:flex}#ev h1{margin:0;font-size:30px;letter-spacing:.5px}#ev h2{margin:0}#ev #ev_cards{display:flex;gap:10px}#ev .card{background:var(--card);border:3px solid transparent;border-radius:16px;padding:8px;width:150px}#ev .card.sel{border-color:var(--acc)}#ev .card canvas{width:100%}#ev .card small{opacity:.8;display:block}#ev .bt{background:var(--acc);color:#12183a;font-weight:800;border-radius:14px;padding:12px 26px;font-size:17px}#ev .bt.s{background:var(--card);color:#fff;font-size:14px;padding:10px 16px}#ev .row{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap}#ev .row b{min-width:120px;text-align:right;font-size:14px}#ev .row button{background:var(--card);border-radius:10px;padding:8px 12px;font-size:14px}#ev .row button.on{background:var(--acc);color:#12183a;font-weight:700}#ev #ev_toast{position:fixed;top:30%;left:50%;transform:translateX(-50%);background:#000a;padding:10px 20px;border-radius:14px;font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none}\n\n#ev #ev_rot{display:none;position:fixed;top:0;left:0;right:0;z-index:9;background:#ffb703;color:#12183a;font-weight:700;padding:10px;text-align:center;pointer-events:none}@media (orientation:portrait){#ev #ev_rot{display:block}}#ev{position:fixed;inset:0;z-index:100036;background:#0f1235;color:#fff;font-family:system-ui,-apple-system,sans-serif;overflow:hidden;--bg:#0f1235}#ev .ov{z-index:5}#ev #ev_set{z-index:6}#ev .row button.bt{background:var(--acc);color:#12183a}#ev .row button.bt.s{background:var(--card);color:#fff}";root.append(sty);
  const sty2=document.createElement('style');sty2.textContent=`#ev #ev_rot{display:none!important}
-#ev .mw{display:flex;flex-wrap:wrap;gap:10px 26px;justify-content:center;align-items:center;max-width:980px}
+#ev .mw{display:flex;flex-wrap:nowrap;gap:10px 22px;justify-content:center;align-items:center;max-width:980px}
 #ev .mL,#ev .mR{display:flex;flex-direction:column;align-items:center;gap:8px}
 #ev .card{width:128px;padding:6px}#ev .card b{font-size:14px}#ev .card small{font-size:11px}
 #ev .row b{min-width:104px}#ev .row button{padding:8px 11px}
@@ -19725,10 +19725,10 @@ root.insertAdjacentHTML('beforeend',`<canvas id="ev_c"></canvas>
 <div class="mL"><h1>🚗 Estrada Viva</h1><p id="ev_msg" style="margin:0">Escolhe o veículo e toca em Jogar</p><div id="ev_cards"></div></div>
 <div class="mR"><div id="ev_mopts"></div><p class="how">◀ ▶ para virar · TRAVÃO para parar · ultrapassa os carros lentos · para no sinal vermelho 🚦 · à noite liga as luzes 💡</p>
 <div class="row"><button class="bt" id="ev_play">▶ Jogar</button><button class="bt s" id="ev_bs2">⚙</button><button class="bt s" id="ev_bk2">← Jogos</button></div></div></div></div>
-<div class="ov" id="ev_set"><h2>⚙ Definições</h2><div id="ev_opts"></div>
+<div class="ov" id="ev_set"><div id="ev_sw" style="display:flex;flex-direction:column;align-items:center;gap:8px"><h2>⚙ Definições</h2><div id="ev_opts"></div>
 <p id="ev_hint" style="max-width:520px;margin:4px 0;opacity:.9">Mantém-te na faixa da direita. Para ultrapassar, usa a faixa da esquerda só quando estiver livre. Pisca e liga as luzes quando escurece.</p>
 <div id="ev_best" style="margin:0;font-size:15px"></div>
-<div class="row"><button class="bt s" id="ev_fs">⛶ Ecrã inteiro</button><button class="bt s" id="ev_cal">🎯 Calibrar inclinação</button><button class="bt" id="ev_sc">Continuar</button></div></div>
+<div class="row"><button class="bt s" id="ev_fs">⛶ Ecrã inteiro</button><button class="bt s" id="ev_cal">🎯 Calibrar inclinação</button><button class="bt" id="ev_sc">Continuar</button></div></div></div>
 `);document.body.append(root);
  var WFS=window.__bgFS,hd=(WFS&&WFS.firstChild&&WFS.firstChild!==w)?WFS.firstChild:null,offs=[],dead=false,raf=0,didFS=false;
  const on=(t,f)=>{window.addEventListener(t,f);offs.push(()=>window.removeEventListener(t,f))};
@@ -19741,7 +19741,8 @@ function layout(){const pw=innerWidth,ph=innerHeight;forced=ph>pw*1.08?1:0;const
  if(forced){VW=ph;VH=pw;st.left='0';st.top='0';st.right='auto';st.bottom='auto';st.width=ph+'px';st.height=pw+'px';st.transformOrigin='0 0';st.transform='translateX('+pw+'px) rotate(90deg)'}
  else{VW=pw;VH=ph;st.left='0';st.top='0';st.right='0';st.bottom='0';st.width='';st.height='';st.transform=''}
  root.classList.toggle('forced',!!forced)}
-function rs(){layout();const d=window.BENGU_LITE?1:Math.min(devicePixelRatio||1,1.5);W=C.width=LC.width=Math.round(VW*d);H=C.height=LC.height=Math.round(VH*d);F=H*.58;HY=H*.42}
+function rs(){layout();const d=window.BENGU_LITE?1:Math.min(devicePixelRatio||1,1.5);W=C.width=LC.width=Math.round(VW*d);H=C.height=LC.height=Math.round(VH*d);F=H*.58;HY=H*.42;fit()}
+function fit(){[['#ev_menu .mw',24],['#ev_sw',110]].forEach(a=>{const e=root.querySelector(a[0]);if(!e)return;e.style.zoom='';const k=Math.min(1,(VW-24)/(e.offsetWidth||1),(VH-a[1])/(e.offsetHeight||1));if(k<1)e.style.zoom=k})}
 on('resize',rs);on('orientationchange',()=>setTimeout(rs,250));rs();
 const SEG=200,RW=2000,D=.9,DRAW=window.BENGU_LITE?90:170,PZ=1000;
 /* velocidades realistas: km/h = unidades/50 */
@@ -19941,7 +19942,7 @@ function reset(){pos=0;spd=0;x=.5;sv=0;dmg=0;ov=0;bonus=0;dist=0;inv=0;lastJ=nul
 function beep(f,du){if(!ac||S.snd!=='1')return;try{const o=ac.createOscillator(),g=ac.createGain();o.type='square';o.frequency.value=f;g.gain.setValueAtTime(.06,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+du);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+du)}catch(e){}}
 function hit(sev,sd_){if(inv>0)return;dmg++;inv=2;spd*=sev;shake=.5;sv=0;x=cl(x+(sd_||0)*.3,-1.45,1.45);toast('💥 Colisão!');beep(90,.3);if(dmg>=lives)over()}
 function over(){st='over';const s=score(),b0=getBest();try{if(s>0&&typeof submit==='function')submit('corrida',s,$('#ev_best'))}catch(e){}
- $('#ev_msg').textContent='💥 Batida! Nível '+lv()+' · '+s+' pts'+(s>b0&&s>0?' 🏆 novo recorde!':'');$('#ev_play').textContent='▶ Jogar outra vez';$('#ev_menu').classList.add('on');ui()}
+ $('#ev_msg').textContent='💥 Batida! Nível '+lv()+' · '+s+' pts'+(s>b0&&s>0?' 🏆 novo recorde!':'');$('#ev_play').textContent='▶ Jogar outra vez';$('#ev_menu').classList.add('on');ui();fit()}
 function upd(dt){T+=dt;dayT+=dt/240;blink=Math.floor(T*2.5)%2;nt=cl(-1.8*Math.cos(dayT*TAU)-.1,0,1);if(shake>0)shake-=dt;
  const d=df(),dm=st==='play'?(1+Math.min(.4,.03*(lv()-1)))*d.om:1;
  for(const o of objs)o.z=(o.z+o.v*dt*(o.on?dm:1)+L)%L;
@@ -19977,7 +19978,7 @@ let hudT=0,whd=0,tiltOK=false,tcT=0,wl=null,seen=0;
 const MO=[['dif','Dificuldade',[['easy','Fácil'],['normal','Normal'],['hard','Difícil']]],['ctl','Controlo',[['setas','◀ ▶ Botões'],['tilt','📱 Inclinação'],['volante','🎡 Volante']]],['acc','Aceleração',[['auto','Automática'],['man','Manual']]]];
 const OPTS=[MO[1],['cam','Vista',[['tras','Atrás'],['alta','Alta'],['capo','Capô'],['cab','Cabine']]],['snd','Som',[['1','Ligado'],['0','Desligado']]],['inv','Inverter inclinação',[['0','Não'],['1','Sim']]]];
 function rowsInto(b,list,cb){b.innerHTML='';list.forEach(([k,l,vs])=>{const r=document.createElement('div');r.className='row';r.innerHTML='<b>'+l+'</b>';vs.forEach(([val,tx])=>{const e=document.createElement('button');e.textContent=tx;if(S[k]===val)e.className='on';e.onclick=()=>{S[k]=val;sv_();tcT=0;mo();bo();ui()};r.appendChild(e)});b.appendChild(r)})}
-function mo(){rowsInto($('#ev_mopts'),MO)}function bo(){rowsInto($('#ev_opts'),OPTS)}
+function mo(){rowsInto($('#ev_mopts'),MO);fit()}function bo(){rowsInto($('#ev_opts'),OPTS);fit()}
 function ui(){$('#ev_wheel').style.display=S.ctl==='volante'?'block':'none';$('#ev_pad').style.display=S.ctl==='setas'?'flex':'none';$('#ev_tl').style.display=S.ctl==='tilt'&&st==='play'?'block':'none';
  const auto=S.acc==='auto';$('#ev_ped').classList.toggle('auto',auto);root.querySelector('[data-h=gas]').style.display=auto?'none':'';
  try{if(typeof board==='function')board('corrida',$('#ev_best'));else $('#ev_best').textContent='🏆 O teu melhor: '+(getBest()||'ainda sem pontuação')}catch(e){}
@@ -19996,20 +19997,21 @@ on('keyup',e=>{const k=e.key.toLowerCase();if(k==='arrowleft'||k==='a')K.l=0;if(
 on('deviceorientation',e=>{if(e.beta==null)return;tiltOK=true;const a=forced?90:((screen.orientation&&screen.orientation.angle)??window.orientation??90);raw=(a===270||a===-90)?-e.beta:e.beta;
  const dd=raw-neu,m=Math.abs(dd)<2?0:(dd-Math.sign(dd)*2)/20;tilt=cl(m,-1,1)*(S.inv==='1'?-1:1)});
 function goFS(){const e=document.documentElement,r=e.requestFullscreen||e.webkitRequestFullscreen;let p;const lk=()=>{try{screen.orientation.lock('landscape').catch(()=>{})}catch(x){}};try{if(r&&!document.fullscreenElement){p=r.call(e);didFS=true}}catch(x){}if(p&&p.then)p.then(lk).catch(lk);else lk()}
+root.addEventListener('pointerup',()=>{if(!document.fullscreenElement)goFS()},{once:true});
 $('#ev_play').onclick=async()=>{goFS();snd();if(typeof DeviceOrientationEvent!=='undefined'&&DeviceOrientationEvent.requestPermission){try{await DeviceOrientationEvent.requestPermission()}catch(e){}}
  try{if(navigator.wakeLock&&!wl)navigator.wakeLock.request('screen').then(l=>{wl=l}).catch(()=>{})}catch(e){}
  neu=raw;tcT=0;reset();st='play';$('#ev_menu').classList.remove('on');ui();
  if(!seen){seen=1;toast(S.ctl==='tilt'?'📱 Inclina o telemóvel para virar':'Usa ◀ ▶ para virar e TRAVÃO para parar',3200)}};
 $('#ev_cal').onclick=()=>{neu=raw;toast('Inclinação calibrada')};$('#ev_fs').onclick=goFS;
-const openS=()=>{if(st==='play')st='pause';bo();ui();const P=$('#ev_set');if(hd){hd.style.width='100%';P.insertBefore(hd,P.firstChild)}P.classList.add('on')};
+const openS=()=>{if(st==='play')st='pause';bo();ui();const P=$('#ev_set');if(hd){hd.style.width='100%';P.insertBefore(hd,P.firstChild)}P.classList.add('on');fit()};
 $('#ev_bs').onclick=openS;$('#ev_bs2').onclick=openS;$('#ev_bk2').onclick=back;$('#ev_sc').onclick=()=>{$('#ev_set').classList.remove('on');if(hd&&WFS&&WFS.isConnected){hd.style.width='';WFS.insertBefore(hd,w)}if(st==='pause')st='play'};
 $('#ev_bp').onclick=()=>{if(st==='play'){st='pause';toast('⏸ Pausa')}else if(st==='pause')st='play'};
-$('#ev_bk').onclick=()=>{if(st==='play'||st==='pause'){st='menu';$('#ev_msg').textContent='Escolhe o veículo e toca em Jogar';$('#ev_play').textContent='▶ Jogar';$('#ev_menu').classList.add('on');ui()}};
+$('#ev_bk').onclick=()=>{if(st==='play'||st==='pause'){st='menu';$('#ev_msg').textContent='Escolhe o veículo e toca em Jogar';$('#ev_play').textContent='▶ Jogar';$('#ev_menu').classList.add('on');ui();fit()}};
 let last=performance.now();
 function loop(t){if(dead)return;raf=requestAnimationFrame(loop);const dt=Math.min(.05,(t-last)/1000);last=t;if(window.__bgPause||document.hidden)return;upd(dt);render();if(ac&&st!=='play')gn.gain.value=0;
  if((hudT+=dt)>.15){hudT=0;$('#ev_hv').textContent=Math.round(spd/50);$('#ev_hl').textContent=lv();$('#ev_hs').textContent=score();$('#ev_hh').textContent='♥'.repeat(Math.max(0,lives-dmg))+'♡'.repeat(Math.min(dmg,lives));
   const lm2=$('#ev_lim');lm2.textContent=curLim;lm2.classList.toggle('over',spd/50>curLim*1.15+8)}}
-cards();mo();bo();ui();raf=requestAnimationFrame(loop);
+cards();mo();bo();ui();fit();raf=requestAnimationFrame(loop);
 
 return function(){dead=true;cancelAnimationFrame(raf);offs.forEach(f=>{try{f()}catch(e){}});try{ac&&ac.close()}catch(e){}try{wl&&wl.release()}catch(e){}
  try{if(didFS){screen.orientation.unlock&&screen.orientation.unlock();if(document.fullscreenElement)document.exitFullscreen()}}catch(e){}

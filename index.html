@@ -7288,32 +7288,20 @@ function BgStrip({ idx, users, statuses, following, meUser, posts, onOpen, onTog
     });
     (jr || []).forEach((j) => pool.push({ kind: "journal", id: "jr" + j.id, title: j.title, emoji: "📰", grad: BG_SUG_GRAD[Math.floor(Math.random() * BG_SUG_GRAD.length)] }));
     BG_SUG_GAMES.forEach((g, gi) => pool.push({ kind: "game", id: "game" + gi, title: g[1], emoji: g[0], gkey: g[2], grad: BG_SUG_GRAD[Math.floor(Math.random() * BG_SUG_GRAD.length)] }));
-    window.__bgStripUsed = window.__bgStripUsed || {};
-    const pick = (excl) => {
-      const groups = {}, seen = {};
-      bgShuffle(pool).forEach((it) => {
-        if (excl && window.__bgStripUsed[it.id]) return;
-        (groups[it.kind] = groups[it.kind] || []).push(it);
-      });
-      const kinds = bgShuffle(Object.keys(groups)), out = [];
-      let more = true;
-      while (more && out.length < 12) {
-        more = false;
-        for (const kd of kinds) {
-          const it = groups[kd].shift();
-          if (!it) continue;
-          more = true;
-          const sk = it.uid || it.id;
-          if (seen[sk] && it.kind !== "game" && it.kind !== "journal") continue;
-          seen[sk] = 1; out.push(it);
-          if (out.length >= 12) break;
-        }
-      }
-      return bgShuffle(out);
-    };
-    let r = pick(true);
-    if (r.length < 8) { window.__bgStripUsed = {}; r = pick(false); }
-    r.forEach((it) => { window.__bgStripUsed[it.id] = 1; });
+    /* cada faixa mostra UMA só categoria (nunca misturadas); as faixas seguintes rodam por outras categorias, em ordem aleatória */
+    const avail = [...new Set(pool.map((it) => it.kind))];
+    if (!avail.length) { C[idx] = []; return []; }
+    const prev = window.__bgStripOrder || [];
+    if (!window.__bgStripOrder || avail.some((kd) => prev.indexOf(kd) < 0)) window.__bgStripOrder = bgShuffle(avail);
+    const ord = window.__bgStripOrder.filter((kd) => avail.indexOf(kd) >= 0);
+    const cat = ord[idx % ord.length];
+    const seen = {}, r = [];
+    for (const it of bgShuffle(pool.filter((x) => x.kind === cat))) {
+      const sk = it.uid || it.id;
+      if (seen[sk]) continue;
+      seen[sk] = 1; r.push(it);
+      if (r.length >= 12) break;
+    }
     C[idx] = r;
     return r;
   }, [extra, jr, idx]);
@@ -7346,10 +7334,10 @@ function BgStrip({ idx, users, statuses, following, meUser, posts, onOpen, onTog
     });
   };
   return u.jsxs("div", { style: { background: k.card, padding: "18px 0", marginBottom: 12 }, children: [
-    u.jsx("div", { style: { padding: "0 14px 12px", fontSize: 15, fontWeight: 800, color: k.mute, textTransform: "uppercase" }, children: "Sugestões para si" }),
+    u.jsx("div", { style: { padding: "0 14px 12px", fontSize: 15, fontWeight: 800, color: k.mute, textTransform: "uppercase" }, children: ({ user: "Utilizadores para si", status: "Estados para si", ad: "Anúncios para si", reel: "Reels para si", journal: "Jornais para si", game: "Jogos para si" })[items[0].kind] || "Sugestões para si" }),
     u.jsxs("div", { style: { display: "flex", gap: 12, overflowX: "auto", padding: "0 14px", scrollSnapType: "x proximity", WebkitOverflowScrolling: "touch" }, children: [
       ...items.map(card),
-      u.jsx("button", { key: "more", type: "button", onClick: onMore, style: { flex: "0 0 auto", width: W, height: H, borderRadius: 14, border: "2px dashed " + k.line, background: "transparent", color: k.ink, fontWeight: 800, fontSize: 17 }, children: "Ver mais ›" }),
+      (items[0].kind === "ad" || items[0].kind === "reel") ? null : u.jsx("button", { key: "more", type: "button", onClick: () => (items[0].kind === "journal" ? (window.bengu_news_open && window.bengu_news_open()) : items[0].kind === "game" ? (window.__bgOpenGame = null, window.bengu_ia_open && window.bengu_ia_open("jogos")) : onMore()), style: { flex: "0 0 auto", width: W, height: H, borderRadius: 14, border: "2px dashed " + k.line, background: "transparent", color: k.ink, fontWeight: 800, fontSize: 17 }, children: "Ver mais ›" }),
     ] }),
   ] });
 }

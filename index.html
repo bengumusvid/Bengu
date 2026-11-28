@@ -17554,14 +17554,14 @@ window.bengu_admin_ads=function(){
   adv.placeholder="Nome do anunciante (ex.: Loja do Zé)";adv.value=a.advertiser||"";
   ti.placeholder="Título";ti.value=a.title||"";
   bo.placeholder="Texto curto (opcional)";bo.value=a.body||"";
-  li.placeholder="Link (tem de começar por https://)";li.value=a.link_url||"";
+  li.placeholder="Link (ex.: getbengu.com)";li.value=a.link_url||"";
   cta.placeholder="Texto do botão (ex.: Saber mais)";cta.value=a.cta||"";
   en.type="date";en.value=a.ends_at?String(a.ends_at).slice(0,10):"";
   im.placeholder="Endereço da foto/vídeo (ou escolhe do telemóvel)";im.value=a.image_url||"";function showPv(u){pv.replaceChildren();if(!u)return;var m=isVid(u)?el("video","width:100%;max-height:240px;border-radius:10px;background:#000"):el("img","width:100%;max-height:240px;object-fit:cover;border-radius:10px");m.src=u;if(isVid(u)){m.controls=true;m.muted=true;m.playsInline=true;m.preload="metadata"}pv.append(m)}showPv(im.value);
   pk.type="file";pk.accept="image/*,video/*";pk.style.display="none";pb.onclick=function(){pk.click()};
   pk.onchange=function(){var fl=pk.files&&pk.files[0];if(!fl)return;st.textContent="A enviar… aguarde.";upload(fl).then(function(u){im.value=u;showPv(u);st.textContent="Ficheiro enviado."}).catch(function(e){st.textContent=e.message})};
   ca.onclick=function(){f.remove()};
-  ok.onclick=function(){if(!adv.value.trim()||!ti.value.trim()||!/^https:\/\//i.test(li.value.trim())){st.textContent="Preenche o anunciante, o título e um link https://";return}
+  ok.onclick=function(){var lk=li.value.trim().replace(/^http:\/\//i,"");if(lk&&!/^https:\/\//i.test(lk))lk="https://"+lk;li.value=lk;if(!adv.value.trim()||!ti.value.trim()||!/^https:\/\/[^\s\/]+\.[^\s\/]+/i.test(lk)){st.textContent=!adv.value.trim()?"Falta o nome do anunciante.":!ti.value.trim()?"Falta o título.":"O link não parece válido (ex.: getbengu.com).";return}
    ok.disabled=true;var ends=en.value?new Date(en.value+"T23:59:59").toISOString():null;
    save({id:a.id,active:a.id?a.active:true},{advertiser:adv.value,title:ti.value,body:bo.value,link_url:li.value,cta:cta.value,image_url:im.value,ends_at:ends}).then(function(){f.remove()})};
   var lb=function(t){return el("div","font-size:12px;color:#9aa0d0;margin-top:8px",t)};

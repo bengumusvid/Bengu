@@ -2242,7 +2242,7 @@ function postCard(x,name,photo,canDel,table,again,reel){var c=card(),h=el("div",
   else if(m.kind==="audio"){var w=el("div","background:"+C.card2+";border-radius:10px;padding:8px;margin-bottom:8px");w.append(el("div","font-size:13px;margin-bottom:4px","🎵 "+(m.name||"Música")));var a=el("audio","width:100%");a.src=m.url;a.controls=true;a.preload="none";w.append(a);c.append(w)}
   else{var l=el("a","display:flex;align-items:center;gap:10px;background:"+C.card2+";border-radius:10px;padding:10px;margin-bottom:8px;color:#fff;text-decoration:none");l.href=m.url;l.onclick=function(ev){if(window.bgDocView){ev.preventDefault();window.bgDocView(m.url,m.name)}else{l.target="_blank"}};
    var tt=el("div","flex:1;min-width:0");tt.append(el("div","font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap",m.name||"Documento"),el("div","font-size:12px;color:"+C.mute,m.size||"Abrir / descarregar"));l.append(el("span","font-size:26px","📄"),tt,el("span","color:"+C.acc+";font-weight:800","Abrir"));c.append(l)}});
- if(x.body)c.append(el("div","white-space:pre-wrap;line-height:1.4",x.body));pgActions(c,x,table==="bengu_page_posts"?"page":"group",name,canDel||isAdm(),again);return c}
+ if(x.body){var _bq=el("div","white-space:pre-wrap;line-height:1.4",x.body);c.append(_bq);window.bgClampDom&&bgClampDom(_bq)}pgActions(c,x,table==="bengu_page_posts"?"page":"group",name,canDel||isAdm(),again);return c}
 /* só nas páginas: criar reel */
 function reelForm(id,again){var c=card(),vf=null,pv=el("video","width:100%;max-height:50vh;border-radius:10px;background:#000;display:none;margin:6px 0"),cap=area("Legenda do reel (opcional)","",2),sw=window.bgSeries.panel(),
  inpf=el("input","display:none");inpf.type="file";inpf.accept="video/*";
@@ -2507,7 +2507,7 @@ function feedCard(r,again){var K=KK(),kind=r.kind,me=uid(),st={likes:0,dislikes:
  if(me&&r.author_id!==me){var fl=el("button",HB,"🚩");fl.setAttribute("aria-label","Denunciar");fl.onclick=function(){var t=prompt("Porque denuncia esta publicação?","Conteúdo impróprio");if(t===null)return;api("bengu_pg_reports","POST",{post_kind:kind,post_id:r.id,reporter_id:me,reason:(t||"Conteúdo impróprio").slice(0,300)}).then(function(){toast("Report sent to the administrator.")}).catch(function(e){toast(/Já existe/.test(e.message)?"Já denunciou esta publicação.":e.message)})};hd.append(fl)}
  if(isAdm()){var mb=el("button",HB,"🛡");mb.setAttribute("aria-label","Moderar");mb.onclick=function(){modSheet({kind:kind+"_post",id:r.id,owner:r.author_id,title:r.parent_name,done:again})};hd.append(mb)}
  a.append(hd);
- if(r.body)a.append(el("p","padding:0 16px 12px;margin:0;font-size:15px;line-height:1.35;white-space:pre-wrap;text-align:left",r.body));
+ if(r.body){var _bp=el("p","padding:0 16px 12px;margin:0;font-size:15px;line-height:1.35;white-space:pre-wrap;text-align:left",r.body);a.append(_bp);window.bgClampDom&&bgClampDom(_bp)}
  mediaOf(r).forEach(function(m){if(!m||!m.url)return;
   if(m.kind==="image"){var im=el("img","width:100%;display:block;max-height:640px;object-fit:contain;background:"+K.paper+";cursor:zoom-in");im.src=m.url;im.loading="lazy";im.alt="";im.onclick=function(){full(m.url)};a.append(im)}
   else if(m.kind==="video"){var v=el("video","width:100%;display:block;background:#000;max-height:"+(r.is_reel?"75vh":"460px"));v.src=m.url;v.controls=true;v.playsInline=true;v.preload="metadata";a.append(v)}
@@ -7343,7 +7343,7 @@ function BgSponsored({ ad }) {
         u.jsx("span", { style: { fontSize: 10, fontWeight: 800, letterSpacing: 0.6, padding: "2px 7px", borderRadius: 6, background: k.paper, color: k.mute }, children: "PATROCINADO" }),
         u.jsx("span", { style: { fontSize: 13, fontWeight: 700, color: k.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: ad.advertiser }),
       ] }),
-      ad.image_url ? u.jsx("img", { src: ad.image_url, alt: "", loading: "lazy", style: { width: "100%", maxHeight: 420, objectFit: "cover", display: "block" } }) : null,
+      ad.image_url ? (/\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(ad.image_url) ? u.jsx("video", { src: ad.image_url, controls: true, autoPlay: true, muted: true, loop: true, playsInline: true, preload: "metadata", style: { width: "100%", maxHeight: 420, display: "block", background: "#000" } }) : u.jsx("img", { src: ad.image_url, alt: "", loading: "lazy", style: { width: "100%", maxHeight: 420, objectFit: "cover", display: "block" } })) : null,
       u.jsxs("div", { style: { padding: "10px 16px 0" }, children: [
         u.jsx("div", { style: { fontSize: 15, fontWeight: 800, color: k.ink }, children: ad.title }),
         ad.body ? u.jsx("div", { style: { fontSize: 13, color: k.mute, marginTop: 3, lineHeight: 1.4 }, children: ad.body }) : null,
@@ -7600,7 +7600,7 @@ function es({
         ],
       }),
       e.text && e.type === "text" && Iu(e) && !Iu(e).plain && u.jsx(BgTrWrap, { text: e.text, render: (tx) => u.jsx("div", { onClick: () => bgCountPost(e), children: u.jsx(Ng, { post: { ...e, text: tx } }) }) }),
-      bgLiveTag(e.text).rest && e.type !== "live" && !(e.type === "text" && Iu(e) && !Iu(e).plain) && u.jsx(BgTrWrap, { text: bgLiveTag(e.text).rest, render: (tx) => u.jsx("p", { lang: "pt", onClick: () => { e.type === "text" && bgCountPost(e); }, className: `px-4 pb-3 text-left whitespace-pre-wrap ${e.type === "text" ? "text-lg leading-snug" : "text-[15px] leading-snug"}`, style: { color: k.ink, fontFamily: e.type === "text" && Iu(e) && Iu(e).font ? bgFontCss(Iu(e).font) : void 0 }, children: Tg_(tx) }) }),
+      bgLiveTag(e.text).rest && e.type !== "live" && !(e.type === "text" && Iu(e) && !Iu(e).plain) && u.jsx(BgTrWrap, { text: bgLiveTag(e.text).rest, render: (tx) => u.jsx(BgClamp, { children: u.jsx("p", { lang: "pt", onClick: () => { e.type === "text" && bgCountPost(e); }, className: `px-4 pb-3 text-left whitespace-pre-wrap ${e.type === "text" ? "text-lg leading-snug" : "text-[15px] leading-snug"}`, style: { color: k.ink, fontFamily: e.type === "text" && Iu(e) && Iu(e).font ? bgFontCss(Iu(e).font) : void 0 }, children: Tg_(tx) }) }) }),
       e.text && e.type === "live" && u.jsx(BgPostTr, { text: e.text }),
       u.jsx(K_, { post: e, users: r, mine: n, onDeleteItem: delIt, onDownloadItem: dlIt_ }),
       u.jsx(BgPostMusic, { post: e }),
@@ -13496,6 +13496,23 @@ function bgLiveTag(t) {
   const m = /^(🔴[^\n]*? esteve em direto)\s*(?:\n+|$)/.exec(t || "");
   return m ? { tag: m[1], rest: (t || "").slice(m[0].length).trim() } : { tag: "", rest: t || "" };
 }
+function BgClamp({ children, lines = 5 }) {
+  const ref = B.useRef(null);
+  const [open, setOpen] = B.useState(false);
+  const [over, setOver] = B.useState(false);
+  const [mh, setMh] = B.useState(0);
+  B.useEffect(() => {
+    const w = ref.current, p = w && w.firstElementChild;
+    if (!p || open) return;
+    const cs = getComputedStyle(p), lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.4, pb = parseFloat(cs.paddingBottom) || 0, m = lh * lines;
+    setMh(m);
+    setOver(p.scrollHeight - pb > m + 4);
+  });
+  return u.jsxs("div", { children: [
+    u.jsx("div", { ref, style: !open && over ? { maxHeight: mh, overflow: "hidden" } : undefined, children }),
+    over ? u.jsx("button", { type: "button", onClick: () => setOpen(!open), className: "px-4 pb-3 text-sm font-bold", style: { color: k.saffron, background: "none", border: 0 }, children: open ? BG_L("See less", "Ver menos") : BG_L("See more", "Ver mais") }) : null,
+  ] });
+}
 function BgTrWrap({ text, render }) {
   const h = B.createElement, L = bgTrL(), lg = (Tu.lang || "pt").slice(0, 2);
   const key = lg + "|" + text;
@@ -17524,11 +17541,15 @@ window.bengu_admin_ads=function(){
   dl.onclick=function(){if(!confirm("Apagar este anúncio?"))return;rpc("bengu_admin_ad_delete",{p_id:a.id}).then(load).catch(function(e){alert(e.message)})};
   row.append(tg,ed,dl);c.append(row);list.append(c)}
  function save(a,ch){var v=Object.assign({},a,ch);return rpc("bengu_admin_ad_save",{p_id:v.id||null,p_advertiser:v.advertiser,p_title:v.title,p_body:v.body||"",p_image:v.image_url||"",p_link:v.link_url,p_cta:v.cta||"",p_active:v.active,p_ends:v.ends_at||null}).then(load).catch(function(e){alert(e.message)})}
- function upload(file){var ext=(file.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg",path="anuncios/"+Date.now()+"."+ext;
-  return fetch(U+"/storage/v1/object/media/"+path,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":file.type||"image/jpeg","x-upsert":"false"},body:file}).then(function(r){if(!r.ok)throw new Error("Não foi possível enviar a imagem");return(window.BG_R2||U+"/storage/v1/object/public")+"/media/"+path})}
+ function uidT(){try{return JSON.parse(localStorage.getItem("sb-cnpkgauzhoyzlhtcexiv-auth-token")).user.id}catch(e){return""}}
+ function isVid(u){return /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(u||"")}
+ function upload(file){var v=/^video\//.test(file.type||"")||isVid(file.name),mx=500;if(file.size>mx*1048576)return Promise.reject(new Error((v?"O vídeo":"A foto")+" tem mais de "+mx+" MB."));
+  var me=uidT();if(!me)return Promise.reject(new Error("Inicie sessão no Bengu primeiro."));
+  var dx=v?"mp4":"jpg",ext=((file.name.split(".").pop()||dx).toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,5))||dx,path=me+"/anuncio-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)+"."+ext;
+  return fetch(U+"/storage/v1/object/media/"+path,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":file.type||(v?"video/mp4":"image/jpeg"),"x-upsert":"false"},body:file}).then(function(r){if(!r.ok)return r.json().catch(function(){return{}}).then(function(j){throw new Error((j&&(j.message||j.error))||"Não foi possível enviar o ficheiro.")});return(window.BG_R2||U+"/storage/v1/object/public")+"/media/"+path})}
  function form(a){
   a=a||{};var f=el("div","position:fixed;inset:0;z-index:100070;background:rgba(8,11,36,.97);overflow:auto;padding:16px 14px 40px;box-sizing:border-box;color:#fff;font-family:var(--bg-font)"),
-   adv=el("input",INP),ti=el("input",INP),bo=el("textarea",INP+"min-height:70px"),li=el("input",INP),cta=el("input",INP),en=el("input",INP),im=el("input",INP),pk=el("input"),pb=el("button",BTN,"📁 Escolher imagem"),
+   adv=el("input",INP),ti=el("input",INP),bo=el("textarea",INP+"min-height:70px"),li=el("input",INP),cta=el("input",INP),en=el("input",INP),im=el("input",INP),pk=el("input"),pb=el("button",BTN,"📁 Escolher foto ou vídeo"),pv=el("div","margin:8px 0"),
    ok=el("button",ON,"✓ Guardar"),ca=el("button",BTN,"✕ Cancelar"),st=el("p","color:#9aa0d0;font-size:13px;margin:6px 0","");
   adv.placeholder="Nome do anunciante (ex.: Loja do Zé)";adv.value=a.advertiser||"";
   ti.placeholder="Título";ti.value=a.title||"";
@@ -17536,19 +17557,22 @@ window.bengu_admin_ads=function(){
   li.placeholder="Link (tem de começar por https://)";li.value=a.link_url||"";
   cta.placeholder="Texto do botão (ex.: Saber mais)";cta.value=a.cta||"";
   en.type="date";en.value=a.ends_at?String(a.ends_at).slice(0,10):"";
-  im.placeholder="Endereço da imagem (ou escolhe do telemóvel)";im.value=a.image_url||"";
-  pk.type="file";pk.accept="image/*";pk.style.display="none";pb.onclick=function(){pk.click()};
-  pk.onchange=function(){var fl=pk.files&&pk.files[0];if(!fl)return;st.textContent="A enviar imagem…";upload(fl).then(function(u){im.value=u;st.textContent="Imagem enviada."}).catch(function(e){st.textContent=e.message})};
+  im.placeholder="Endereço da foto/vídeo (ou escolhe do telemóvel)";im.value=a.image_url||"";function showPv(u){pv.replaceChildren();if(!u)return;var m=isVid(u)?el("video","width:100%;max-height:240px;border-radius:10px;background:#000"):el("img","width:100%;max-height:240px;object-fit:cover;border-radius:10px");m.src=u;if(isVid(u)){m.controls=true;m.muted=true;m.playsInline=true;m.preload="metadata"}pv.append(m)}showPv(im.value);
+  pk.type="file";pk.accept="image/*,video/*";pk.style.display="none";pb.onclick=function(){pk.click()};
+  pk.onchange=function(){var fl=pk.files&&pk.files[0];if(!fl)return;st.textContent="A enviar… aguarde.";upload(fl).then(function(u){im.value=u;showPv(u);st.textContent="Ficheiro enviado."}).catch(function(e){st.textContent=e.message})};
   ca.onclick=function(){f.remove()};
   ok.onclick=function(){if(!adv.value.trim()||!ti.value.trim()||!/^https:\/\//i.test(li.value.trim())){st.textContent="Preenche o anunciante, o título e um link https://";return}
    ok.disabled=true;var ends=en.value?new Date(en.value+"T23:59:59").toISOString():null;
    save({id:a.id,active:a.id?a.active:true},{advertiser:adv.value,title:ti.value,body:bo.value,link_url:li.value,cta:cta.value,image_url:im.value,ends_at:ends}).then(function(){f.remove()})};
   var lb=function(t){return el("div","font-size:12px;color:#9aa0d0;margin-top:8px",t)};
   var br=el("div","display:flex;gap:8px;margin-top:10px");br.append(ok,ca);
-  f.append(el("b","font-size:18px",a.id?"✏️ Editar anúncio":"➕ Novo anúncio"),lb("Anunciante"),adv,lb("Título"),ti,lb("Texto"),bo,lb("Link"),li,lb("Botão"),cta,lb("Termina em (opcional)"),en,lb("Imagem"),im,pb,pk,st,br);
+  f.append(el("b","font-size:18px",a.id?"✏️ Editar anúncio":"➕ Novo anúncio"),lb("Anunciante"),adv,lb("Título"),ti,lb("Texto"),bo,lb("Link"),li,lb("Botão"),cta,lb("Termina em (opcional)"),en,lb("Foto ou vídeo (máx. 500 MB)"),im,pb,pk,pv,st,br);
   document.body.append(f)}
  nw.onclick=function(){form()};load()};
 })();
+</script>
+<script>/* BENGU: textos longos mostram só 5 linhas + "Ver mais" (páginas e grupos) */
+window.bgClampDom=function(p){setTimeout(function(){if(!p||!p.isConnected)return;var cs=getComputedStyle(p),lh=parseFloat(cs.lineHeight)||parseFloat(cs.fontSize)*1.4,mh=lh*5+(parseFloat(cs.paddingBottom)||0);if(p.scrollHeight<=mh+4)return;p.style.maxHeight=mh+"px";p.style.overflow="hidden";var b=document.createElement("button");b.type="button";b.textContent="Ver mais";b.style.cssText="border:0;background:none;color:#f5b400;font-weight:700;font-size:14px;padding:0 16px 12px;font-family:inherit";b.onclick=function(){var o=p.style.overflow==="hidden";p.style.maxHeight=o?"":mh+"px";p.style.overflow=o?"":"hidden";b.textContent=o?"Ver menos":"Ver mais"};p.after(b)},150)};
 </script>
 <script>/* BENGU: botão "📲 Instalar" nos jogos. O administrador liga/desliga a opção e vê quantos utilizadores já instalaram (tabela bengu_installs, ver bengu-install.sql). */
 (function(){var U="https://cnpkgauzhoyzlhtcexiv.supabase.co",K="sb_publishable_pk8EKbcwtTdat2c8BXsIpg_FmJd_iQZ",CK="bg_inst_on";

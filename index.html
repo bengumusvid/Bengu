@@ -6338,7 +6338,7 @@ function BgPinned() {
         u.jsx("div", { className: "text-xs font-bold", style: { color: k.saffron }, children: "📌 " + (n.title || "Bengu") }),
         adm ? u.jsx("button", { type: "button", onClick: edit, className: "text-xs font-bold", style: { color: k.saffron }, children: "✏️ Editar" + (n.ends_at ? " · até " + new Date(n.ends_at).toLocaleDateString() : "") }) : null,
       ] }),
-      n.body_pt ? u.jsx("p", { className: "text-sm leading-snug whitespace-pre-wrap", style: { color: k.ink }, children: BG_L(n.body_en || n.body_pt, n.body_pt) }) : null,
+      n.body_pt ? u.jsx("p", { className: "text-sm leading-snug whitespace-pre-wrap", style: { color: k.ink }, children: bgLinkify(BG_L(n.body_en || n.body_pt, n.body_pt), true) }) : null,
       nf.length
         ? u.jsx("div", { className: "mt-3 flex flex-col gap-3", children: nf.map((f, i) =>
             f.kind === "image"
@@ -17494,7 +17494,7 @@ window.bengu_pinned_admin=function(){
   var m=sheet("📌 Aviso fixado"),b=m.body;
   b.append(el("p","font-size:12px;opacity:.8;margin:0 0 10px;line-height:1.5","Este aviso aparece no topo do feed. Escreva o texto, junte ficheiros (fotos, vídeos, áudios, documentos) e defina até quando é válido: depois dessa data desaparece sozinho. Não é preciso mexer no index."));
   var ti=el("input",FLD);ti.placeholder="Título (ex.: Bengu)";ti.value="Bengu";
-  var pt=el("textarea",FLD+"min-height:130px");pt.placeholder="Texto do aviso (português)";
+  var pt=el("textarea",FLD+"min-height:130px");pt.placeholder="Texto do aviso (português). Links e sites (ex.: getbengu.com) ficam clicáveis.";
   var en=el("textarea",FLD+"min-height:90px");en.placeholder="Texto em inglês (opcional)";
   var dt=el("input",FLD);dt.type="date";
   var nov=el("input","");nov.type="checkbox";

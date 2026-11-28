@@ -6306,17 +6306,52 @@ function BgFontPick({ text }) {
     ],
   });
 }
-const BG_PIN_END = new Date(2027, 9, 10).getTime();
-const BG_PIN_TXT = "A Bengu é uma nova rede social de entretenimento para todos. Convide outros a aderir e a criar contas e páginas. Vamos publicar conteúdos! Quanto mais usuários existirem, mais seguidores teremos para ver, assistir e escutar as nossas publicações. Não desanime — um dia será uma referência nesta rede social!";
-const BG_PIN_EN = "Bengu is a new entertainment social network for everyone. Invite others to join and create accounts and pages. Let's publish content! The more users there are, the more followers we will have to see, watch and listen to our posts. Don't give up — one day it will be a reference in this social network!";
+/* Aviso fixado do topo do feed: vem da base de dados (definido pelo administrador, com validade). Nada de texto escrito aqui no index. */
 function BgPinned() {
-  if (Date.now() >= BG_PIN_END) return null;
+  const [n, setN] = B.useState(window.__bgPinnedV === undefined ? undefined : window.__bgPinnedV);
+  const [adm, setAdm] = B.useState(false);
+  B.useEffect(() => {
+    let on = true;
+    const load = () => Promise.resolve(me.rpc("bengu_pinned_get")).then(
+      (r) => { const v = r && r.data ? r.data : null; window.__bgPinnedV = v; on && setN(v); },
+      () => { on && setN(null); },
+    );
+    load();
+    window.__bgPinnedReload = load;
+    Promise.resolve(me.rpc("is_admin")).then((r) => { on && setAdm(!!r && r.data === true); }, () => {});
+    return () => { on = false; };
+  }, []);
+  if (n === undefined) return null;
+  const nf = n && Array.isArray(n.files) ? n.files : [];
+  const live = n && (n.body_pt || nf.length) && !(n.ends_at && Date.now() >= new Date(n.ends_at).getTime());
+  const edit = () => window.bengu_pinned_admin && window.bengu_pinned_admin();
+  if (!live) {
+    return adm
+      ? u.jsx("button", { type: "button", onClick: edit, className: "mx-4 mt-3 mb-1 rounded-xl p-3 text-sm font-bold", style: { background: "transparent", border: `1px dashed ${k.saffron}`, color: k.saffron, width: "calc(100% - 32px)" }, children: "📌 Criar aviso fixado (só o administrador vê)" })
+      : null;
+  }
   return u.jsxs("div", {
     className: "mx-4 mt-3 mb-1 rounded-xl p-4",
     style: { background: k.card, border: `1px solid ${k.saffron}` },
     children: [
-      u.jsx("div", { className: "text-xs font-bold mb-1", style: { color: k.saffron }, children: "📌 Bengu" }),
-      u.jsx("p", { className: "text-sm leading-snug whitespace-pre-wrap", style: { color: k.ink }, children: BG_L(BG_PIN_EN, BG_PIN_TXT) }),
+      u.jsxs("div", { className: "flex items-center justify-between mb-1", children: [
+        u.jsx("div", { className: "text-xs font-bold", style: { color: k.saffron }, children: "📌 " + (n.title || "Bengu") }),
+        adm ? u.jsx("button", { type: "button", onClick: edit, className: "text-xs font-bold", style: { color: k.saffron }, children: "✏️ Editar" + (n.ends_at ? " · até " + new Date(n.ends_at).toLocaleDateString() : "") }) : null,
+      ] }),
+      n.body_pt ? u.jsx("p", { className: "text-sm leading-snug whitespace-pre-wrap", style: { color: k.ink }, children: BG_L(n.body_en || n.body_pt, n.body_pt) }) : null,
+      nf.length
+        ? u.jsx("div", { className: "mt-3 flex flex-col gap-3", children: nf.map((f, i) =>
+            f.kind === "image"
+              ? u.jsx("a", { key: i, href: f.url, target: "_blank", rel: "noopener noreferrer", children: u.jsx("img", { src: f.url, alt: f.name || "", loading: "lazy", style: { width: "100%", borderRadius: 12, display: "block" } }) })
+              : f.kind === "video"
+                ? u.jsx("video", { key: i, src: f.url, controls: !0, playsInline: !0, preload: "metadata", style: { width: "100%", borderRadius: 12, background: "#000" } })
+                : f.kind === "audio"
+                  ? u.jsxs("div", { key: i, children: [u.jsx("div", { className: "text-xs mb-1", style: { color: k.mute }, children: "🎵 " + (f.name || "") }), u.jsx("audio", { src: f.url, controls: !0, preload: "metadata", style: { width: "100%" } })] })
+                  : u.jsxs("a", { key: i, href: f.url, target: "_blank", rel: "noopener noreferrer", className: "flex items-center gap-3 rounded-xl p-3", style: { background: k.paper, border: `1px solid ${k.line}`, color: k.ink }, children: [
+                      u.jsx("span", { style: { fontSize: 26 }, children: "📄" }),
+                      u.jsxs("span", { className: "flex-1 min-w-0", children: [u.jsx("span", { className: "block text-sm font-bold truncate", children: f.name || "Documento" }), u.jsx("span", { className: "block text-xs", style: { color: k.mute }, children: (f.size ? f.size + " · " : "") + "Abrir / descarregar" })] }),
+                    ] })) })
+        : null,
     ],
   });
 }
@@ -17455,6 +17490,72 @@ window.bengu_pay_switches=function(uid,name){
 };
 
 /* ----- interruptor geral: desliga o aplicativo para todos (o administrador continua a entrar) ----- */
+window.bengu_pinned_admin=function(){
+  var m=sheet("📌 Aviso fixado"),b=m.body;
+  b.append(el("p","font-size:12px;opacity:.8;margin:0 0 10px;line-height:1.5","Este aviso aparece no topo do feed. Escreva o texto, junte ficheiros (fotos, vídeos, áudios, documentos) e defina até quando é válido: depois dessa data desaparece sozinho. Não é preciso mexer no index."));
+  var ti=el("input",FLD);ti.placeholder="Título (ex.: Bengu)";ti.value="Bengu";
+  var pt=el("textarea",FLD+"min-height:130px");pt.placeholder="Texto do aviso (português)";
+  var en=el("textarea",FLD+"min-height:90px");en.placeholder="Texto em inglês (opcional)";
+  var dt=el("input",FLD);dt.type="date";
+  var nov=el("input","");nov.type="checkbox";
+  var nl=el("label","display:flex;gap:8px;align-items:center;margin:8px 0;font-size:14px");nl.append(nov,el("span","","Sem data de fim (fica até eu o retirar)"));
+  nov.onchange=function(){dt.disabled=nov.checked};
+  var st=el("div","font-weight:800;margin-bottom:8px","");
+  var files=[],pend=[];
+  var fl=el("div","margin:8px 0");
+  var fi=el("input","display:none");fi.type="file";fi.multiple=true;
+  function kindOf(f){var t=f.type||"",n=f.name||"";return t.indexOf("image/")==0?"image":t.indexOf("video/")==0?"video":(t.indexOf("audio/")==0||/\.(mp3|m4a|wav|ogg|opus|aac)$/i.test(n))?"audio":"doc"}
+  function human(n){return n<1048576?Math.max(1,Math.round(n/1024))+" KB":(n/1048576).toFixed(1).replace(".",",")+" MB"}
+  function drawFiles(){fl.replaceChildren();var all=files.concat(pend);
+    if(!all.length){fl.append(el("div","font-size:12px;opacity:.7","Sem ficheiros juntos."));return}
+    all.forEach(function(f,i){var isNew=i>=files.length,k=isNew?kindOf(f):f.kind,row=el("div","display:flex;align-items:center;gap:10px;background:#1b1f48;border-radius:10px;padding:8px;margin:6px 0");
+      var th;if(k==="image"&&isNew){th=el("img","width:44px;height:44px;object-fit:cover;border-radius:8px");th.src=URL.createObjectURL(f)}else if(k==="image"){th=el("img","width:44px;height:44px;object-fit:cover;border-radius:8px");th.src=f.url}else th=el("span","font-size:26px;width:44px;text-align:center",k==="video"?"🎬":k==="audio"?"🎵":"📄");
+      var tx=el("div","flex:1;min-width:0");tx.append(el("div","font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap",f.name),el("div","font-size:12px;opacity:.7",isNew?human(f.size):(f.size||"")));
+      var x=el("button","border:0;background:transparent;color:#ff9b9b;font-size:20px;padding:4px 8px","✕");x.type="button";
+      x.onclick=function(){if(isNew)pend.splice(i-files.length,1);else files.splice(i,1);drawFiles()};
+      row.append(th,tx,x);fl.append(row)})}
+  fi.onchange=function(){Array.prototype.forEach.call(fi.files,function(f){pend.push(f)});fi.value="";drawFiles()};
+  var add=btn("📎 Juntar fotos, vídeos, áudios ou documentos","#1E88E5","#fff",function(){fi.click()});add.style.width="100%";add.style.margin="10px 0 0";
+  var msg=el("div","font-size:13px;color:#f5b400;min-height:18px;margin-top:6px","");
+  drawFiles();
+  b.append(st,ti,el("div","height:8px"),pt,el("div","height:8px"),en,add,fi,fl,el("div","font-size:13px;margin:10px 0 4px;font-weight:700","Válido até (inclusive)"),dt,nl);
+  function pad(x){return String(x).padStart(2,"0")}
+  rpc("bengu_admin_get_pinned",{}).then(function(r){
+    if(!r){st.textContent="Ainda não há aviso.";return}
+    ti.value=r.title||"Bengu";pt.value=r.body_pt||"";en.value=r.body_en||"";files=Array.isArray(r.files)?r.files:[];drawFiles();
+    if(r.ends_at){var d=new Date(r.ends_at);dt.value=d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}else{nov.checked=true;dt.disabled=true}
+    var exp=r.ends_at&&new Date(r.ends_at).getTime()<=Date.now();
+    st.textContent=!r.active?"⏸ Aviso retirado":exp?"⌛ Aviso expirado":"✅ Aviso visível";
+    st.style.color=!r.active||exp?"#ffb020":"#2fbf71"
+  }).catch(function(e){note(b,e.message+" (execute o bengu-aviso-fixado.sql no Supabase)",false)});
+  function myId(){try{return JSON.parse(atob(tok().split(".")[1].replace(/-/g,"+").replace(/_/g,"/"))).sub}catch(e){return null}}
+  function upAll(){var out=files.slice(),i=0,me=myId();if(pend.length&&!me)return Promise.reject(new Error("Inicie sessão."));
+    function next(){if(i>=pend.length)return Promise.resolve(out);var f=pend[i],k=kindOf(f);i++;
+      if(f.size>(k==="video"?100:50)*1048576)return Promise.reject(new Error("«"+f.name+"» é demasiado grande (máx. "+(k==="video"?100:50)+" MB)."));
+      msg.textContent="A enviar "+i+"/"+pend.length+"…";
+      var ext=(String(f.name).split(".").pop()||"bin").toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,6)||"bin",path=me+"/aviso-"+Date.now()+"-"+Math.random().toString(36).slice(2,6)+"."+ext;
+      return fetch(U+"/storage/v1/object/media/"+path,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+tok(),"Content-Type":f.type||"application/octet-stream","x-upsert":"false","cache-control":"max-age=31536000"},body:f}).then(function(r){
+        if(!r.ok)throw new Error("Não foi possível enviar «"+f.name+"».");
+        out.push({url:(window.BG_R2?window.BG_R2+"/media/":U+"/storage/v1/object/public/media/")+path,name:f.name,size:human(f.size),kind:k});return next()})}
+    return next()}
+  var sv,rt;
+  function send(active){
+    var txt=pt.value.trim();if(!txt&&!files.length&&!pend.length){note(b,"Escreva o texto ou junte pelo menos um ficheiro.",false);return}
+    var ends=null;
+    if(!nov.checked){if(!dt.value){note(b,"Escolha a data de fim ou marque «Sem data de fim».",false);return}
+      ends=new Date(dt.value+"T23:59:59").toISOString();
+      if(active&&new Date(ends).getTime()<=Date.now()){note(b,"A data de fim já passou.",false);return}}
+    sv.disabled=true;rt.disabled=true;
+    (active?upAll():Promise.resolve(files)).then(function(list){
+      msg.textContent="A guardar…";
+      return rpc("bengu_admin_set_pinned",{p_title:ti.value.trim()||"Bengu",p_body_pt:txt,p_body_en:en.value.trim()||null,p_active:active,p_ends_at:ends,p_files:list})
+    }).then(function(){
+      window.__bgPinnedV=undefined;if(window.__bgPinnedReload)window.__bgPinnedReload();m.close()
+    }).catch(function(e){sv.disabled=false;rt.disabled=false;msg.textContent="";note(b,e.message+" (se persistir, execute o bengu-aviso-fixado.sql no Supabase)",false)})}
+  sv=btn("Guardar e publicar","#2fbf71","#fff",function(){send(true)});sv.style.width="100%";sv.style.marginTop="8px";
+  rt=btn("Retirar o aviso","#B71C1C","#fff",function(){if(confirm("Retirar o aviso fixado do feed?"))send(false)});rt.style.width="100%";rt.style.marginTop="8px";
+  b.append(msg,sv,rt)
+};
 window.bengu_app_switch=function(){
   var m=sheet("🔌 Aplicativo Bengu");
   m.body.append(el("p","font-size:12px;opacity:.8;margin:0 0 10px","Desligado: todos os utilizadores veem um aviso e não conseguem usar o Bengu. Só o administrador continua a entrar. Pode voltar a ligar a qualquer momento, sem publicar um index novo."));

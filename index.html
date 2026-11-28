@@ -7227,8 +7227,25 @@ function bgSugPool(uid) {
   );
   return window.__bgSugP;
 }
+function bgSugJournals() {
+  if (window.__bgSugJ && Date.now() - (window.__bgSugJT || 0) < 300000) return window.__bgSugJ;
+  window.__bgSugJT = Date.now();
+  window.__bgSugJ = Promise.resolve(me.from("bengu_journals").select("id,title,status,created_at").order("created_at", { ascending: false }).limit(30)).then(
+    (r) => (Array.isArray(r.data) ? r.data.filter((x) => x && x.title && (!x.status || x.status === "published")) : []),
+    () => [],
+  );
+  return window.__bgSugJ;
+}
+const BG_SUG_GAMES = [["🐍", "Cobra 3D", "cobra"], ["🐤", "Flappy Bengu", "flappy"], ["🧱", "Tetris 3D", "tetris"], ["🔢", "2048", "2048"], ["💣", "Campo minado", "minas"], ["🧩", "Puzzle 8", "puzzle"], ["🎨", "Simon (cores)", "simon"], ["❓", "Quiz", "quiz"], ["🏎️", "Corrida", "corrida"], ["🎲", "Dominó", "domino"], ["🧠", "Jogo da memória", "memoria"], ["🔤", "Forca", "forca"]];
+const BG_SUG_GRAD = ["linear-gradient(160deg,#1e88e5,#12183A)", "linear-gradient(160deg,#6a1b9a,#12183A)", "linear-gradient(160deg,#2fbf71,#12183A)", "linear-gradient(160deg,#ff7a00,#12183A)", "linear-gradient(160deg,#d62828,#12183A)"];
 function BgStrip({ idx, users, statuses, following, meUser, posts, onOpen, onToggle, onStatus, onMore }) {
   const [extra, setExtra] = B.useState(null);
+  const [jr, setJr] = B.useState(null);
+  B.useEffect(() => {
+    let on = true;
+    bgSugJournals().then((r) => { on && setJr(r || []); });
+    return () => { on = false; };
+  }, []);
   const [fol, setFol] = B.useState({});
   B.useEffect(() => {
     let on = true;
@@ -7236,7 +7253,7 @@ function BgStrip({ idx, users, statuses, following, meUser, posts, onOpen, onTog
     return () => { on = false; };
   }, [meUser && meUser.id]);
   const items = B.useMemo(() => {
-    if (extra === null) return null;
+    if (extra === null || jr === null) return null;
     window.__bgStripCache = window.__bgStripCache || {};
     const C = window.__bgStripCache;
     if (C[idx]) return C[idx];
@@ -7259,39 +7276,67 @@ function BgStrip({ idx, users, statuses, following, meUser, posts, onOpen, onTog
       const m1 = /^📢 ANÚNCIO · ([^\n]*)/.exec(t);
       pool.push({ kind: "ad", id: "ad" + p.id, uid: p.userId, user: U[p.userId] || { name: "Bengu" }, img: md[0].url, title: m1 ? m1[1] : "Anúncio" });
     });
+    let nReels = 0;
+    (posts || []).forEach((p) => {
+      if (nReels >= 30 || !p.userId || p.userId === myId) return;
+      const t = String(p.text || p.body || p.content || "");
+      if (t.indexOf("📢 ANÚNCIO") === 0) return;
+      const vs = (Array.isArray(p.items) && p.items.length ? p.items : Array.isArray(p.media) ? p.media : []).find((m) => m && m.kind === "video" && m.url);
+      if (!vs) return;
+      nReels++;
+      pool.push({ kind: "reel", id: "reel" + p.id, uid: p.userId, user: U[p.userId] || { name: "Bengu" }, img: vs.cover || "", video: vs.cover ? "" : vs.url });
+    });
+    (jr || []).forEach((j) => pool.push({ kind: "journal", id: "jr" + j.id, title: j.title, emoji: "📰", grad: BG_SUG_GRAD[Math.floor(Math.random() * BG_SUG_GRAD.length)] }));
+    BG_SUG_GAMES.forEach((g, gi) => pool.push({ kind: "game", id: "game" + gi, title: g[1], emoji: g[0], gkey: g[2], grad: BG_SUG_GRAD[Math.floor(Math.random() * BG_SUG_GRAD.length)] }));
     window.__bgStripUsed = window.__bgStripUsed || {};
     const pick = (excl) => {
-      const out = [], seen = {};
-      for (const it of bgShuffle(pool)) {
-        const key = it.kind === "ad" ? it.id : it.id;
-        if (seen[it.uid || it.id] || (excl && window.__bgStripUsed[key])) continue;
-        seen[it.uid || it.id] = 1; out.push(it);
-        if (out.length >= 10) break;
+      const groups = {}, seen = {};
+      bgShuffle(pool).forEach((it) => {
+        if (excl && window.__bgStripUsed[it.id]) return;
+        (groups[it.kind] = groups[it.kind] || []).push(it);
+      });
+      const kinds = bgShuffle(Object.keys(groups)), out = [];
+      let more = true;
+      while (more && out.length < 12) {
+        more = false;
+        for (const kd of kinds) {
+          const it = groups[kd].shift();
+          if (!it) continue;
+          more = true;
+          const sk = it.uid || it.id;
+          if (seen[sk] && it.kind !== "game" && it.kind !== "journal") continue;
+          seen[sk] = 1; out.push(it);
+          if (out.length >= 12) break;
+        }
       }
-      return out;
+      return bgShuffle(out);
     };
     let r = pick(true);
-    if (r.length < 10) { window.__bgStripUsed = {}; r = pick(false); }
+    if (r.length < 8) { window.__bgStripUsed = {}; r = pick(false); }
     r.forEach((it) => { window.__bgStripUsed[it.id] = 1; });
     C[idx] = r;
     return r;
-  }, [extra, idx]);
+  }, [extra, jr, idx]);
   if (!items || !items.length) return null;
-  const W = 168, H = 260;
+  const W = Math.max(168, Math.min(240, Math.floor(((typeof window !== "undefined" ? window.innerWidth : 360) - 40) / 2))), H = Math.round(W * 1.75);
   const card = (it) => {
-    const usr = it.user || {}, img = it.kind === "ad" ? it.img : usr.avatar;
-    const go = () => (it.kind === "status" ? onStatus(it.id) : onOpen(it.kind === "ad" ? it.uid : it.id));
+    const usr = it.user || {}, img = (it.kind === "ad" || it.kind === "reel") ? it.img : (it.kind === "journal" || it.kind === "game") ? "" : usr.avatar;
+    const cr = usr.createdAt || usr.created_at, isNewU = it.kind === "user" && cr && Date.now() - new Date(cr).getTime() < 14 * 864e5;
+    const lbl = { ad: "📢 Anúncio", reel: "🎞 Reel", journal: "📰 Jornal", game: "🎮 Jogo", status: "Estado" }[it.kind] || (isNewU ? "Novo" : "");
+    const go = () => (it.kind === "status" ? onStatus(it.id) : it.kind === "journal" ? (window.bengu_news_open && window.bengu_news_open()) : it.kind === "game" ? (window.__bgOpenGame = it.gkey, window.bengu_ia_open && window.bengu_ia_open("jogos")) : onOpen((it.kind === "ad" || it.kind === "reel") ? it.uid : it.id));
     const followed = fol[it.id] || (following || []).includes(it.id);
     return u.jsxs("div", {
       key: it.id, role: "button", onClick: go,
       style: { flex: "0 0 auto", width: W, height: H, borderRadius: 14, position: "relative", overflow: "hidden", cursor: "pointer", scrollSnapAlign: "start",
-        background: img ? "#000 center/cover no-repeat url(" + JSON.stringify(img) + ")" : (usr.color || "#3a3f7a"),
-        border: it.kind === "status" ? "2px solid " + k.saffron : "1px solid " + k.line },
+        background: img ? "#000 center/cover no-repeat url(" + JSON.stringify(img) + ")" : (it.grad || usr.color || "#3a3f7a"),
+        border: it.kind === "status" ? "2px solid " + k.saffron : "1px solid " + k.line, ...(it.kind === "reel" ? { background: img ? "#000 center/cover no-repeat url(" + JSON.stringify(img) + ")" : "#000" } : {}) },
       children: [
-        !img && u.jsx("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 58 }, children: (usr.name || "?").split(" ").filter(Boolean).map((x) => x[0]).slice(0, 2).join("").toUpperCase() }),
-        (it.kind !== "user") && u.jsx("span", { style: { position: "absolute", top: 6, left: 6, padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 800, background: k.saffron, color: "#12183A" }, children: it.kind === "ad" ? "📢 Anúncio" : "Estado" }),
+        it.video && u.jsx("video", { src: it.video + "#t=0.5", muted: !0, playsInline: !0, preload: "metadata", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" } }),
+        it.emoji && u.jsx("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 64, paddingBottom: 40 }, children: it.emoji }),
+        !img && !it.emoji && !it.video && u.jsx("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 58 }, children: (usr.name || "?").split(" ").filter(Boolean).map((x) => x[0]).slice(0, 2).join("").toUpperCase() }),
+        lbl && u.jsx("span", { style: { position: "absolute", top: 6, left: 6, padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 800, background: k.saffron, color: "#12183A" }, children: lbl }),
         u.jsxs("div", { style: { position: "absolute", left: 0, right: 0, bottom: 0, padding: "28px 10px 10px", background: "linear-gradient(transparent, rgba(0,0,0,.82))", color: "#fff" }, children: [
-          u.jsx("div", { style: { fontSize: 15, fontWeight: 700, lineHeight: 1.2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }, children: it.kind === "ad" ? it.title : usr.name }),
+          u.jsx("div", { style: { fontSize: 15, fontWeight: 700, lineHeight: 1.2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }, children: (it.kind === "ad" || it.kind === "journal" || it.kind === "game") ? it.title : usr.name }),
           it.kind === "user" && u.jsx("button", { type: "button",
             onClick: (e) => { e.stopPropagation(); if (!followed) { setFol((p) => ({ ...p, [it.id]: 1 })); onToggle(it.id); } },
             style: { marginTop: 8, width: "100%", padding: "9px 0", border: 0, borderRadius: 999, fontSize: 14, fontWeight: 800, background: followed ? "rgba(255,255,255,.25)" : k.saffron, color: followed ? "#fff" : "#12183A" },
@@ -10297,7 +10342,7 @@ function X_({
   }, [y == null ? void 0 : y.id, ps]);
   B.useEffect(() => { const v_ = vr.current; if (!v_ || !y || y.kind !== "video") return; ps ? v_.pause() : v_.play().catch(() => {}); }, [ps]);
   const lastSt = (arr) => (arr && arr.length ? arr.reduce((a, b) => (String(a.createdAt) > String(b.createdAt) ? a : b)) : null);
-  const CW = 88, CH = 140;
+  const CW = Math.max(100, Math.min(150, Math.floor(((typeof window !== "undefined" ? window.innerWidth : 360) - 40) / 3))), CH = Math.round(CW * 1.6);
   const cardBase = { width: CW, height: CH, borderRadius: 14, overflow: "hidden", position: "relative", flexShrink: 0, padding: 0, border: "none", background: k.line, display: "block" };
   const shade = "linear-gradient(to top, rgba(0,0,0,.75) 0%, rgba(0,0,0,0) 100%)";
   const cardPhoto = (O) => O && O.avatar
@@ -10317,8 +10362,8 @@ function X_({
         onClick: R, "aria-label": U, className: "shrink-0",
         style: { ...cardBase, background: k.card, border: `1px solid ${k.line}` },
         children: [
-          u.jsx("div", { style: { position: "absolute", left: 0, right: 0, top: 0, height: 98 }, children: cardPhoto(O) }),
-          u.jsx("span", { className: "absolute flex items-center justify-center rounded-full", style: { left: "50%", top: 83, transform: "translateX(-50%)", width: 30, height: 30, background: k.saffron, color: k.onAccent, border: `3px solid ${k.card}` }, children: u.jsx(ho, { size: 16 }) }),
+          u.jsx("div", { style: { position: "absolute", left: 0, right: 0, top: 0, height: Math.round(CH * 0.7) }, children: cardPhoto(O) }),
+          u.jsx("span", { className: "absolute flex items-center justify-center rounded-full", style: { left: "50%", top: Math.round(CH * 0.7) - 15, transform: "translateX(-50%)", width: 30, height: 30, background: k.saffron, color: k.onAccent, border: `3px solid ${k.card}` }, children: u.jsx(ho, { size: 16 }) }),
           u.jsx("span", { className: "absolute text-[11px] font-semibold", style: { left: 4, right: 4, bottom: 6, color: k.ink, textAlign: "center", lineHeight: 1.15 }, children: U }),
         ],
       })
@@ -18200,7 +18245,7 @@ function LEIT(){return[
 ]}
 function GAMES(){return[["cobra","🐍","Cobra 3D",snake],["flappy","🐤","Flappy Bengu",flappy],["tetris","🧱","Tetris 3D",tetris],["galo","❌","Jogo do galo",galo],["2048","🔢","2048",g2048],["minas","💣","Campo minado",minas],["toupeira","🔨","Caça à toupeira",toupeira],["puzzle","🧩","Puzzle 8",puzzle],["simon","🎨","Simon (cores)",simon],["ppt","✂️","Pedra, papel, tesoura",ppt],["numero","🎯","Adivinha o número",numero],["forca","🔤","Forca",forca],["contas","➕","Contas rápidas",contas],["reacao","⚡","Teste de reação",reacao],["quiz","❓","Quiz",quiz],["cores","🌈","Cores",cores],["corrida","🏎️","Corrida",corrida],["domino","🎲","Dominó",domino],["memoria","🧠","Jogo da memória",memory,1],["ingfala","🎤","Fala inglês",ingFala],["ingtrad","🇬🇧","Traduz inglês",ingTrad]].concat(G3D()).concat(LEIT())}
 function viewGames(b){try{viewGamesInner(b)}catch(e){b.append(el("p","color:#ff8a8a;font-size:13px;word-break:break-word","Erro nos jogos: "+(e&&e.message?e.message:e)))}}
-function viewGamesInner(b){if(window.bgIsAdm&&window.bgIsAdm())b.append(el("p","font-size:11px;opacity:.5;margin:0 0 4px","Jogos · versão 4.74"));stopGame();var box=el("div","-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent"),inMenu=false;box.oncontextmenu=function(e){e.preventDefault()};box.onselectstart=function(e){e.preventDefault()};b.append(box);menu();refreshAcc(function(){if(inMenu)menu()});
+function viewGamesInner(b){if(window.bgIsAdm&&window.bgIsAdm())b.append(el("p","font-size:11px;opacity:.5;margin:0 0 4px","Jogos · versão 4.74"));stopGame();var box=el("div","-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent"),inMenu=false;box.oncontextmenu=function(e){e.preventDefault()};box.onselectstart=function(e){e.preventDefault()};b.append(box);menu();refreshAcc(function(){if(inMenu)menu()});try{var og=window.__bgOpenGame;window.__bgOpenGame=null;if(og){var gg=GAMES().filter(function(x){return x[0]===og})[0];if(gg&&canC("game_"+gg[0]))setTimeout(function(){play(gg)},400)}}catch(e){}
  function menu(){try{menuBody()}catch(e){box.replaceChildren(el("h3","margin:4px 0","🎮 Jogos"),el("p","color:#ff8a8a;font-size:13px;word-break:break-word","Erro ao abrir os jogos: "+(e&&e.message?e.message:e)))}}
 function menuBody(){stopGame();inMenu=true;if(window.__bgBk){window.__bgBk.replaceChildren();var ibn=window.bgInstallBtn&&window.bgInstallBtn();if(ibn)window.__bgBk.append(ibn);if(isAdm()){var rb=el("button",BTN+";padding:7px 12px;font-size:13px","");window.bgLb(rb,"🏆",BG_L("Ranking","Classificação"));rb.onclick=bgAdminRankModal;window.__bgBk.append(rb);var rp=el("button",BTN+";padding:7px 12px;font-size:13px;margin-left:6px","");window.bgLb(rp,"🏅",BG_L("Players","Jogadores"));rp.onclick=bgAdminPlayersModal;window.__bgBk.append(rp);var ia=window.bgInstallAdminBtn&&window.bgInstallAdminBtn();if(ia)window.__bgBk.append(ia)}}box.replaceChildren(el("h3","margin:4px 0","🎮 Jogos"),el("p","font-size:12px;opacity:.7;margin:0 0 10px","Jogas sem internet e sem gastar dados. Todos os jogos têm níveis (1, 2, 3… sem limite) e ficam mais difíceis a cada nível."));
   var mu=el("button",CARD+";flex-direction:row;justify-content:center;width:100%;margin-bottom:10px;background:#3a3f90"),tx=el("span","text-align:left");tx.append(el("div","","Música offline"),el("div","font-size:11px;font-weight:400;opacity:.75","As músicas do teu telemóvel · sem internet"));
@@ -18210,7 +18255,13 @@ function menuBody(){stopGame();inMenu=true;if(window.__bgBk){window.__bgBk.repla
   var isEdu=function(G){return !!EDU[G[0]]};
   var cols=el("div","display:grid;grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,1fr);gap:10px;align-items:stretch;margin-top:14px;height:60vh");
   function sec(title,list){var col=el("div","min-width:0;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y");col.append(el("h4","margin:0 0 8px;padding:6px 0;font-size:14px;text-align:center;position:sticky;top:0;z-index:2;background:#14163a",title));var g=el("div","display:grid;grid-template-columns:1fr;gap:10px");
-   list.forEach(function(G){var c=el("button",CARD+";min-width:0;word-break:break-word");c.append(el("span","font-size:30px",G[1]),el("span","text-align:center",G[2]));if(!canC("game_"+G[0]))c.append(el("span","font-size:11px;font-weight:400;opacity:.8","🔒 Premium"));c.onclick=function(){play(G)};g.append(c)});col.append(g);cols.append(col)}
+   list.forEach(function(G){var c=el("button",CARD+";min-width:0;word-break:break-word");c.append(el("span","font-size:30px",G[1]),el("span","text-align:center",G[2]));if(!canC("game_"+G[0]))c.append(el("span","font-size:11px;font-weight:400;opacity:.8","🔒 Premium"));c.onclick=function(){play(G)};c.style.position="relative";
+   var lk=el("span","position:absolute;top:4px;right:6px;font-size:15px;padding:2px 5px;opacity:.9","🔗");lk.setAttribute("role","button");lk.setAttribute("aria-label","Copiar link do jogo");
+   lk.onclick=function(e){e.stopPropagation();var url=location.origin+location.pathname+"?jogo="+encodeURIComponent(G[0]);
+    function ok(){toast("Link copiado: "+G[2])}
+    function fb(){try{var ta=document.createElement("textarea");ta.value=url;ta.style.cssText="position:fixed;opacity:0";document.body.append(ta);ta.select();document.execCommand("copy");ta.remove();ok()}catch(x){prompt("Copie o link:",url)}}
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(ok,fb);else fb()};
+   c.append(lk);g.append(c)});col.append(g);cols.append(col)}
   sec("📚 Aprendizagem",GAMES().filter(isEdu));sec("🎉 Diversão",GAMES().filter(function(G){return !isEdu(G)}));box.append(cols);
   function fitCols(){try{if(!cols.isConnected)return;var h=Math.floor(b.getBoundingClientRect().bottom-cols.getBoundingClientRect().top-14);cols.style.height=Math.max(220,h)+"px"}catch(e){}}
   fitCols();requestAnimationFrame(fitCols);setTimeout(fitCols,300);
@@ -20638,6 +20689,9 @@ function viewScheduled(b){
 function fab(){var f=document.getElementById("bg-ia-fab");if(!tok()){if(f)f.remove();return}if(f)return;
  f=el("button","position:fixed;right:12px;bottom:84px;z-index:9000;width:46px;height:46px;border:0;border-radius:50%;background:#f5b400;color:#14163a;font-size:22px;box-shadow:0 3px 12px rgba(0,0,0,.4)","✨");f.id="bg-ia-fab";f.setAttribute("aria-label","IA e Jogos");f.onclick=function(){open("ia")};document.body.append(f)}
 window.bengu_ia_open=open;
+/* BENGU: link directo para cada jogo (patrocínios): ?jogo=corrida (ou #jogo=corrida). Abre o jogo assim que a sessão estiver iniciada. */
+(function(){var m=/[?&#]jogo=([a-z0-9_-]+)/i.exec(location.search+location.hash);if(!m)return;var key=m[1].toLowerCase(),n=0;
+ var t=setInterval(function(){n++;if(n>240){clearInterval(t);return}if(!tok()||!window.bengu_ia_open)return;clearInterval(t);setTimeout(function(){window.__bgOpenGame=key;window.bengu_ia_open("jogos")},700)},500)})();
 })();
 </script>
 

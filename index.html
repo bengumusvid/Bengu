@@ -1987,6 +1987,7 @@ function addJournal(done,sec){var fee=jFee(sec),me=uid();if(!me){alert(BG_L("Log
   .then(function(url){return api("bengu_journals","POST",jBody({author_id:me,title:t.slice(0,120),pdf_url:url},sec,fee))}).then(function(r){jDone(b,done,sec,r)})
   .catch(function(e){alert((e&&e.message)||BG_L("Publishing error.","Erro ao publicar."));go.disabled=false;go.textContent=BG_L("Publish newspaper","Publicar jornal")})});
  b.append(h("p",{style:"margin:10px 0 4px;font-size:13px;opacity:.75"},BG_L("Only publish newspapers you own or have permission for. Copied newspapers are removed.","Publique apenas jornais que são seus ou para os quais tem autorização. Jornais copiados são removidos.")),ti,fw,rl,go);if(!/^(mundo|africa|mocambique)$/.test(sec))b.prepend(edBtn(b,done,sec));if(fee)b.prepend(fee.box)}
+window.bengu_journal_open=function(id){api("bengu_journals?select=*&id=eq."+encodeURIComponent(id)+"&limit=1").then(function(r){if(r&&r[0])openPdf(r[0]);else if(window.bengu_news_open)window.bengu_news_open()},function(){if(window.bengu_news_open)window.bengu_news_open()})};
 window.bengu_news_open=function(){var b=sheet(BG_L("📰 News","📰 Notícias")),o=b.parentNode,admin=false,cur=0,sub=0,spt="Soccer";o.classList.add("bgnews-open");o.style.background="#FBF6E9";
  var mast=h("div",{class:"bgn-mast",style:"position:sticky;top:56px;z-index:5;margin:8px 0 0;padding:5px 0;border-radius:8px;overflow:hidden;white-space:nowrap;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.45);font:900 15px Georgia,serif;letter-spacing:2px;background:linear-gradient(90deg,#E53935,#FB8C00,#FDD835 50%,#43A047,#1E88E5)"},h("span",{},"BENGU NOTÍCIAS  \u2605  BENGU NOTÍCIAS  \u2605  BENGU NOTÍCIAS  \u2605")),
  tabs=h("div",{style:"display:flex;gap:8px;overflow-x:auto;padding:12px 0"}),list=h("div");b.append(mast,tabs,list);var hd0=b.parentNode.firstChild;if(hd0&&hd0.offsetHeight)mast.style.top=hd0.offsetHeight+"px";
@@ -7284,9 +7285,9 @@ function BgStrip({ idx, users, statuses, following, meUser, posts, onOpen, onTog
       const vs = (Array.isArray(p.items) && p.items.length ? p.items : Array.isArray(p.media) ? p.media : []).find((m) => m && m.kind === "video" && m.url);
       if (!vs) return;
       nReels++;
-      pool.push({ kind: "reel", id: "reel" + p.id, uid: p.userId, user: U[p.userId] || { name: "Bengu" }, img: vs.cover || "", video: vs.cover ? "" : vs.url });
+      pool.push({ kind: "reel", id: "reel" + p.id, pid: p.id, uid: p.userId, user: U[p.userId] || { name: "Bengu" }, img: vs.cover || "", video: vs.cover ? "" : vs.url });
     });
-    (jr || []).forEach((j) => pool.push({ kind: "journal", id: "jr" + j.id, title: j.title, emoji: "📰", grad: BG_SUG_GRAD[Math.floor(Math.random() * BG_SUG_GRAD.length)] }));
+    (jr || []).forEach((j) => pool.push({ kind: "journal", id: "jr" + j.id, jid: j.id, title: j.title, emoji: "📰", grad: BG_SUG_GRAD[Math.floor(Math.random() * BG_SUG_GRAD.length)] }));
     BG_SUG_GAMES.forEach((g, gi) => pool.push({ kind: "game", id: "game" + gi, title: g[1], emoji: g[0], gkey: g[2], grad: BG_SUG_GRAD[Math.floor(Math.random() * BG_SUG_GRAD.length)] }));
     /* cada faixa mostra UMA só categoria (nunca misturadas); as faixas seguintes rodam por outras categorias, em ordem aleatória */
     const avail = [...new Set(pool.map((it) => it.kind))];
@@ -7311,7 +7312,7 @@ function BgStrip({ idx, users, statuses, following, meUser, posts, onOpen, onTog
     const usr = it.user || {}, img = (it.kind === "ad" || it.kind === "reel") ? it.img : (it.kind === "journal" || it.kind === "game") ? "" : usr.avatar;
     const cr = usr.createdAt || usr.created_at, isNewU = it.kind === "user" && cr && Date.now() - new Date(cr).getTime() < 14 * 864e5;
     const lbl = { ad: "📢 Anúncio", reel: "🎞 Reel", journal: "📰 Jornal", game: "🎮 Jogo", status: "Estado" }[it.kind] || (isNewU ? "Novo" : "");
-    const go = () => (it.kind === "status" ? onStatus(it.id) : it.kind === "journal" ? (window.bengu_news_open && window.bengu_news_open()) : it.kind === "game" ? (window.__bgOpenGame = it.gkey, window.bengu_ia_open && window.bengu_ia_open("jogos")) : onOpen((it.kind === "ad" || it.kind === "reel") ? it.uid : it.id));
+    const go = () => (it.kind === "status" ? onStatus(it.id) : it.kind === "journal" ? (window.bengu_journal_open ? window.bengu_journal_open(it.jid) : window.bengu_news_open && window.bengu_news_open()) : it.kind === "game" ? (window.__bgOpenGame = it.gkey, window.bengu_ia_open && window.bengu_ia_open("jogos")) : (window.__bgOpenReel = it.kind === "reel" ? it.pid : null, onOpen((it.kind === "ad" || it.kind === "reel") ? it.uid : it.id)));
     const followed = fol[it.id] || (following || []).includes(it.id);
     return u.jsxs("div", {
       key: it.id, role: "button", onClick: go,
@@ -15289,6 +15290,10 @@ function BgProfileTabs(p) {
           String(b.createdAt).localeCompare(String(a.createdAt)),
       ),
     cur = openId ? all.find((q) => q.id === openId) : null;
+  B.useEffect(() => {
+    const rid = window.__bgOpenReel;
+    if (rid && all.some((q) => q.id === rid)) { window.__bgOpenReel = null; setTab("reels"); setOpenId(rid); }
+  }, [all.length]);
   return u.jsxs("div", {
     children: [
       u.jsx("div", {

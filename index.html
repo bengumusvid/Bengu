@@ -19882,7 +19882,7 @@ function corrida(w){
 @media (max-height:430px){#ev h1{font-size:22px}#ev .card{width:100px}#ev #ev_msg{display:none}#ev .how{display:none}#ev #ev_pad .hold{width:84px;height:84px}}`;root.append(sty2);{const s3=document.createElement('style');s3.textContent=`#ev #ev_menu{background:linear-gradient(#0b0e2a99,#0b0e2a00 35%,#0b0e2a00 55%,#0b0e2acc)}#ev #ev_menu .mw{width:100%;height:100%;max-width:none;align-items:flex-end;justify-content:space-between}#ev #ev_menu .mL{justify-content:flex-end}#ev #ev_menu .mR{align-items:flex-end}#ev #ev_menu h1{position:absolute;top:10px;left:16px;font-size:22px;text-shadow:0 2px 6px #000}#ev #ev_msg,#ev #ev_menu .how{display:none}#ev #ev_menu .card{width:92px;padding:4px}#ev #ev_menu .card b{font-size:12px}#ev #ev_menu .card small{display:none}#ev #ev_mopts{max-height:40vh;overflow:auto}#ev:has(#ev_menu.on) :is(#ev_hud,#ev_pad,#ev_ped,#ev_aux,#ev_wheel,#ev_tl,#ev_toast){display:none!important}#ev #ev_gauge{position:fixed;left:max(10px,env(safe-area-inset-left));top:calc(max(8px,env(safe-area-inset-top)) + 56px);width:104px;height:104px;pointer-events:none;filter:drop-shadow(0 2px 4px #0008)}#ev #ev_gauge svg{width:100%;height:100%;display:block}#ev #ev_cam{position:fixed;right:max(10px,env(safe-area-inset-right));top:calc(max(8px,env(safe-area-inset-top)) + 56px);display:flex;align-items:center;justify-content:center;padding:0}#ev:has(#ev_menu.on) :is(#ev_gauge,#ev_cam){display:none!important}#ev #ev_toast{position:static;transform:none;flex:1 1 0;min-width:0;margin:0 4px;padding:8px 12px;font-size:13px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}#ev #ev_tl{bottom:84px;max-width:40vw}#ev #ev_ped .hold{background:none;border:0;padding:0;filter:drop-shadow(0 3px 4px #0009);transition:transform .08s}#ev #ev_ped .hold.on{background:none;transform:translateY(4px) scale(.95)}#ev #ev_ped .hold.on .pd{fill:var(--acc)}#ev #ev_ped .hold[data-h=gas]{width:70px}`;root.append(s3)}
 root.insertAdjacentHTML('beforeend',`<canvas id="ev_c"></canvas>
 <div id="ev_hud"><button class="ib" id="ev_bk" aria-label="Menu">←</button>
-<div id="ev_pill"><span><span id="ev_hv">0</span> km/h</span><span>· Nív <span id="ev_hl">1</span></span><span>· <span id="ev_hs">0</span> pts</span><span id="ev_hh">♥♥♥</span><span id="ev_lim">50</span></div>
+<div id="ev_pill"><span style="display:none"><span id="ev_hv">0</span></span><span>Nív <span id="ev_hl">1</span></span><span>· <span id="ev_hs">0</span> pts</span><span id="ev_hh">♥♥♥</span><span id="ev_lim">50</span></div>
 <div id="ev_toast"></div>
 <div class="r"><button class="ib" id="ev_bp" aria-label="Pausa">⏸</button><button class="ib" id="ev_bs" aria-label="Definições">⚙</button></div></div>
 <div id="ev_gauge"></div><button class="ib" id="ev_cam" aria-label="Mudar vista da estrada"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><path d="M11 4h10l6 24H5z" fill="#12183a"/><path d="M16 7v3M16 13v4M16 20v6" stroke="#ffb800" stroke-width="2" stroke-linecap="round"/><path d="M2 9c3-4 6-5 8-5M30 9c-3-4-6-5-8-5" stroke="#12183a" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
@@ -20074,8 +20074,31 @@ function drawObj(s,o,nf){const pct=(o.z%SEG)/SEG;
 const y_=v=>v;
 function pv(g,cx,by,s,v,o){const kd=(v.k==='truck'||v.k==='trailer')?'truck':v.k==='car'?'sedan':v.k,wd=v.w*s;g.save();g.translate(cx,by);g.rotate(o.st*.035);g.transform(1,0,o.sw*.05,1,0,0);
  paintCar(g,kd,v.col,wd,{front:0,br:o.br,hl:o.hl,L:o.L,R:o.R,hz:o.hz,bk:o.bk});g.restore()}
+function hoodCam(g,v,tr){
+ const sh=(hx,k)=>{if(!/^#[0-9a-f]{6}$/i.test(hx))return hx;const n=parseInt(hx.slice(1),16),f=c=>Math.max(0,Math.min(255,Math.round(k<1?c*k:c+(255-c)*(k-1))));return 'rgb('+f(n>>16&255)+','+f(n>>8&255)+','+f(n&255)+')'};
+ const r=Math.min(1,Math.abs(spd)/5000),bob=Math.sin(T*17)*H*.0018*r+Math.sin(T*7.3)*H*.0012*r;
+ g.save();g.translate(-sv*W*.006,bob);
+ const yf=H*(v.k==='sport'||v.k==='muscle'?.7:v.k==='suv'?.77:.74),yn=H*.93;
+ if(!tr){
+  const L1=W*.3,R1=W*.7,L2=-W*.02,R2=W*1.02,hp=()=>{g.beginPath();g.moveTo(L2,yn);g.lineTo(L1,yf+H*.012);g.quadraticCurveTo(W*.5,yf-H*.03,R1,yf+H*.012);g.lineTo(R2,yn);g.closePath()};
+  hp();let gr=g.createLinearGradient(0,yf-H*.03,0,yn);gr.addColorStop(0,sh(v.col,.55));gr.addColorStop(.45,sh(v.col,.85));gr.addColorStop(1,sh(v.col,1.18));g.fillStyle=gr;g.fill();
+  g.save();hp();g.clip();
+  gr=g.createLinearGradient(0,yf,0,yn);gr.addColorStop(0,'rgba(210,230,255,.38)');gr.addColorStop(.5,'rgba(210,230,255,.1)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,yf-H*.04,W,yn-yf+H*.04);
+  const rg=g.createRadialGradient(W*.5,yn,0,W*.5,yn,W*.5);rg.addColorStop(0,'rgba(0,0,0,.28)');rg.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=rg;g.fillRect(0,yf-H*.04,W,yn-yf+H*.04);
+  g.lineWidth=Math.max(1.5,H*.004);for(const k of [-1,1]){const xf=W*.5+k*W*.07,xn=W*.5+k*W*.3;g.strokeStyle='rgba(0,0,0,.22)';g.beginPath();g.moveTo(xf,yf+H*.005);g.lineTo(xn,yn);g.stroke();g.strokeStyle='rgba(255,255,255,.2)';g.beginPath();g.moveTo(xf+k*3,yf+H*.005);g.lineTo(xn+k*3,yn);g.stroke()}
+  if(lm>0){const hg=g.createRadialGradient(W*.5,yf,0,W*.5,yf,W*.45);hg.addColorStop(0,'rgba(255,246,196,.35)');hg.addColorStop(1,'rgba(255,246,196,0)');g.fillStyle=hg;g.fillRect(0,yf-H*.04,W,yn-yf+H*.04)}
+  g.fillStyle='rgba(5,8,25,'+(nt*.5).toFixed(2)+')';g.fillRect(0,yf-H*.04,W,yn-yf+H*.04);
+  g.restore();
+  g.strokeStyle='rgba(255,255,255,.55)';g.lineWidth=Math.max(1.5,H*.004);g.beginPath();g.moveTo(L1,yf+H*.012);g.quadraticCurveTo(W*.5,yf-H*.03,R1,yf+H*.012);g.stroke();
+  g.strokeStyle='rgba(0,0,0,.55)';g.lineWidth=Math.max(1,H*.003);g.beginPath();g.moveTo(L1,yf+H*.016);g.quadraticCurveTo(W*.5,yf-H*.026,R1,yf+H*.016);g.stroke();
+  g.strokeStyle='#0c0c10';g.lineWidth=H*.011;g.lineCap='round';g.beginPath();g.moveTo(W*.16,yn-H*.012);g.lineTo(W*.43,yn-H*.075);g.moveTo(W*.5,yn-H*.012);g.lineTo(W*.77,yn-H*.075);g.stroke();g.lineCap='butt'}
+ g.restore();
+ const ts=g.createLinearGradient(0,0,0,H*.14);ts.addColorStop(0,'rgba(10,20,35,.55)');ts.addColorStop(1,'rgba(10,20,35,0)');g.fillStyle=ts;g.fillRect(0,0,W,H*.14);
+ g.fillStyle='#0b0b11';g.beginPath();g.moveTo(0,0);g.lineTo(W*.055,0);g.lineTo(W*.012,H*.9);g.lineTo(0,H*.9);g.fill();g.beginPath();g.moveTo(W,0);g.lineTo(W*.945,0);g.lineTo(W*.988,H*.9);g.lineTo(W,H*.9);g.fill();
+ const dg=g.createLinearGradient(0,H*.84,0,H);dg.addColorStop(0,'#2b2d3a');dg.addColorStop(.25,'#1a1c26');dg.addColorStop(1,'#0a0a10');g.fillStyle=dg;g.beginPath();g.moveTo(0,H*.92);g.quadraticCurveTo(W*.5,H*.85,W,H*.92);g.lineTo(W,H);g.lineTo(0,H);g.fill();
+ g.strokeStyle='rgba(255,255,255,.14)';g.lineWidth=Math.max(1,H*.003);g.beginPath();g.moveTo(0,H*.92);g.quadraticCurveTo(W*.5,H*.85,W,H*.92);g.stroke()}
 function cockpit(g,v,o){const tr=(v.k==='truck'||v.k==='trailer');
- if(S.cam==='capo'){g.fillStyle=v.col;g.beginPath();g.moveTo(W*.12,H);g.lineTo(W*.32,H*.84);g.lineTo(W*.68,H*.84);g.lineTo(W*.88,H);g.fill();g.fillStyle='#ffffff30';g.beginPath();g.moveTo(W*.34,H*.86);g.lineTo(W*.66,H*.86);g.lineTo(W*.7,H*.9);g.lineTo(W*.3,H*.9);g.fill();return}
+ if(S.cam==='capo'){hoodCam(g,v,tr);return}
  g.fillStyle='#0d0d14';g.beginPath();g.moveTo(0,0);g.lineTo(W*.09,0);g.lineTo(0,H*.8);g.fill();g.beginPath();g.moveTo(W,0);g.lineTo(W*.91,0);g.lineTo(W,H*.8);g.fill();g.fillRect(W*.44,0,W*.12,H*.07);
  const gr=g.createLinearGradient(0,H*.8,0,H);gr.addColorStop(0,'#2a2a38');gr.addColorStop(1,'#0d0d14');g.fillStyle=gr;g.fillRect(0,H*.8,W,H*.2);
  g.fillStyle='#000a';g.fillRect(W*.36,H*.8,W*.28,H*.1);g.fillStyle='#fff';g.font='bold '+(H*.07)+'px system-ui';g.textAlign='center';g.fillText(Math.round(spd/50),W*.5,H*.875);
@@ -20332,8 +20355,11 @@ function upd(dt){T+=dt;lightning(dt);if(st==='play')cyc+=dt;blink=Math.floor(T*2
  const v=V[S.veh],mxs=v.max*(S.dif==='easy'?.9:1),sg=segs[Math.floor((pos+PZ)/SEG)%N],br=Hd.br||K.dn,gas=S.acc==='auto'?1:(Hd.gas||K.up);inv-=dt;
  const off=Math.abs(x)>(sg.j?4.9:1.05);let cap=mxs*(sg.m?.55:1);if(off)cap=Math.min(cap,mxs*.3);
  abk=0;if(d.as>.9)for(const o of objs){if(o.t!=='c'||o.on)continue;const dz=((o.z-(pos+PZ)+L*1.5)%L)-L/2;if(dz>0&&dz<2600&&Math.abs(o.off-x)<.45&&spd>o.v){cap=Math.min(cap,Math.max(o.v,0));abk=1;break}}
- if(rev){const cR=1000;if(spd>0)spd=Math.max(0,spd-mxs/3*dt);else if(gas&&!br)spd=Math.max(-cR,spd-mxs/v.acc*1.3*dt);else if(br)spd=Math.min(0,spd+mxs/3.2*dt);else spd=Math.min(0,spd+mxs/20*dt);if(off)spd=Math.max(spd,-cR*.4);revT+=dt;if(spd<-80&&revT>.8){revT=0;beep(880,.1)}}else{if(gas&&!br)spd+=mxs/v.acc*dt*(1.05-.5*(spd/mxs));else spd-=mxs/20*dt;
- if(br)spd-=mxs/(3.2+1.6*rn)*dt;if(off)spd-=mxs/4*dt;if(spd>cap)spd=Math.max(cap,spd-mxs*.5*dt);spd=Math.max(0,spd)}
+ if(rev){const cR=1000;if(spd>0)spd=Math.max(0,spd-mxs/3*dt);else if(gas&&!br)spd=Math.max(-cR,spd-mxs/v.acc*1.3*dt);else if(br)spd=Math.min(0,spd+mxs/3.2*dt);else spd=Math.min(0,spd+mxs/20*dt);if(off)spd=Math.max(spd,-cR*.4);revT+=dt;if(spd<-80&&revT>.8){revT=0;beep(880,.1)}}else{const slp=(sg.y-sg.y1)/SEG,rr=Math.max(0,spd)/mxs;let ga=-slp*1500;
+ if(gas&&!br){const ea=mxs/v.acc*(1.05-.5*rr);if(ga<0)ga=Math.max(ga,-ea*.8);spd+=(ea+ga)*dt}
+ else{const dr=mxs/28*(1+2*Math.abs(spd)/mxs);if(Math.abs(spd)<dr*dt+1){if(Math.abs(ga)>dr)spd+=Math.sign(ga)*(Math.abs(ga)-dr)*dt;else spd=0}else spd+=(ga-Math.sign(spd)*dr)*dt}
+ if(br){const bk=mxs/(3.2+1.6*rn)*dt;spd=spd>0?Math.max(0,spd-bk):Math.min(0,spd+bk)}
+ if(off&&spd>0)spd-=mxs/4*dt;if(spd>cap)spd=Math.max(cap,spd-mxs*.5*dt);spd=Math.max(-900,spd)}
  let tg=K.r-K.l+(Hd.R||0)-(Hd.L||0);if(S.ctl==='volante')tg+=wa/60;if(S.ctl==='tilt')tg+=tilt;tg=cl(tg,-1,1);sv+=(tg-sv)*Math.min(1,dt*6);
  const r=Math.abs(spd)/mxs;x+=sv*dt*1.5*v.steer*Math.min(1,Math.abs(spd)/700)*(1-.25*r)*(1-.15*rn);x-=dt*.22*r*r*sg.c;if(sg.m)x+=Math.sin(T*5.3+pos*.001)*dt*.3*r;
  if(Math.abs(x)>1&&!sg.j)x-=Math.sign(x)*(Math.abs(x)-.95)*dt*(.4+d.as*1.6);
@@ -20356,15 +20382,15 @@ function upd(dt){T+=dt;lightning(dt);if(st==='play')cyc+=dt;blink=Math.floor(T*2
  if(ac)engine(r,v,gas&&!br,off,sg.m,dt)}
 let ac,osc,gn,o2,o3,lf,fl,ng,nfl,gPrev=1,dip=0;
 function snd(){if(ac||S.snd!=='1')return;try{ac=new(window.AudioContext||window.webkitAudioContext)();
- osc=ac.createOscillator();osc.type='sawtooth';o2=ac.createOscillator();o2.type='square';o3=ac.createOscillator();o3.type='triangle';lf=ac.createOscillator();
- fl=ac.createBiquadFilter();fl.type='lowpass';fl.Q.value=3;const g2=ac.createGain(),g3=ac.createGain(),pg=ac.createGain(),lg=ac.createGain();gn=ac.createGain();gn.gain.value=0;g2.gain.value=.4;g3.gain.value=.9;pg.gain.value=.72;lg.gain.value=.28;
+ osc=ac.createOscillator();osc.type='sawtooth';o2=ac.createOscillator();o2.type='sawtooth';o3=ac.createOscillator();o3.type='triangle';lf=ac.createOscillator();
+ fl=ac.createBiquadFilter();fl.type='lowpass';fl.Q.value=.8;const g2=ac.createGain(),g3=ac.createGain(),pg=ac.createGain(),lg=ac.createGain();gn=ac.createGain();gn.gain.value=0;g2.gain.value=.7;g3.gain.value=.8;pg.gain.value=.8;lg.gain.value=.06;
  osc.connect(fl);o2.connect(g2);g2.connect(fl);o3.connect(g3);g3.connect(fl);fl.connect(pg);pg.connect(gn);gn.connect(ac.destination);lf.connect(lg);lg.connect(pg.gain);
  const nb=ac.createBuffer(1,ac.sampleRate*2,ac.sampleRate),dd=nb.getChannelData(0);for(let i=0;i<dd.length;i++)dd[i]=Math.random()*2-1;const ns=ac.createBufferSource();ns.buffer=nb;ns.loop=true;nfl=ac.createBiquadFilter();nfl.type='bandpass';nfl.frequency.value=600;ng=ac.createGain();ng.gain.value=0;ns.connect(nfl);nfl.connect(ng);ng.connect(ac.destination);
  [osc,o2,o3,lf,ns].forEach(n=>n.start())}catch(e){ac=null}}
 function engine(r,v,gas,off,mud,dt){const t=ac.currentTime,B=[0,.18,.34,.52,.7,.86,1.01];let i=1;while(i<6&&r>=B[i])i++;if(i!==gPrev){if(i>gPrev)dip=.3;gPrev=i}dip=Math.max(0,dip-dt);
- const fr2=cl((r-B[i-1])/(B[i]-B[i-1]),0,1),rpm=(.2+fr2*.8)*(1-dip*.9)*(gas?1:.8),tk=(v.k==='truck'||v.k==='trailer'),f=(tk?40:v.k==='sport'||v.k==='muscle'?64:56)+rpm*(tk?90:200);
- osc.frequency.setTargetAtTime(f,t,.04);o2.frequency.setTargetAtTime(f*.5,t,.04);o3.frequency.setTargetAtTime(f*.25,t,.04);lf.frequency.setTargetAtTime(f*(tk?.25:.5),t,.04);
- fl.frequency.setTargetAtTime(300+rpm*1500+(gas?600:0),t,.06);gn.gain.setTargetAtTime(S.snd==='1'?.04+rpm*.035+(gas?.025:0):0,t,.05);
+ const fr2=cl((r-B[i-1])/(B[i]-B[i-1]),0,1),rpm=(.2+fr2*.8)*(1-dip*.9)*(gas?1:.8),tk=(v.k==='truck'||v.k==='trailer'),f=(tk?22:v.k==='sport'||v.k==='muscle'?30:26)+rpm*(tk?50:110);
+ osc.frequency.setTargetAtTime(f,t,.04);o2.frequency.setTargetAtTime(f*1.012,t,.04);o3.frequency.setTargetAtTime(f*.5,t,.04);lf.frequency.setTargetAtTime(f*.5,t,.04);
+ fl.frequency.setTargetAtTime(220+rpm*1100+(gas?450:0),t,.06);gn.gain.setTargetAtTime(S.snd==='1'?.05+rpm*.04+(gas?.03:0):0,t,.05);
  ng.gain.setTargetAtTime(S.snd==='1'?r*.08+(off?.07:0)+(mud?.05:0):0,t,.1);nfl.frequency.setTargetAtTime(500+r*2200,t,.1)}
 function crash(){if(!ac||S.snd!=='1')return;try{const n=ac.sampleRate*.6,b=ac.createBuffer(1,n,ac.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.5);const s2=ac.createBufferSource();s2.buffer=b;const l=ac.createBiquadFilter();l.type='lowpass';l.frequency.value=1400;const g=ac.createGain();g.gain.value=.5;s2.connect(l);l.connect(g);g.connect(ac.destination);s2.start()}catch(e){}}
 /* ---------- UI ---------- */
